@@ -55,10 +55,12 @@ namespace TaskApp
             public string DatabasePath { get; set; } = "tasks.db";
         }
 
-        public static Database GetDatabase(TaskCommandSettings settings)
+        public static async Task<Database> GetDatabaseAsync(TaskCommandSettings settings, CancellationToken cancellationToken = default)
         {
             var dbPath = Path.GetFullPath(settings.DatabasePath);
-            return new Database(dbPath);
+            var db = new Database(dbPath);
+            await db.InitializeAsync(cancellationToken);
+            return db;
         }
     }
 }
