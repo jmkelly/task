@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task CLI - Cross-Platform Task Management Tool</title>
+    <meta name="description" content="A self-contained, cross-platform CLI application for managing tasks with SQLite. No dependencies, no installation hassles.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="marketing.css">
+</head>
+<body>
+    <header class="hero">
+        <nav class="nav">
+            <div class="nav-content">
+                <h1 class="nav-title">Task CLI</h1>
+                <div class="nav-links">
+                    <a href="#features">Features</a>
+                    <a href="#installation">Installation</a>
+                    <a href="#usage">Usage</a>
+                    <a href="https://github.com/your-repo" class="cta-btn">GitHub</a>
+                </div>
+            </div>
+        </nav>
+
+        <div class="hero-content">
+            <div class="hero-text">
+                <h1 class="hero-title">
+                    Master Your Tasks with
+                    <span class="accent">Task CLI</span>
+                </h1>
+                <p class="hero-subtitle">
+                    A lightning-fast, self-contained task management tool for developers and productivity enthusiasts.
+                    Cross-platform, SQLite-powered, zero dependencies.
+                </p>
+                <div class="hero-actions">
+                    <a href="#installation" class="primary-btn">Get Started</a>
+                    <a href="#features" class="secondary-btn">Learn More</a>
+                </div>
+                <div class="hero-stats">
+                    <div class="stat">
+                        <span class="stat-number">17MB</span>
+                        <span class="stat-label">Self-Contained</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number">4</span>
+                        <span class="stat-label">Platforms</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number">SQLite</span>
+                        <span class="stat-label">Powered</span>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <div class="terminal">
+                    <div class="terminal-header">
+                        <div class="terminal-dots">
+                            <span class="dot red"></span>
+                            <span class="dot yellow"></span>
+                            <span class="dot green"></span>
+                        </div>
+                        <span class="terminal-title">Terminal</span>
+                    </div>
+                    <div class="terminal-content">
+                        <div class="terminal-line">$ <span class="command">task add "Build awesome CLI tools"</span></div>
+                        <div class="terminal-line">Task added successfully! (ID: 1)</div>
+                        <div class="terminal-line">$ <span class="command">task list</span></div>
+                        <div class="terminal-line">1. [ ] Build awesome CLI tools</div>
+                        <div class="terminal-line">$ <span class="command">task complete 1</span></div>
+                        <div class="terminal-line">Task marked as complete!</div>
+                        <div class="terminal-line">$ <span class="cursor">_</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <section id="features" class="features">
+        <div class="container">
+            <h2 class="section-title">Why Choose Task CLI?</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🚀</div>
+                    <h3>Self-Contained</h3>
+                    <p>Single executable file includes everything needed. No installation, no dependencies, no hassle.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🌐</div>
+                    <h3>Cross-Platform</h3>
+                    <p>Works on Linux, macOS (Intel & ARM), and Windows. Built with .NET for maximum compatibility.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">💾</div>
+                    <h3>SQLite Powered</h3>
+                    <p>Robust data storage with SQLite. Your tasks are safe, searchable, and portable.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Lightning Fast</h3>
+                    <p>Compiled to native code for optimal performance. Instant startup, no warm-up time.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔧</div>
+                    <h3>Scripting Ready</h3>
+                    <p>JSON output for automation. Plain text for human readability. Integrate with your workflows.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔍</div>
+                    <h3>Powerful Search</h3>
+                    <p>Find tasks instantly with built-in search functionality. Never lose track of your work.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="installation" class="installation">
+        <div class="container">
+            <h2 class="section-title">Get Started in Minutes</h2>
+            <div class="install-grid">
+                <div class="install-step">
+                    <div class="step-number">1</div>
+                    <h3>Download</h3>
+                    <p>Grab the executable for your platform from the releases page.</p>
+                    <div class="platform-links">
+                        <a href="#" class="platform-btn linux">Linux x64</a>
+                        <a href="#" class="platform-btn mac-intel">macOS Intel</a>
+                        <a href="#" class="platform-btn mac-arm">macOS ARM64</a>
+                        <a href="#" class="platform-btn windows">Windows x64</a>
+                    </div>
+                </div>
+                <div class="install-step">
+                    <div class="step-number">2</div>
+                    <h3>Make Executable</h3>
+                    <p>On Linux/macOS, run:</p>
+                    <div class="code-block">
+                        <code>chmod +x Task</code>
+                    </div>
+                    <p>Windows executables are ready to run.</p>
+                </div>
+                <div class="install-step">
+                    <div class="step-number">3</div>
+                    <h3>Install Globally</h3>
+                    <p>Optional: Add to your PATH for system-wide access.</p>
+                    <div class="code-block">
+                        <code>sudo mv Task /usr/local/bin/task</code>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="usage" class="usage">
+        <div class="container">
+            <h2 class="section-title">Simple Yet Powerful</h2>
+            <div class="usage-content">
+                <div class="usage-examples">
+                    <h3>Basic Commands</h3>
+                    <div class="command-example">
+                        <div class="command-desc">Add a new task</div>
+                        <div class="code-block">
+                            <code>task add "Review pull requests"</code>
+                        </div>
+                    </div>
+                    <div class="command-example">
+                        <div class="command-desc">List all tasks</div>
+                        <div class="code-block">
+                            <code>task list</code>
+                        </div>
+                    </div>
+                    <div class="command-example">
+                        <div class="command-desc">Mark task as complete</div>
+                        <div class="code-block">
+                            <code>task complete 1</code>
+                        </div>
+                    </div>
+                    <div class="command-example">
+                        <div class="command-desc">Search for tasks</div>
+                        <div class="code-block">
+                            <code>task search "pull"</code>
+                        </div>
+                    </div>
+                </div>
+                <div class="usage-features">
+                    <h3>Advanced Features</h3>
+                    <ul class="feature-list">
+                        <li><strong>JSON Output:</strong> Perfect for scripting and integrations</li>
+                        <li><strong>Custom Databases:</strong> Use different databases for different projects</li>
+                        <li><strong>Import/Export:</strong> Migrate tasks between systems</li>
+                        <li><strong>Plain Text Mode:</strong> Clean output for automation</li>
+                    </ul>
+                    <div class="code-block json">
+                        <code>task list --json</code>
+                        <br>
+                        <code>[{"id":1,"text":"Review pull requests","completed":false}]</code>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>Task CLI</h3>
+                    <p>Simple, fast, and reliable task management for the command line.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Links</h4>
+                    <a href="#features">Features</a>
+                    <a href="#installation">Installation</a>
+                    <a href="#usage">Usage</a>
+                    <a href="https://github.com/your-repo">GitHub</a>
+                </div>
+                <div class="footer-section">
+                    <h4>Built with</h4>
+                    <div class="tech-stack">
+                        <span class="tech">C#</span>
+                        <span class="tech">.NET 9</span>
+                        <span class="tech">SQLite</span>
+                        <span class="tech">Spectre.Console</span>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Task CLI. Open source and free to use.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="marketing.js"></script>
+</body>
+</html>
