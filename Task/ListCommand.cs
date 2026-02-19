@@ -6,7 +6,7 @@ using System.Threading;
 namespace TaskApp
 {
     [Description("List all tasks in a table format. Use filters to narrow results. Use --json for structured output suitable for LLMs.")]
-    public class ListCommand : Command<ListCommand.Settings>
+    public class ListCommand : AsyncCommand<ListCommand.Settings>
     {
         public class Settings : Program.TaskCommandSettings
         {
@@ -19,10 +19,10 @@ namespace TaskApp
             public string? Priority { get; set; }
         }
 
-        public override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken)
+        public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
         {
-            var db = Program.GetDatabase(settings);
-            var tasks = db.GetAllTasks();
+            var db = await Program.GetDatabaseAsync(settings, cancellationToken);
+            var tasks = await db.GetAllTasks(cancellationToken);
 
             // Filter
             if (!string.IsNullOrEmpty(settings.Status))

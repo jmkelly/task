@@ -6,7 +6,7 @@ using System.Threading;
 namespace TaskApp
 {
     [Description("Add a new task to the task list. Use --json for LLM-friendly structured output.")]
-    public class AddCommand : Command<AddCommand.Settings>
+    public class AddCommand : AsyncCommand<AddCommand.Settings>
     {
         public class Settings : Program.TaskCommandSettings
         {
@@ -31,9 +31,9 @@ namespace TaskApp
             public string? Tags { get; set; }
         }
 
-        public override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken)
+        public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
         {
-            var db = Program.GetDatabase(settings);
+            var db = await Program.GetDatabaseAsync(settings, cancellationToken);
 
             string? title = settings.Title;
             string? description = settings.Description;
@@ -82,7 +82,7 @@ namespace TaskApp
                     dueDate = DateTime.Parse(dueDateInput);
                 }
 
-                var availableTags = db.GetAllUniqueTags();
+                var availableTags = await db.GetAllUniqueTags(cancellationToken);
                 if (availableTags.Count > 0)
                 {
                     var selectedTags = AnsiConsole.Prompt(
@@ -128,7 +128,7 @@ namespace TaskApp
                 }
             }
 
-            var task = db.AddTask(title, description, priority, dueDate, tags);
+            var task = await db.AddTask(title, description, priority, dueDate, tags, cancellationToken);
 
             if (settings.Json)
             {

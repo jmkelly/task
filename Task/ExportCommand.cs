@@ -8,7 +8,7 @@ using System.IO;
 namespace TaskApp
 {
     [Description("Export tasks to JSON or CSV format. Outputs to file if specified, otherwise to stdout.")]
-    public class ExportCommand : Command<ExportCommand.Settings>
+    public class ExportCommand : AsyncCommand<ExportCommand.Settings>
     {
         public class Settings : Program.TaskCommandSettings
         {
@@ -21,13 +21,13 @@ namespace TaskApp
             public string? Output { get; set; }
         }
 
-        public override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken)
+        public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
         {
-            var db = Program.GetDatabase(settings);
+            var db = await Program.GetDatabaseAsync(settings, cancellationToken);
 
             try
             {
-                var tasks = db.GetAllTasks();
+                var tasks = await db.GetAllTasks(cancellationToken);
 
                 if (tasks.Count == 0)
                 {

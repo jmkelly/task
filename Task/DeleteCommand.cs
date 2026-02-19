@@ -5,7 +5,7 @@ using System.Threading;
 namespace TaskApp
 {
     [Description("Delete a task permanently. Use --json for structured confirmation output.")]
-    public class DeleteCommand : Command<DeleteCommand.Settings>
+    public class DeleteCommand : AsyncCommand<DeleteCommand.Settings>
     {
         public class Settings : Program.TaskCommandSettings
         {
@@ -14,9 +14,9 @@ namespace TaskApp
             public string? Id { get; set; }
         }
 
-        public override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken)
+        public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
         {
-            var db = Program.GetDatabase(settings);
+            var db = await Program.GetDatabaseAsync(settings, cancellationToken);
 
             if (string.IsNullOrEmpty(settings.Id))
             {
@@ -24,7 +24,7 @@ namespace TaskApp
                 return 1;
             }
 
-            var task = db.GetTaskByUid(settings.Id);
+            var task = await db.GetTaskByUid(settings.Id, cancellationToken);
 
             if (task == null)
             {
@@ -32,7 +32,7 @@ namespace TaskApp
                 return 1;
             }
 
-            db.DeleteTask(task.Id.ToString());
+            await db.DeleteTask(task.Id.ToString(), cancellationToken);
 
             if (settings.Json)
             {

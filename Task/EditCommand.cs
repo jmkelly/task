@@ -5,7 +5,7 @@ using System.Threading;
 namespace TaskApp
 {
     [Description("Edit an existing task's properties. Specify the task ID and any fields to update. Use --json for LLM-friendly output.")]
-    public class EditCommand : Command<EditCommand.Settings>
+    public class EditCommand : AsyncCommand<EditCommand.Settings>
     {
         public class Settings : Program.TaskCommandSettings
         {
@@ -34,9 +34,9 @@ namespace TaskApp
             public string? Tags { get; set; }
         }
 
-        public override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken)
+        public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
         {
-            var db = Program.GetDatabase(settings);
+            var db = await Program.GetDatabaseAsync(settings, cancellationToken);
 
             if (string.IsNullOrEmpty(settings.Id))
             {
@@ -44,7 +44,7 @@ namespace TaskApp
                 return 1;
             }
 
-            var task = db.GetTaskByUid(settings.Id);
+            var task = await db.GetTaskByUid(settings.Id, cancellationToken);
 
             if (task == null)
             {
@@ -72,7 +72,7 @@ namespace TaskApp
                 task.Tags = settings.Tags.Split(',').Select(t => t.Trim()).ToList();
             }
 
-            db.UpdateTask(task);
+            await db.UpdateTask(task, cancellationToken);
 
             if (settings.Json)
             {

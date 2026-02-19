@@ -6,7 +6,7 @@ using System.Threading;
 namespace TaskApp
 {
     [Description("Search for tasks using full-text, semantic, or hybrid search. Use --json for structured results.")]
-    public class SearchCommand : Command<SearchCommand.Settings>
+    public class SearchCommand : AsyncCommand<SearchCommand.Settings>
     {
         public class Settings : Program.TaskCommandSettings
         {
@@ -19,9 +19,9 @@ namespace TaskApp
             public string Type { get; set; } = "fts";
         }
 
-        public override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken)
+        public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
         {
-            var db = Program.GetDatabase(settings);
+            var db = await Program.GetDatabaseAsync(settings, cancellationToken);
 
             if (string.IsNullOrEmpty(settings.Query))
             {
@@ -33,22 +33,22 @@ namespace TaskApp
             if (settings.Type == "fts")
             {
                 // Use FTS search
-                tasks = db.SearchTasksFTS(settings.Query);
+                tasks = await db.SearchTasksFTS(settings.Query, cancellationToken);
             }
             else if (settings.Type == "semantic")
             {
                 // Use semantic search
-                tasks = db.SearchTasksSemantic(settings.Query);
+                tasks = await db.SearchTasksSemantic(settings.Query, cancellationToken);
             }
             else if (settings.Type == "hybrid")
             {
                 // Use hybrid search
-                tasks = db.SearchTasksHybrid(settings.Query);
+                tasks = await db.SearchTasksHybrid(settings.Query, cancellationToken);
             }
             else
             {
                 // Simple search
-                tasks = db.GetAllTasks().Where(t => 
+                tasks = (await db.GetAllTasks(cancellationToken)).Where(t => 
                     t.Title.Contains(settings.Query, StringComparison.OrdinalIgnoreCase) ||
                     (t.Description ?? "").Contains(settings.Query, StringComparison.OrdinalIgnoreCase) ||
                     t.Tags.Any(tag => tag.Contains(settings.Query, StringComparison.OrdinalIgnoreCase))

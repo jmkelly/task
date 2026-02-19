@@ -8,7 +8,7 @@ using System.IO;
 namespace TaskApp
 {
     [Description("Import tasks from JSON or CSV format.")]
-    public class ImportCommand : Command<ImportCommand.Settings>
+    public class ImportCommand : AsyncCommand<ImportCommand.Settings>
     {
         public class Settings : Program.TaskCommandSettings
         {
@@ -21,9 +21,9 @@ namespace TaskApp
             public string? Input { get; set; }
         }
 
-        public override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken)
+        public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
         {
-            var db = Program.GetDatabase(settings);
+            var db = await Program.GetDatabaseAsync(settings, cancellationToken);
 
             if (string.IsNullOrEmpty(settings.Input))
             {
@@ -39,27 +39,8 @@ namespace TaskApp
 
             try
             {
-                List<TaskItem> tasks;
-                if (string.Equals(settings.Format, "csv", StringComparison.OrdinalIgnoreCase))
-                {
-                    tasks = ImportFromCsv(settings.Input);
-                }
-                else if (string.Equals(settings.Format, "json", StringComparison.OrdinalIgnoreCase))
-                {
-                    tasks = ImportFromJson(settings.Input);
-                }
-                else
-                {
-                    Console.Error.WriteLine($"ERROR: Unsupported format '{settings.Format}'. Supported formats: json, csv.");
-                    return 1;
-                }
-
-                if (tasks.Count == 0)
-                {
-                    AnsiConsole.MarkupLine("[yellow]No tasks found in file to import.[/]");
-                    return 0;
-                }
-
+                List<TaskItem> tasks = new List<TaskItem>();
+                var addTasks = new List<Task>();
                 int imported = 0;
                 AnsiConsole.Progress()
                     .Start(ctx =>
@@ -81,7 +62,7 @@ namespace TaskApp
                                 taskItem.Status = string.IsNullOrEmpty(taskItem.Status) ? "pending" : taskItem.Status;
 
                                 // Add to database (this will generate new UID and timestamps)
-                                db.AddTask(taskItem.Title, taskItem.Description, taskItem.Priority, taskItem.DueDate, taskItem.Tags);
+                                addTasks.Add(db.AddTask(taskItem.Title, taskItem.Description, taskItem.Priority, taskItem.DueDate, taskItem.Tags, cancellationToken));
                                 imported++;
                                 task.Increment(1);
                             }
@@ -92,6 +73,8 @@ namespace TaskApp
                         }
                         task.StopTask();
                     });
+
+                await Task.WhenAll(addTasks);
 
                 AnsiConsole.MarkupLine($"[green]Successfully imported {imported} out of {tasks.Count} tasks.[/]");
                 return 0;
@@ -106,9 +89,9 @@ namespace TaskApp
         private List<TaskItem> ImportFromJson(string filePath)
         {
             List<TaskItem> tasks = null;
-            AnsiConsole.Progress()
-                .Start(ctx =>
-                {
+                AnsiConsole.Progress()
+                    .Start(async ctx =>
+                    {
                     var task = ctx.AddTask("Reading JSON file", maxValue: 1);
                     var json = File.ReadAllText(filePath);
                     task.Increment(0.5);
