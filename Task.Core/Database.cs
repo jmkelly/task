@@ -43,6 +43,7 @@ namespace Task.Core
 						due_date TEXT,
 						tags TEXT,
 						project TEXT,
+						assignee TEXT,
 						status TEXT NOT NULL,
 						created_at TEXT NOT NULL,
 						updated_at TEXT NOT NULL
@@ -75,6 +76,17 @@ namespace Task.Core
 				alterCommand.ExecuteNonQuery();
 			}
 
+			// Add assignee column if it doesn't exist (for migration)
+			var checkAssigneeSql = "SELECT COUNT(*) FROM pragma_table_info('tasks') WHERE name='assignee'";
+			using var checkAssigneeCommand = new SqliteCommand(checkAssigneeSql, connection);
+			var assigneeCount = (long)checkAssigneeCommand.ExecuteScalar();
+			if (assigneeCount == 0)
+			{
+				var alterAssigneeSql = "ALTER TABLE tasks ADD COLUMN assignee TEXT";
+				using var alterAssigneeCommand = new SqliteCommand(alterAssigneeSql, connection);
+				alterAssigneeCommand.ExecuteNonQuery();
+			}
+
 
 		}
 
@@ -92,6 +104,7 @@ namespace Task.Core
 						due_date TEXT,
 						tags TEXT,
 						project TEXT,
+						assignee TEXT,
 						status TEXT NOT NULL,
 						created_at TEXT NOT NULL,
 						updated_at TEXT NOT NULL
@@ -122,6 +135,17 @@ namespace Task.Core
 				var alterSql = "ALTER TABLE tasks ADD COLUMN project TEXT";
 				using var alterCommand = new SqliteCommand(alterSql, connection);
 				await alterCommand.ExecuteNonQueryAsync(cancellationToken);
+			}
+
+			// Add assignee column if it doesn't exist (for migration)
+			var checkAssigneeSql = "SELECT COUNT(*) FROM pragma_table_info('tasks') WHERE name='assignee'";
+			using var checkAssigneeCommand = new SqliteCommand(checkAssigneeSql, connection);
+			var assigneeCount = (long)await checkAssigneeCommand.ExecuteScalarAsync(cancellationToken);
+			if (assigneeCount == 0)
+			{
+				var alterAssigneeSql = "ALTER TABLE tasks ADD COLUMN assignee TEXT";
+				using var alterAssigneeCommand = new SqliteCommand(alterAssigneeSql, connection);
+				await alterAssigneeCommand.ExecuteNonQueryAsync(cancellationToken);
 			}
 
 
@@ -173,7 +197,7 @@ namespace Task.Core
 
 			// Use FTS5 MATCH
 			var sql = @"
-				SELECT t.id, t.uid, t.title, t.description, t.priority, t.due_date, t.tags, t.project, t.status, t.created_at, t.updated_at
+				SELECT t.id, t.uid, t.title, t.description, t.priority, t.due_date, t.tags, t.project, t.assignee, t.status, t.created_at, t.updated_at
 				FROM tasks_fts fts
 				JOIN tasks t ON t.id = fts.rowid
 				WHERE tasks_fts MATCH @query
@@ -195,9 +219,10 @@ namespace Task.Core
 					DueDate = reader.IsDBNull(5) || string.IsNullOrEmpty(reader.GetString(5)) ? null : DateTime.Parse(reader.GetString(5), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
 					Tags = reader.IsDBNull(6) ? new List<string>() : reader.GetString(6).Split(',').Where(t => !string.IsNullOrEmpty(t)).ToList(),
 					Project = reader.IsDBNull(7) ? null : reader.GetString(7),
-					Status = reader.GetString(8),
-					CreatedAt = DateTime.Parse(reader.GetString(9), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
-					UpdatedAt = DateTime.Parse(reader.GetString(10), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal)
+					Assignee = reader.IsDBNull(8) ? null : reader.GetString(8),
+					Status = reader.GetString(9),
+					CreatedAt = DateTime.Parse(reader.GetString(10), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
+					UpdatedAt = DateTime.Parse(reader.GetString(11), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal)
 				};
 				tasks.Add(task);
 			}
@@ -318,7 +343,7 @@ namespace Task.Core
 			return Guid.NewGuid().ToString().Substring(0, 6);
 		}
 
-		public async System.Threading.Tasks.Task<TaskItem> AddTaskAsync(string title, string? description, string priority, DateTime? dueDate, List<string> tags, string? project = null, string status = "todo", CancellationToken cancellationToken = default)
+		public async System.Threading.Tasks.Task<TaskItem> AddTaskAsync(string title, string? description, string priority, DateTime? dueDate, List<string> tags, string? project = null, string? assignee = null, string status = "todo", CancellationToken cancellationToken = default)
 		{
 			using var connection = new SqliteConnection($"Data Source={_dbPath}");
 			await connection.OpenAsync(cancellationToken);
@@ -330,8 +355,8 @@ namespace Task.Core
 				var createdAt = DateTime.UtcNow;
 				var updatedAt = createdAt;
 				var sql = @"
-					INSERT INTO tasks (uid, title, description, priority, due_date, tags, project, status, created_at, updated_at)
-					VALUES (@uid, @title, @description, @priority, @dueDate, @tags, @project, @status, @createdAt, @updatedAt)";
+					INSERT INTO tasks (uid, title, description, priority, due_date, tags, project, assignee, status, created_at, updated_at)
+					VALUES (@uid, @title, @description, @priority, @dueDate, @tags, @project, @assignee, @status, @createdAt, @updatedAt)";
 
 				using var command = new SqliteCommand(sql, connection, transaction);
 				command.Parameters.AddWithValue("@uid", uid);
@@ -341,6 +366,7 @@ namespace Task.Core
 				command.Parameters.AddWithValue("@dueDate", dueDate?.ToString("yyyy-MM-dd") ?? "");
 				command.Parameters.AddWithValue("@tags", string.Join(",", tags));
 				command.Parameters.AddWithValue("@project", project ?? "");
+				command.Parameters.AddWithValue("@assignee", assignee ?? "");
 				command.Parameters.AddWithValue("@status", status);
 				command.Parameters.AddWithValue("@createdAt", createdAt.ToString("yyyy-MM-dd HH:mm:ss"));
 				command.Parameters.AddWithValue("@updatedAt", updatedAt.ToString("yyyy-MM-dd HH:mm:ss"));
@@ -362,6 +388,7 @@ namespace Task.Core
 					DueDate = dueDate,
 					Tags = tags,
 					Project = project,
+					Assignee = assignee,
 					Status = status,
 					CreatedAt = createdAt,
 					UpdatedAt = updatedAt
@@ -378,7 +405,7 @@ namespace Task.Core
 		{
 			using var connection = new SqliteConnection($"Data Source={_dbPath}");
 			await connection.OpenAsync(cancellationToken);
-			var sql = "SELECT id, uid, title, description, priority, due_date, tags, project, status, created_at, updated_at FROM tasks WHERE uid = @uid";
+			var sql = "SELECT id, uid, title, description, priority, due_date, tags, project, assignee, status, created_at, updated_at FROM tasks WHERE uid = @uid";
 			using var command = new SqliteCommand(sql, connection);
 			command.Parameters.AddWithValue("@uid", uid);
 			using var reader = await command.ExecuteReaderAsync(cancellationToken);
@@ -394,9 +421,10 @@ namespace Task.Core
 					DueDate = reader.IsDBNull(5) || string.IsNullOrEmpty(reader.GetString(5)) ? null : DateTime.Parse(reader.GetString(5), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
 					Tags = reader.IsDBNull(6) ? new List<string>() : reader.GetString(6).Split(',').Where(t => !string.IsNullOrEmpty(t)).ToList(),
 					Project = reader.IsDBNull(7) ? null : reader.GetString(7),
-					Status = reader.GetString(8),
-					CreatedAt = DateTime.Parse(reader.GetString(9), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
-					UpdatedAt = DateTime.Parse(reader.GetString(10), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal)
+					Assignee = reader.IsDBNull(8) ? null : reader.GetString(8),
+					Status = reader.GetString(9),
+					CreatedAt = DateTime.Parse(reader.GetString(10), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
+					UpdatedAt = DateTime.Parse(reader.GetString(11), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal)
 				};
 			}
 			return null;
@@ -412,7 +440,7 @@ namespace Task.Core
 			{
 				var sql = @"
 					UPDATE tasks SET title = @title, description = @description, priority = @priority,
-				due_date = @dueDate, tags = @tags, project = @project, status = @status, updated_at = @updatedAt
+				due_date = @dueDate, tags = @tags, project = @project, assignee = @assignee, status = @status, updated_at = @updatedAt
 					WHERE id = @id";
 
 				using var command = new SqliteCommand(sql, connection, transaction);
@@ -423,6 +451,7 @@ namespace Task.Core
 				command.Parameters.AddWithValue("@dueDate", task.DueDate?.ToString("yyyy-MM-dd") ?? "");
 				command.Parameters.AddWithValue("@tags", task.TagsString);
 				command.Parameters.AddWithValue("@project", task.Project ?? "");
+				command.Parameters.AddWithValue("@assignee", task.Assignee ?? "");
 				command.Parameters.AddWithValue("@status", task.Status);
 				command.Parameters.AddWithValue("@updatedAt", DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"));
 				await command.ExecuteNonQueryAsync(cancellationToken);
@@ -441,7 +470,7 @@ namespace Task.Core
 			var tasks = new List<TaskItem>();
 			using var connection = new SqliteConnection($"Data Source={_dbPath}");
 			await connection.OpenAsync(cancellationToken);
-			var sql = "SELECT id, uid, title, description, priority, due_date, tags, project, status, created_at, updated_at FROM tasks";
+			var sql = "SELECT id, uid, title, description, priority, due_date, tags, project, assignee, status, created_at, updated_at FROM tasks";
 			using var command = new SqliteCommand(sql, connection);
 			using var reader = await command.ExecuteReaderAsync(cancellationToken);
 			while (await reader.ReadAsync(cancellationToken))
@@ -456,9 +485,10 @@ namespace Task.Core
 					DueDate = reader.IsDBNull(5) || string.IsNullOrEmpty(reader.GetString(5)) ? null : DateTime.Parse(reader.GetString(5), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
 					Tags = reader.IsDBNull(6) ? new List<string>() : reader.GetString(6).Split(',').Where(t => !string.IsNullOrEmpty(t)).ToList(),
 					Project = reader.IsDBNull(7) ? null : reader.GetString(7),
-					Status = reader.GetString(8),
-					CreatedAt = DateTime.Parse(reader.GetString(9), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
-					UpdatedAt = DateTime.Parse(reader.GetString(10), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal)
+					Assignee = reader.IsDBNull(8) ? null : reader.GetString(8),
+					Status = reader.GetString(9),
+					CreatedAt = DateTime.Parse(reader.GetString(10), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
+					UpdatedAt = DateTime.Parse(reader.GetString(11), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal)
 				};
 				tasks.Add(task);
 			}

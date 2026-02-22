@@ -14,6 +14,7 @@ public class TaskDto
     public DateTime? DueDate { get; set; }
     public List<string> Tags { get; set; } = new();
     public string? Project { get; set; }
+    public string? Assignee { get; set; }
     public List<string> DependsOn { get; set; } = new();
     public string? Status { get; set; }
     public required DateTime CreatedAt { get; set; }
@@ -29,6 +30,7 @@ public class TaskCreateDto
     public DateTime? DueDate { get; set; }
     public List<string> Tags { get; set; } = new();
     public string? Project { get; set; }
+    public string? Assignee { get; set; }
     public List<string>? DependsOn { get; set; }
     public string? Status { get; set; }
 }
@@ -42,6 +44,7 @@ public class TaskUpdateDto
     public DateTime? DueDate { get; set; }
     public List<string>? Tags { get; set; }
     public string? Project { get; set; }
+    public string? Assignee { get; set; }
     public List<string>? DependsOn { get; set; }
     public string? Status { get; set; }
 }
@@ -55,6 +58,7 @@ public class TaskImportDto
     public DateTime? DueDate { get; set; }
     public List<string>? Tags { get; set; }
     public string? Project { get; set; }
+    public string? Assignee { get; set; }
     public List<string>? DependsOn { get; set; }
     public string? Status { get; set; }
 }

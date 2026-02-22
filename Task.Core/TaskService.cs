@@ -24,6 +24,7 @@ namespace Task.Core
             string? status = null,
             string? priority = null,
             string? project = null,
+            string? assignee = null,
             string? tags = null,
             DateTime? dueBefore = null,
             DateTime? dueAfter = null,
@@ -47,6 +48,10 @@ namespace Task.Core
             if (!string.IsNullOrEmpty(project))
             {
                 tasks = tasks.Where(t => t.Project?.Equals(project, StringComparison.OrdinalIgnoreCase) == true).ToList();
+            }
+            if (!string.IsNullOrEmpty(assignee))
+            {
+                tasks = tasks.Where(t => t.Assignee?.Equals(assignee, StringComparison.OrdinalIgnoreCase) == true).ToList();
             }
             if (!string.IsNullOrEmpty(tags))
             {
@@ -94,9 +99,9 @@ namespace Task.Core
             return await _database.GetTaskByUidAsync(uid, cancellationToken);
         }
 
-        public async ST.Task<TaskItem> AddTaskAsync(string title, string? description, string priority, DateTime? dueDate, List<string> tags, string? project = null, List<string>? dependsOn = null, string? status = "todo", CancellationToken cancellationToken = default)
+        public async ST.Task<TaskItem> AddTaskAsync(string title, string? description, string priority, DateTime? dueDate, List<string> tags, string? project = null, List<string>? dependsOn = null, string? assignee = null, string? status = "todo", CancellationToken cancellationToken = default)
         {
-            return await _database.AddTaskAsync(title, description, priority, dueDate, tags, project, status, cancellationToken);
+            return await _database.AddTaskAsync(title, description, priority, dueDate, tags, project, assignee, status, cancellationToken);
         }
 
         public async ST.Task UpdateTaskAsync(TaskItem task, CancellationToken cancellationToken = default)
@@ -130,6 +135,14 @@ namespace Task.Core
             var tasks = await _database.GetAllTasksAsync(cancellationToken);
             var projects = tasks.Where(t => !string.IsNullOrEmpty(t.Project)).Select(t => t.Project!).Distinct().OrderBy(p => p).ToList();
             return projects;
+        }
+
+        public async ST.Task<List<string>> GetAllUniqueAssigneesAsync(CancellationToken cancellationToken = default)
+        {
+            // Database doesn't have this method, implement it
+            var tasks = await _database.GetAllTasksAsync(cancellationToken);
+            var assignees = tasks.Where(t => !string.IsNullOrEmpty(t.Assignee)).Select(t => t.Assignee!).Distinct().OrderBy(a => a).ToList();
+            return assignees;
         }
 
         public async ST.Task<List<TaskItem>> GetTasksDependingOnAsync(string uid, CancellationToken cancellationToken = default)

@@ -14,6 +14,7 @@ namespace Task.Core
 		public List<string> Tags { get; set; } = new();
 		[JsonPropertyName("project")]
 		public string? Project { get; set; }
+		public string? Assignee { get; set; }
 		public List<string> DependsOn { get; set; } = new();
 		public required string Status { get; set; } = "todo"; // todo, in_progress, done
 		public required DateTime CreatedAt { get; set; }
