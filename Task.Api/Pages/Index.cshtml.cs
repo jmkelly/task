@@ -18,27 +18,27 @@ namespace Task.Api.Pages
 
         public async System.Threading.Tasks.Task OnGetAsync()
         {
-            TaskItems = await _database.GetAllTasks();
+            TaskItems = await _database.GetAllTasksAsync();
         }
 
         public async System.Threading.Tasks.Task<IActionResult> OnGetRefresh()
         {
-            TaskItems = await _database.GetAllTasks();
+            TaskItems = await _database.GetAllTasksAsync();
             return Partial("_KanbanBoard", TaskItems);
         }
 
         public async System.Threading.Tasks.Task<IActionResult> OnPostUpdateStatus(string uid, string status)
         {
-            var task = await _database.GetTaskByUid(uid);
+            var task = await _database.GetTaskByUidAsync(uid);
             if (task == null)
             {
                 return NotFound();
             }
 
             task.Status = status;
-            await _database.UpdateTask(task);
+            await _database.UpdateTaskAsync(task);
 
-            TaskItems = await _database.GetAllTasks();
+            TaskItems = await _database.GetAllTasksAsync();
             return Partial("_KanbanBoard", TaskItems);
         }
 
@@ -51,8 +51,8 @@ namespace Task.Api.Pages
 
             tags ??= new List<string>();
 
-            var task = await _database.AddTask(title, description, priority, dueDate, tags);
-            TaskItems = await _database.GetAllTasks();
+            var task = await _database.AddTaskAsync(title, description, priority, dueDate, tags);
+            TaskItems = await _database.GetAllTasksAsync();
             return Partial("_KanbanBoard", TaskItems);
         }
 
@@ -63,7 +63,7 @@ namespace Task.Api.Pages
                 return BadRequest("Title is required");
             }
 
-            var task = await _database.GetTaskByUid(uid);
+            var task = await _database.GetTaskByUidAsync(uid);
             if (task == null)
             {
                 return NotFound();
@@ -76,9 +76,9 @@ namespace Task.Api.Pages
             task.Tags = tags ?? new List<string>();
             task.UpdatedAt = DateTime.Now;
 
-            await _database.UpdateTask(task);
+            await _database.UpdateTaskAsync(task);
 
-            TaskItems = await _database.GetAllTasks();
+            TaskItems = await _database.GetAllTasksAsync();
             return Partial("_KanbanBoard", TaskItems);
         }
 
@@ -89,7 +89,7 @@ namespace Task.Api.Pages
 
         public async System.Threading.Tasks.Task<IActionResult> OnGetEditModal(string uid)
         {
-            var task = await _database.GetTaskByUid(uid);
+            var task = await _database.GetTaskByUidAsync(uid);
             if (task == null)
             {
                 return NotFound();
@@ -99,15 +99,15 @@ namespace Task.Api.Pages
 
         public async System.Threading.Tasks.Task<IActionResult> OnPostDeleteTask(string uid)
         {
-            var task = await _database.GetTaskByUid(uid);
+            var task = await _database.GetTaskByUidAsync(uid);
             if (task == null)
             {
                 return NotFound();
             }
 
-            await _database.DeleteTask(task.Id.ToString());
+            await _database.DeleteTaskAsync(task.Uid);
 
-            TaskItems = await _database.GetAllTasks();
+            TaskItems = await _database.GetAllTasksAsync();
             return Partial("_KanbanBoard", TaskItems);
         }
 
@@ -115,7 +115,7 @@ namespace Task.Api.Pages
         {
             await _database.ClearAllTasksAsync();
 
-            TaskItems = await _database.GetAllTasks();
+            TaskItems = await _database.GetAllTasksAsync();
             return Partial("_KanbanBoard", TaskItems);
         }
     }

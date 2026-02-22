@@ -12,7 +12,8 @@ public class TaskDto
     [JsonConverter(typeof(DateTimeNullableConverter))]
     public DateTime? DueDate { get; set; }
     public List<string> Tags { get; set; } = new();
-    public required string Status { get; set; }
+    public string? Status { get; set; }
     public required DateTime CreatedAt { get; set; }
     public required DateTime UpdatedAt { get; set; }
+    public string? Project { get; set; }
 }

@@ -31,7 +31,7 @@ public class TasksController : ControllerBase
     {
         try
         {
-            var allTasks = await _database.GetAllTasks();
+            var allTasks = await _database.GetAllTasksAsync();
 
             // Apply filters
             if (!string.IsNullOrEmpty(status))
@@ -108,7 +108,7 @@ public class TasksController : ControllerBase
     {
         try
         {
-            var task = await _database.GetTaskByUid(uid);
+            var task = await _database.GetTaskByUidAsync(uid);
             if (task == null)
             {
                 return NotFound();
@@ -134,12 +134,13 @@ public class TasksController : ControllerBase
                 return BadRequest(ModelState);
             }
 
-            var task = await _database.AddTask(
+            var task = await _database.AddTaskAsync(
                 dto.Title,
                 dto.Description,
                 dto.Priority,
                 dto.DueDate,
-                dto.Tags);
+                dto.Tags,
+                dto.Project);
 
             return CreatedAtAction(nameof(GetTask), new { uid = task.Uid }, MapToDto(task));
         }
@@ -156,7 +157,7 @@ public class TasksController : ControllerBase
     {
         try
         {
-            var existingTask = await _database.GetTaskByUid(uid);
+            var existingTask = await _database.GetTaskByUidAsync(uid);
             if (existingTask == null)
             {
                 return NotFound();
@@ -175,8 +176,10 @@ public class TasksController : ControllerBase
                 existingTask.Tags = dto.Tags;
             if (!string.IsNullOrEmpty(dto.Status))
                 existingTask.Status = dto.Status;
+            if (!string.IsNullOrEmpty(dto.Project))
+                existingTask.Project = dto.Project;
 
-            await _database.UpdateTask(existingTask);
+            await _database.UpdateTaskAsync(existingTask);
 
             return Ok(MapToDto(existingTask));
         }
@@ -193,13 +196,13 @@ public class TasksController : ControllerBase
     {
         try
         {
-            var existingTask = await _database.GetTaskByUid(uid);
+            var existingTask = await _database.GetTaskByUidAsync(uid);
             if (existingTask == null)
             {
                 return NotFound();
             }
 
-            await _database.DeleteTask(existingTask.Id.ToString());
+            await _database.DeleteTaskAsync(existingTask.Uid);
 
             return NoContent();
         }
@@ -216,16 +219,16 @@ public class TasksController : ControllerBase
     {
         try
         {
-            var existingTask = await _database.GetTaskByUid(uid);
+            var existingTask = await _database.GetTaskByUidAsync(uid);
             if (existingTask == null)
             {
                 return NotFound();
             }
 
-            await _database.CompleteTask(existingTask.Id.ToString());
+            await _database.CompleteTaskAsync(existingTask.Uid);
 
             // Re-fetch to get updated data
-            var updatedTask = await _database.GetTaskByUid(uid);
+            var updatedTask = await _database.GetTaskByUidAsync(uid);
             return Ok(MapToDto(updatedTask!));
         }
         catch (Exception ex)
@@ -250,14 +253,14 @@ public class TasksController : ControllerBase
             switch (type?.ToLower())
             {
                 case "semantic":
-                    tasks = await _database.SearchTasksSemantic(q);
+                    tasks = await _database.SearchTasksSemanticAsync(q);
                     break;
                 case "hybrid":
-                    tasks = await _database.SearchTasksHybrid(q);
+                    tasks = await _database.SearchTasksHybridAsync(q);
                     break;
                 case "fts":
                 default:
-                    tasks = await _database.SearchTasksFTS(q);
+                    tasks = await _database.SearchTasksFTSAsync(q);
                     break;
             }
 
@@ -277,7 +280,7 @@ public class TasksController : ControllerBase
     {
         try
         {
-            var tasks = await _database.GetAllTasks();
+            var tasks = await _database.GetAllTasksAsync();
 
             if (format.ToLower() == "csv")
             {
@@ -356,7 +359,7 @@ public class TasksController : ControllerBase
                     task.Status = string.IsNullOrEmpty(task.Status) ? "pending" : task.Status;
 
                     // Add to database
-                    var addedTask = await _database.AddTask(
+                    var addedTask = await _database.AddTaskAsync(
                         task.Title,
                         task.Description,
                         task.Priority,
@@ -392,7 +395,7 @@ public class TasksController : ControllerBase
     {
         try
         {
-            var tags = await _database.GetAllUniqueTags();
+            var tags = await _database.GetAllUniqueTagsAsync();
             return Ok(tags);
         }
         catch (Exception ex)

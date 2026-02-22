@@ -11,6 +11,7 @@ namespace Task.Api
 		public required string Priority { get; set; } = "medium"; // high, medium, low
 		public DateTime? DueDate { get; set; }
 		public List<string> Tags { get; set; } = new();
+		public string? Project { get; set; }
 		public required string Status { get; set; } = "todo"; // todo, in_progress, done
 		public required DateTime CreatedAt { get; set; }
 		public required DateTime UpdatedAt { get; set; }

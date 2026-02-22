@@ -11,4 +11,5 @@ public class TaskUpdateDto
     public DateTime? DueDate { get; set; }
     public List<string>? Tags { get; set; }
     public string? Status { get; set; }
+    public string? Project { get; set; }
 }

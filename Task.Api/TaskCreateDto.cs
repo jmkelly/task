@@ -18,4 +18,6 @@ public class TaskCreateDto
     public DateTime? DueDate { get; set; }
 
     public List<string> Tags { get; set; } = new();
+
+    public string? Project { get; set; }
 }
