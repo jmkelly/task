@@ -42,7 +42,7 @@ namespace Task.Api.Pages
             return Partial("_KanbanBoard", TaskItems);
         }
 
-        public async System.Threading.Tasks.Task<IActionResult> OnPostCreateTask(string title, string? description, string priority, DateTime? dueDate, List<string>? tags)
+        public async System.Threading.Tasks.Task<IActionResult> OnPostCreateTask(string title, string? description, string priority, DateTime? dueDate, List<string>? tags, string? project)
         {
             if (string.IsNullOrWhiteSpace(title))
             {
@@ -51,12 +51,12 @@ namespace Task.Api.Pages
 
             tags ??= new List<string>();
 
-            var task = await _database.AddTaskAsync(title, description, priority, dueDate, tags);
+            var task = await _database.AddTaskAsync(title, description, priority, dueDate, tags, project);
             TaskItems = await _database.GetAllTasksAsync();
             return Partial("_KanbanBoard", TaskItems);
         }
 
-        public async System.Threading.Tasks.Task<IActionResult> OnPostEditTask(string uid, string title, string? description, string priority, DateTime? dueDate, List<string>? tags)
+        public async System.Threading.Tasks.Task<IActionResult> OnPostEditTask(string uid, string title, string? description, string priority, DateTime? dueDate, List<string>? tags, string? project)
         {
             if (string.IsNullOrWhiteSpace(title))
             {
@@ -74,6 +74,7 @@ namespace Task.Api.Pages
             task.Priority = priority;
             task.DueDate = dueDate;
             task.Tags = tags ?? new List<string>();
+            task.Project = project;
             task.UpdatedAt = DateTime.Now;
 
             await _database.UpdateTaskAsync(task);

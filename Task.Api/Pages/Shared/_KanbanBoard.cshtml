@@ -12,7 +12,13 @@
                     <div class="task-card" draggable="true" data-uid="@task.Uid" ondragstart="handleDragStart(event)">
                         <div class="task-header">
                             <h3 class="task-title">@task.Title</h3>
-                            <span class="task-priority priority-@task.Priority.ToLower()">@task.Priority</span>
+                            <div class="task-meta">
+                                <span class="task-priority priority-@task.Priority.ToLower()">@task.Priority</span>
+                                @if (!string.IsNullOrEmpty(task.Project))
+                                {
+                                    <span class="task-project">@task.Project</span>
+                                }
+                            </div>
                         </div>
                         @if (!string.IsNullOrEmpty(task.Description))
                         {
@@ -65,7 +71,13 @@
                     <div class="task-card" draggable="true" data-uid="@task.Uid" ondragstart="handleDragStart(event)">
                         <div class="task-header">
                             <h3 class="task-title">@task.Title</h3>
-                            <span class="task-priority priority-@task.Priority.ToLower()">@task.Priority</span>
+                            <div class="task-meta">
+                                <span class="task-priority priority-@task.Priority.ToLower()">@task.Priority</span>
+                                @if (!string.IsNullOrEmpty(task.Project))
+                                {
+                                    <span class="task-project">@task.Project</span>
+                                }
+                            </div>
                         </div>
                         @if (!string.IsNullOrEmpty(task.Description))
                         {
@@ -118,7 +130,13 @@
                     <div class="task-card" draggable="true" data-uid="@task.Uid" ondragstart="handleDragStart(event)">
                         <div class="task-header">
                             <h3 class="task-title">@task.Title</h3>
-                            <span class="task-priority priority-@task.Priority.ToLower()">@task.Priority</span>
+                            <div class="task-meta">
+                                <span class="task-priority priority-@task.Priority.ToLower()">@task.Priority</span>
+                                @if (!string.IsNullOrEmpty(task.Project))
+                                {
+                                    <span class="task-project">@task.Project</span>
+                                }
+                            </div>
                         </div>
                         @if (!string.IsNullOrEmpty(task.Description))
                         {
