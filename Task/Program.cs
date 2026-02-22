@@ -33,10 +33,13 @@ namespace TaskApp
 
                 // Commands
                 config.AddCommand<AddCommand>("add")
-                    .WithDescription("Add a new task to the task list.")
+                    .WithDescription("Add a new task to the task list. " +
+                        "Supports quick add with just a title, or full options for detailed tasks. " +
+                        "Use without arguments for interactive mode.")
                     .WithExample(new[] { "add", "\"Buy milk\"" })
-                    .WithExample(new[] { "add", "--title", "\"Refactor code\"", "--priority", "high" })
+                    .WithExample(new[] { "add", "--title", "\"Refactor code\"", "--priority", "high", "--tags", "code,refactor" })
                     .WithExample(new[] { "add", "--title", "\"Upload report\"", "--due-date", "2024-04-01" })
+                    .WithExample(new[] { "add", "--title", "\"Team meeting\"", "--project", "work", "--status", "in_progress" })
                     .WithExample(new[] { "add" });
 
                 config.AddCommand<ListCommand>("list")

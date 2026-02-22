@@ -11,39 +11,48 @@ namespace TaskApp
         public class Settings : Program.TaskCommandSettings
         {
             [CommandArgument(0, "[title]")]
-            [Description("The title of the task (optional for interactive mode)")]
+            [Description("The task title. Use quotes for multi-word titles (e.g., 'Buy groceries'). " +
+                        "Cannot be used together with --title.")]
             public string? Title { get; set; }
 
             [CommandOption("-t|--title")]
-            [Description("The title of the task (alternative to positional argument)")]
+            [Description("The task title as an option (alternative to positional argument). " +
+                        "Use when title starts with a dash or for consistency with other commands.")]
             public string? TitleOption { get; set; }
 
             [CommandOption("-d|--description")]
-            [Description("A brief description of the task (e.g., 'Milk, bread, eggs')")]
+            [Description("A detailed description of the task. " +
+                        "Example: -d 'Buy milk, bread, and eggs from the store'")]
             public string? Description { get; set; }
 
             [CommandOption("-p|--priority")]
-            [Description("Priority level: high, medium, or low (default: medium)")]
+            [Description("Priority level for the task. Valid values: low, medium, high. " +
+                        "Default: medium. Example: --priority high")]
             public string Priority { get; set; } = "medium";
 
             [CommandOption("--due-date")]
-            [Description("Due date in YYYY-MM-DD format (e.g., '2024-02-20')")]
+            [Description("Due date for the task in YYYY-MM-DD format. " +
+                        "Example: --due-date 2024-04-01")]
             public string? DueDate { get; set; }
 
             [CommandOption("--tags")]
-            [Description("Comma-separated list of tags (e.g., 'shopping,urgent')")]
+            [Description("Comma-separated list of tags for organization. " +
+                        "Example: --tags shopping,urgent,weekly")]
             public string? Tags { get; set; }
 
             [CommandOption("--project")]
-            [Description("Project name to organize the task (e.g., 'work', 'home')")]
+            [Description("Project name to group related tasks. " +
+                        "Example: --project work or --project home")]
             public string? Project { get; set; }
 
             [CommandOption("--depends-on")]
-            [Description("Comma-separated task UIDs this task depends on (e.g., 'a1b2c3,d4e5f6')")]
+            [Description("Comma-separated list of task UIDs that this task depends on. " +
+                        "Example: --depends-on a1b2c3,d4e5f6")]
             public string? DependsOn { get; set; }
 
             [CommandOption("-s|--status")]
-            [Description("Initial status: todo, done, or in_progress (default: todo)")]
+            [Description("Initial status of the task. Valid values: todo, done, in_progress. " +
+                        "Default: todo. Example: --status in_progress")]
             public string? Status { get; set; }
         }
 
@@ -64,7 +73,7 @@ namespace TaskApp
             {
                 ErrorHelper.ShowError(
                     "Use only one of positional title or --title option.",
-                    "task add 'Task title' or task add --title 'Task title'",
+                    "task add 'Task title' OR task add --title 'Task title'",
                     "task add --help");
                 return 1;
             }
@@ -92,6 +101,7 @@ namespace TaskApp
                 return 1;
             }
 
+            // If no title provided, run in interactive mode
             if (string.IsNullOrEmpty(title))
             {
                 // Interactive mode: prompt for inputs
