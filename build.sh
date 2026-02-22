@@ -4,7 +4,7 @@
 
 set -e
 
-PROJECT_DIR="Task"
+PROJECT_DIR="Task.Cli"
 OUTPUT_DIR="binaries"
 
 # Clean previous builds

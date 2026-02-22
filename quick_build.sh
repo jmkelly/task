@@ -4,7 +4,7 @@
 
 set -e
 
-PROJECT_DIR="Task"
+PROJECT_DIR="Task.Cli"
 OUTPUT_DIR="binaries"
 
 # Clean previous builds
@@ -18,7 +18,7 @@ echo "Building for Linux x64..."
 dotnet publish "$PROJECT_DIR" -c Release -r linux-x64 --self-contained -p:PublishSingleFile=true -o "$OUTPUT_DIR/task-linux-x64"
 
 #copy this to /usr/local/bin task overwriting any existing
-cp "$OUTPUT_DIR/task-linux-x64/Task" /usr/local/bin/task 
+cp "$OUTPUT_DIR/task-linux-x64/Task.Cli" /usr/local/bin/task 
 
 echo "Build complete! Self-contained directories are in the '$OUTPUT_DIR' directory:"
 ls -la "$OUTPUT_DIR"

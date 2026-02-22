@@ -6,7 +6,7 @@ A cross-platform task management system with separate CLI client, REST API backe
 
 The system consists of three main components:
 
-- **CLI Client** (`Task/`): A command-line interface for managing tasks
+- **CLI Client** (`Task.Cli/`): A command-line interface for managing tasks
 - **REST API Backend** (`Task.Api/`): A web API server providing REST endpoints
 - **Storage**: SQLite database with full-text search and vector search capabilities
 
@@ -45,10 +45,10 @@ The system consists of three main components:
 
 Download the appropriate single executable for your platform from the releases page. Each executable is self-contained, including the .NET runtime and all dependencies, making it easy to distribute and run without additional setup.
 
-- **Linux x64**: `Task` (single executable file, ~17MB)
-- **macOS Intel**: `Task` (single executable file)
-- **macOS ARM64**: `Task` (single executable file)
-- **Windows x64**: `Task.exe` (single executable file)
+- **Linux x64**: `Task.Cli` (single executable file, ~17MB)
+- **macOS Intel**: `Task.Cli` (single executable file)
+- **macOS ARM64**: `Task.Cli` (single executable file)
+- **Windows x64**: `Task.Cli.exe` (single executable file)
 
 ##### Installation Steps
 
@@ -56,16 +56,16 @@ Download the appropriate single executable for your platform from the releases p
 
 2. **Make Executable (Linux/macOS only)**: After downloading, make the file executable:
    ```bash
-   chmod +x Task
-   ```
+    chmod +x Task.Cli
+    ```
 
 3. **Install to PATH (Recommended)**: To use the `task` command from anywhere, move the executable to a directory in your system's PATH:
-   - On Linux/macOS: Move to `/usr/local/bin/` (requires sudo) or `~/bin/` (create if needed):
-     ```bash
-     sudo mv Task /usr/local/bin/task
-     # or
-     mkdir -p ~/bin && mv Task ~/bin/task
-     ```
+    - On Linux/macOS: Move to `/usr/local/bin/` (requires sudo) or `~/bin/` (create if needed):
+      ```bash
+      sudo mv Task.Cli /usr/local/bin/task
+      # or
+      mkdir -p ~/bin && mv Task.Cli ~/bin/task
+      ```
      Ensure `~/bin` is in your PATH by adding to your shell profile (e.g., `~/.bashrc` or `~/.zshrc`):
      ```bash
      export PATH="$HOME/bin:$PATH"
@@ -89,12 +89,14 @@ Clone the repository and build:
 ```bash
 git clone <repository-url>
 cd Task
-dotnet build -c Release
+dotnet build Task.Cli/Task.Cli.csproj -c Release
 ```
 
 To publish single-file executables:
 
 ```bash
+cd Task.Cli
+
 # Linux
 dotnet publish -c Release -r linux-x64 --self-contained -p:PublishSingleFile=true -p:PublishTrimmed=true
 
@@ -111,7 +113,7 @@ dotnet publish -c Release -r win-x64 --self-contained -p:PublishSingleFile=true 
 Run the CLI application:
 
 ```bash
-./Task --help
+./Task.Cli --help
 ```
 
 ### API Backend Installation
