@@ -1,6 +1,7 @@
 using Task.Api;
 using System.Threading.Tasks;
 using Scalar.AspNetCore;
+using Task.Core;
 
 namespace Task.Api
 {

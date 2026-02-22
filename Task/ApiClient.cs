@@ -1,5 +1,7 @@
 using System.Net.Http.Json;
 using System.Text.Json;
+using Task.Core;
+using System.Threading.Tasks;
 
 namespace TaskApp;
 
@@ -25,7 +27,7 @@ public class ApiClient : ITaskService
         await System.Threading.Tasks.Task.CompletedTask;
     }
 
-    public async Task<List<TaskItem>> GetAllTasksAsync(
+    public async System.Threading.Tasks.Task<List<TaskItem>> GetAllTasksAsync(
         string? status = null,
         string? priority = null,
         string? project = null,
@@ -61,7 +63,7 @@ public class ApiClient : ITaskService
         return dtos?.Select(MapFromDto).ToList() ?? new List<TaskItem>();
     }
 
-    public async Task<TaskItem?> GetTaskByUidAsync(string uid, CancellationToken cancellationToken = default)
+    public async System.Threading.Tasks.Task<TaskItem?> GetTaskByUidAsync(string uid, CancellationToken cancellationToken = default)
     {
         var url = $"{_baseUrl}/api/tasks/{uid}";
         var response = await _httpClient.GetAsync(url, cancellationToken);
@@ -76,7 +78,7 @@ public class ApiClient : ITaskService
         return dto != null ? MapFromDto(dto) : null;
     }
 
-    public async Task<TaskItem> AddTaskAsync(
+    public async System.Threading.Tasks.Task<TaskItem> AddTaskAsync(
         string title,
         string? description,
         string priority,
@@ -111,7 +113,7 @@ public class ApiClient : ITaskService
         return MapFromDto(dto!);
     }
 
-    public async Task UpdateTaskAsync(TaskItem task, CancellationToken cancellationToken = default)
+    public async System.Threading.Tasks.Task UpdateTaskAsync(TaskItem task, CancellationToken cancellationToken = default)
     {
         var updateDto = new TaskUpdateDto
         {
@@ -128,21 +130,21 @@ public class ApiClient : ITaskService
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task DeleteTaskAsync(string uid, CancellationToken cancellationToken = default)
+    public async System.Threading.Tasks.Task DeleteTaskAsync(string uid, CancellationToken cancellationToken = default)
     {
         var url = $"{_baseUrl}/api/tasks/{uid}";
         var response = await _httpClient.DeleteAsync(url, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task CompleteTaskAsync(string uid, CancellationToken cancellationToken = default)
+    public async System.Threading.Tasks.Task CompleteTaskAsync(string uid, CancellationToken cancellationToken = default)
     {
         var url = $"{_baseUrl}/api/tasks/{uid}/complete";
         var response = await _httpClient.PatchAsync(url, null, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task<List<TaskItem>> SearchTasksAsync(
+    public async System.Threading.Tasks.Task<List<TaskItem>> SearchTasksAsync(
         string query,
         string type = "fts",
         CancellationToken cancellationToken = default)
@@ -155,7 +157,7 @@ public class ApiClient : ITaskService
         return dtos?.Select(MapFromDto).ToList() ?? new List<TaskItem>();
     }
 
-    public async Task<List<string>> GetAllUniqueTagsAsync(CancellationToken cancellationToken = default)
+    public async System.Threading.Tasks.Task<List<string>> GetAllUniqueTagsAsync(CancellationToken cancellationToken = default)
     {
         var url = $"{_baseUrl}/api/tags";
         var response = await _httpClient.GetAsync(url, cancellationToken);
@@ -164,7 +166,7 @@ public class ApiClient : ITaskService
         return await response.Content.ReadFromJsonAsync<List<string>>(_jsonOptions, cancellationToken) ?? new List<string>();
     }
 
-    public async Task<List<string>> GetAllUniqueProjectsAsync(CancellationToken cancellationToken = default)
+    public async System.Threading.Tasks.Task<List<string>> GetAllUniqueProjectsAsync(CancellationToken cancellationToken = default)
     {
         var url = $"{_baseUrl}/api/projects";
         var response = await _httpClient.GetAsync(url, cancellationToken);
@@ -173,7 +175,7 @@ public class ApiClient : ITaskService
         return await response.Content.ReadFromJsonAsync<List<string>>(_jsonOptions, cancellationToken) ?? new List<string>();
     }
 
-    public async Task<List<TaskItem>> GetTasksDependingOnAsync(string uid, CancellationToken cancellationToken = default)
+    public async System.Threading.Tasks.Task<List<TaskItem>> GetTasksDependingOnAsync(string uid, CancellationToken cancellationToken = default)
     {
         var url = $"{_baseUrl}/api/tasks/{uid}/dependencies";
         var response = await _httpClient.GetAsync(url, cancellationToken);
@@ -183,7 +185,7 @@ public class ApiClient : ITaskService
         return dtos?.Select(MapFromDto).ToList() ?? new List<TaskItem>();
     }
 
-    public async Task<bool> ValidateDependenciesAsync(string uid, List<string> dependsOn, CancellationToken cancellationToken = default)
+    public async System.Threading.Tasks.Task<bool> ValidateDependenciesAsync(string uid, List<string> dependsOn, CancellationToken cancellationToken = default)
     {
         var url = $"{_baseUrl}/api/tasks/{uid}/validate-dependencies";
         var response = await _httpClient.PostAsJsonAsync(url, dependsOn, _jsonOptions, cancellationToken);

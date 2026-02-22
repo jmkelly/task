@@ -4,6 +4,8 @@ using System.ComponentModel;
 using System.Threading;
 using System.Text.Json;
 using System.IO;
+using Task.Core;
+using System.Threading.Tasks;
 
 namespace TaskApp
 {
@@ -54,7 +56,7 @@ namespace TaskApp
                     return 1;
                 }
 
-                var addTasks = new List<Task>();
+                var addTasks = new List<System.Threading.Tasks.Task>();
                 int imported = 0;
                 AnsiConsole.Progress()
                     .Start(ctx =>
@@ -88,7 +90,7 @@ namespace TaskApp
                         task.StopTask();
                     });
 
-                await Task.WhenAll(addTasks);
+                await System.Threading.Tasks.Task.WhenAll(addTasks);
 
                 AnsiConsole.MarkupLine($"[green]Successfully imported {imported} out of {tasks.Count} tasks.[/]");
                 return 0;

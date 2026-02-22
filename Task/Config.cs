@@ -1,6 +1,7 @@
 using System.Net.Http;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
+using System.Threading.Tasks;
 
 namespace TaskApp
 {
@@ -54,7 +55,7 @@ namespace TaskApp
             }
         }
 
-        public async Task SetValueAsync(string key, string value)
+        public async System.Threading.Tasks.Task SetValueAsync(string key, string value)
         {
             switch (key.ToLowerInvariant())
             {
@@ -74,7 +75,7 @@ namespace TaskApp
             }
         }
 
-        private static async Task ValidateUrlAsync(string url)
+        private static async System.Threading.Tasks.Task ValidateUrlAsync(string url)
         {
             if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
             {

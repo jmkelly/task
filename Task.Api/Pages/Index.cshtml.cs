@@ -1,7 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Text.Json;
-using TaskItem = Task.Api.TaskItem;
+using Task.Core;
+using TaskItem = Task.Core.TaskItem;
 
 namespace Task.Api.Pages
 {

@@ -1,5 +1,6 @@
 using Spectre.Console.Cli;
 using System.ComponentModel;
+using System.Threading.Tasks;
 
 namespace TaskApp
 {
@@ -55,10 +56,10 @@ namespace TaskApp
             if (value == null)
             {
                 Console.Error.WriteLine($"ERROR: Unknown config key: {settings.Key}");
-                return Task.FromResult(1);
+                return System.Threading.Tasks.Task.FromResult(1);
             }
             Console.WriteLine(value);
-            return Task.FromResult(0);
+            return System.Threading.Tasks.Task.FromResult(0);
         }
     }
 
@@ -79,12 +80,12 @@ namespace TaskApp
                 config.UnsetValue(settings.Key);
                 config.Save();
                 Console.WriteLine($"Unset {settings.Key}");
-                return Task.FromResult(0);
+                return System.Threading.Tasks.Task.FromResult(0);
             }
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"ERROR: Failed to unset config: {ex.Message}");
-                return Task.FromResult(1);
+                return System.Threading.Tasks.Task.FromResult(1);
             }
         }
     }
