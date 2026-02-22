@@ -56,9 +56,45 @@ namespace Task.Api.Pages
             return Partial("_KanbanBoard", TaskItems);
         }
 
+        public async System.Threading.Tasks.Task<IActionResult> OnPostEditTask(string uid, string title, string? description, string priority, DateTime? dueDate, List<string>? tags)
+        {
+            if (string.IsNullOrWhiteSpace(title))
+            {
+                return BadRequest("Title is required");
+            }
+
+            var task = await _database.GetTaskByUid(uid);
+            if (task == null)
+            {
+                return NotFound();
+            }
+
+            task.Title = title;
+            task.Description = description;
+            task.Priority = priority;
+            task.DueDate = dueDate;
+            task.Tags = tags ?? new List<string>();
+            task.UpdatedAt = DateTime.Now;
+
+            await _database.UpdateTask(task);
+
+            TaskItems = await _database.GetAllTasks();
+            return Partial("_KanbanBoard", TaskItems);
+        }
+
         public IActionResult OnGetCreateModal()
         {
             return Partial("_CreateTaskModal");
+        }
+
+        public async System.Threading.Tasks.Task<IActionResult> OnGetEditModal(string uid)
+        {
+            var task = await _database.GetTaskByUid(uid);
+            if (task == null)
+            {
+                return NotFound();
+            }
+            return Partial("_EditTaskModal", task);
         }
 
         public async System.Threading.Tasks.Task<IActionResult> OnPostDeleteTask(string uid)
@@ -70,6 +106,14 @@ namespace Task.Api.Pages
             }
 
             await _database.DeleteTask(task.Id.ToString());
+
+            TaskItems = await _database.GetAllTasks();
+            return Partial("_KanbanBoard", TaskItems);
+        }
+
+        public async System.Threading.Tasks.Task<IActionResult> OnPostClearBoard()
+        {
+            await _database.ClearAllTasksAsync();
 
             TaskItems = await _database.GetAllTasks();
             return Partial("_KanbanBoard", TaskItems);

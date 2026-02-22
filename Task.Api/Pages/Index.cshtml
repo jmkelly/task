@@ -11,8 +11,11 @@
         <h1>🚀 Task Kanban Board</h1>
         <p class="header-subtitle">Manage your workflow with drag-and-drop simplicity</p>
     </div>
-    <button class="btn-primary" hx-get="/Index?handler=CreateModal" hx-target="#modal-container" hx-swap="innerHTML">
+    <button class="btn-primary" hx-get="/Index?handler=CreateModal" hx-target="body" hx-swap="beforeend">
         ➕ Add Task
+    </button>
+    <button class="btn-secondary" hx-post="/Index?handler=ClearBoard" hx-target="#board" hx-swap="innerHTML" onclick="return confirm('Are you sure you want to clear all tasks? This action cannot be undone.')">
+        🗑️ Clear Board
     </button>
 </div>
 
