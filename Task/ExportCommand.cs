@@ -23,11 +23,11 @@ namespace TaskApp
 
         public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
         {
-            var db = await Program.GetDatabaseAsync(settings, cancellationToken);
+            var service = await Program.GetTaskServiceAsync(settings, cancellationToken);
 
             try
             {
-                var tasks = await db.GetAllTasks(cancellationToken);
+                var tasks = await service.GetAllTasksAsync(cancellationToken: cancellationToken);
 
                 if (tasks.Count == 0)
                 {
@@ -93,7 +93,7 @@ namespace TaskApp
                         {
                             var task = ctx.AddTask("Serializing tasks to JSON", maxValue: 1);
 #pragma warning disable IL2026
-                            result = JsonSerializer.Serialize(tasks, options);
+                            result = JsonSerializer.Serialize(tasks, JsonHelper.Options);
 #pragma warning restore IL2026
                             task.Increment(1);
                             task.StopTask();
@@ -103,7 +103,7 @@ namespace TaskApp
             else
             {
 #pragma warning disable IL2026
-                return JsonSerializer.Serialize(tasks, options);
+                return JsonSerializer.Serialize(tasks, JsonHelper.Options);
 #pragma warning restore IL2026
             }
         }

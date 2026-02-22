@@ -1,4 +1,5 @@
 using System;
+using System.Text.Json.Serialization;
 
 namespace TaskApp
 {
@@ -11,6 +12,9 @@ namespace TaskApp
 		public required string Priority { get; set; } = "medium"; // high, medium, low
 		public DateTime? DueDate { get; set; }
 		public List<string> Tags { get; set; } = new();
+		[JsonPropertyName("project")]
+		public string? Project { get; set; }
+		public List<string> DependsOn { get; set; } = new();
 		public required string Status { get; set; } = "pending"; // pending, completed
 		public required DateTime CreatedAt { get; set; }
 		public required DateTime UpdatedAt { get; set; }
@@ -18,5 +22,6 @@ namespace TaskApp
 		// For JSON serialization
 		public string DueDateString => DueDate?.ToString("yyyy-MM-dd") ?? "";
 		public string TagsString => string.Join(",", Tags);
+		public string DependsOnString => string.Join(",", DependsOn);
 	}
 }

@@ -10,9 +10,13 @@ namespace TaskApp
     {
         public class Settings : Program.TaskCommandSettings
         {
-            [CommandOption("-t|--title")]
+            [CommandArgument(0, "[title]")]
             [Description("The title of the task (optional for interactive mode)")]
             public string? Title { get; set; }
+
+            [CommandOption("-t|--title")]
+            [Description("The title of the task (alternative to positional argument)")]
+            public string? TitleOption { get; set; }
 
             [CommandOption("-d|--description")]
             [Description("A brief description of the task (e.g., 'Milk, bread, eggs')")]
@@ -29,28 +33,72 @@ namespace TaskApp
             [CommandOption("--tags")]
             [Description("Comma-separated list of tags (e.g., 'shopping,urgent')")]
             public string? Tags { get; set; }
+
+            [CommandOption("--project")]
+            [Description("Project name to organize the task (e.g., 'work', 'home')")]
+            public string? Project { get; set; }
+
+            [CommandOption("--depends-on")]
+            [Description("Comma-separated task UIDs this task depends on (e.g., 'a1b2c3,d4e5f6')")]
+            public string? DependsOn { get; set; }
+
+            [CommandOption("-s|--status")]
+            [Description("Initial status: todo, done, or in_progress (default: todo)")]
+            public string? Status { get; set; }
         }
 
         public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
         {
-            var db = await Program.GetDatabaseAsync(settings, cancellationToken);
+            var service = await Program.GetTaskServiceAsync(settings, cancellationToken);
 
-            string? title = settings.Title;
+            string? title = null;
             string? description = settings.Description;
             string priority = settings.Priority;
             DateTime? dueDate = null;
             var tags = string.IsNullOrEmpty(settings.Tags) ? new List<string>() : settings.Tags.Split(',').Select(t => t.Trim()).ToList();
+            string? project = settings.Project;
+            var dependsOn = string.IsNullOrEmpty(settings.DependsOn) ? new List<string>() : settings.DependsOn.Split(',').Select(t => t.Trim()).ToList();
 
-            if (string.IsNullOrEmpty(settings.Title))
+            // Handle title: either positional or --title option, but not both
+            if (!string.IsNullOrEmpty(settings.Title) && !string.IsNullOrEmpty(settings.TitleOption))
+            {
+                ErrorHelper.ShowError(
+                    "Use only one of positional title or --title option.",
+                    "task add 'Task title' or task add --title 'Task title'",
+                    "task add --help");
+                return 1;
+            }
+
+            title = !string.IsNullOrEmpty(settings.Title) ? settings.Title : settings.TitleOption;
+
+            // Validate priority
+            if (!ErrorHelper.ValidatePriority(priority, out var priorityError))
+            {
+                ErrorHelper.ShowError(priorityError!);
+                return 1;
+            }
+
+            // Validate status
+            if (!ErrorHelper.ValidateStatus(settings.Status, out var statusError))
+            {
+                ErrorHelper.ShowError(statusError!);
+                return 1;
+            }
+
+            // Validate due date
+            if (!ErrorHelper.ValidateDate(settings.DueDate, out var dateError))
+            {
+                ErrorHelper.ShowError(dateError!);
+                return 1;
+            }
+
+            if (string.IsNullOrEmpty(title))
             {
                 // Interactive mode: prompt for inputs
-                if (string.IsNullOrEmpty(title))
-                {
-                    title = AnsiConsole.Prompt(
-                        new TextPrompt<string>("Task title:")
-                            .PromptStyle("yellow")
-                            .Validate(t => !string.IsNullOrWhiteSpace(t), "Title cannot be empty."));
-                }
+                title = AnsiConsole.Prompt(
+                    new TextPrompt<string>("Task title:")
+                        .PromptStyle("yellow")
+                        .Validate(t => !string.IsNullOrWhiteSpace(t), "Title cannot be empty."));
 
                 description = AnsiConsole.Prompt(
                     new TextPrompt<string?>("Task description (optional):")
@@ -82,7 +130,7 @@ namespace TaskApp
                     dueDate = DateTime.Parse(dueDateInput);
                 }
 
-                var availableTags = await db.GetAllUniqueTags(cancellationToken);
+                var availableTags = await service.GetAllUniqueTagsAsync(cancellationToken);
                 if (availableTags.Count > 0)
                 {
                     var selectedTags = AnsiConsole.Prompt(
@@ -108,32 +156,24 @@ namespace TaskApp
             else
             {
                 // Non-interactive mode validation
-                if (string.IsNullOrEmpty(title))
-                {
-                    Console.Error.WriteLine("ERROR: Title is required when not in interactive mode.");
-                    return 1;
-                }
-
                 if (!string.IsNullOrEmpty(settings.DueDate))
                 {
                     if (DateTime.TryParse(settings.DueDate, out var parsedDate))
                     {
                         dueDate = parsedDate;
                     }
-                    else
-                    {
-                        Console.Error.WriteLine("ERROR: Invalid date format. Use YYYY-MM-DD.");
-                        return 1;
-                    }
                 }
             }
 
-            var task = await db.AddTask(title, description, priority, dueDate, tags, cancellationToken);
+            var task = await service.AddTaskAsync(title, description, priority, dueDate, tags, project, dependsOn, settings.Status, cancellationToken);
+            
+            Console.Error.WriteLine($"DEBUG: project='{project}', settings.Project='{settings.Project}'");
+            Console.Error.WriteLine($"DEBUG: task.Project='{task.Project}'");
 
             if (settings.Json)
             {
 #pragma warning disable IL2026
-                Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(task));
+                Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(task, JsonHelper.Options));
 #pragma warning restore IL2026
             }
             else

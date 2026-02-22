@@ -9,43 +9,70 @@ namespace TaskApp
     {
         public class Settings : Program.TaskCommandSettings
         {
-            [CommandArgument(0, "<id>")]
-            [Description("The unique ID of the task to delete (e.g., 'a2b3k9')")]
-            public string? Id { get; set; }
+            [CommandArgument(0, "[ids]")]
+            [Description("The unique ID(s) of the task(s) to delete (e.g., 'a2b3k9' or 'a2b3k9 c4d5e6')")]
+            public string? Ids { get; set; }
         }
 
         public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
         {
-            var db = await Program.GetDatabaseAsync(settings, cancellationToken);
+            var service = await Program.GetTaskServiceAsync(settings, cancellationToken);
 
-            if (string.IsNullOrEmpty(settings.Id))
+            if (string.IsNullOrEmpty(settings.Ids))
             {
-                Console.Error.WriteLine("ERROR: ID is required.");
+                ErrorHelper.ShowError(
+                    "ID is required.",
+                    "task delete <id>",
+                    "task delete --help");
                 return 1;
             }
 
-            var task = await db.GetTaskByUid(settings.Id, cancellationToken);
+            var ids = settings.Ids.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            var deleted = new List<string>();
+            var failed = new List<string>();
 
-            if (task == null)
+            foreach (var id in ids)
             {
-                Console.Error.WriteLine($"ERROR: Task with ID {settings.Id} not found.");
-                return 1;
-            }
+                var task = await service.GetTaskByUidAsync(id, cancellationToken);
 
-            await db.DeleteTask(task.Id.ToString(), cancellationToken);
+                if (task == null)
+                {
+                    failed.Add(id);
+                    continue;
+                }
+
+                await service.DeleteTaskAsync(id, cancellationToken);
+                deleted.Add(id);
+            }
 
             if (settings.Json)
             {
+                var results = new List<object>();
+                foreach (var uid in deleted)
+                {
+                    results.Add(new { uid, deleted = true });
+                }
+                foreach (var id in failed)
+                {
+                    results.Add(new { uid = id, deleted = false, error = "not found" });
+                }
 #pragma warning disable IL2026
-                Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(new { deleted = true, id = settings.Id }));
+                Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(results, JsonHelper.Options));
 #pragma warning restore IL2026
             }
             else
             {
-                Console.WriteLine($"Task {settings.Id} deleted.");
+                if (deleted.Count > 0)
+                {
+                    Console.WriteLine($"Task(s) {string.Join(", ", deleted)} deleted.");
+                }
+                if (failed.Count > 0)
+                {
+                    ErrorHelper.ShowError($"Task(s) not found: {string.Join(", ", failed)}");
+                }
             }
 
-            return 0;
+            return failed.Count > 0 && deleted.Count == 0 ? 1 : 0;
         }
     }
 }

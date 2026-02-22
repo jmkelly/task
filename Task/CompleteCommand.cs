@@ -9,43 +9,127 @@ namespace TaskApp
     {
         public class Settings : Program.TaskCommandSettings
         {
-            [CommandArgument(0, "<id>")]
-            [Description("The unique ID of the task to mark as completed (e.g., 'a2b3k9')")]
-            public string? Id { get; set; }
+            [CommandArgument(0, "[ids]")]
+            [Description("The unique ID(s) of the task(s) to mark as completed (e.g., 'a2b3k9' or 'a2b3k9 c4d5e6')")]
+            public string[] Ids { get; set; } = Array.Empty<string>();
+
+            [CommandOption("--all")]
+            [Description("Mark all incomplete tasks as completed")]
+            public bool All { get; set; }
         }
 
         public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
         {
-            var db = await Program.GetDatabaseAsync(settings, cancellationToken);
+            var service = await Program.GetTaskServiceAsync(settings, cancellationToken);
+            var idsToComplete = new List<string>();
 
-            if (string.IsNullOrEmpty(settings.Id))
+            if (settings.All)
             {
-                Console.Error.WriteLine("ERROR: ID is required.");
-                return 1;
+                var allTasks = await service.GetAllTasksAsync(status: "todo", cancellationToken: cancellationToken);
+                if (allTasks.Count == 0)
+                {
+                    Console.WriteLine("No incomplete tasks to complete.");
+                    return 0;
+                }
+                idsToComplete = allTasks.Select(t => t.Uid).ToList();
+            }
+            else
+            {
+                if (settings.Ids.Length == 0)
+                {
+                    ErrorHelper.ShowError(
+                        "ID is required.",
+                        "task complete <id> or task complete --all",
+                        "task complete --help");
+                    return 1;
+                }
+                idsToComplete = settings.Ids.ToList();
             }
 
-            var task = await db.GetTaskByUid(settings.Id, cancellationToken);
+            var completed = new List<string>();
+            var failed = new List<string>();
+            var warnings = new List<string>();
 
-            if (task == null)
+            foreach (var id in idsToComplete)
             {
-                Console.Error.WriteLine($"ERROR: Task with ID {settings.Id} not found.");
-                return 1;
-            }
+                var task = await service.GetTaskByUidAsync(id, cancellationToken);
+                if (task == null)
+                {
+                    failed.Add(id);
+                    continue;
+                }
 
-            await db.CompleteTask(task.Id.ToString(), cancellationToken);
+                if (task.DependsOn.Count > 0)
+                {
+                    var incompleteDeps = new List<string>();
+                    foreach (var depUid in task.DependsOn)
+                    {
+                        var depTask = await service.GetTaskByUidAsync(depUid, cancellationToken);
+                        if (depTask != null && depTask.Status != "done")
+                        {
+                            incompleteDeps.Add(depUid);
+                        }
+                    }
+                    if (incompleteDeps.Count > 0)
+                    {
+                        warnings.Add($"Task {id} has incomplete dependencies: {string.Join(", ", incompleteDeps)}");
+                        continue;
+                    }
+                }
+
+                await service.CompleteTaskAsync(id, cancellationToken);
+                completed.Add(id);
+
+                var dependentTasks = await service.GetTasksDependingOnAsync(id, cancellationToken);
+                foreach (var depTask in dependentTasks)
+                {
+                    if (depTask.Status != "done")
+                    {
+                        var remainingDeps = depTask.DependsOn.Where(d => d != id).ToList();
+                        var allDone = true;
+                        foreach (var remainingDep in remainingDeps)
+                        {
+                            var remainingTask = await service.GetTaskByUidAsync(remainingDep, cancellationToken);
+                            if (remainingTask == null || remainingTask.Status != "done")
+                            {
+                                allDone = false;
+                                break;
+                            }
+                        }
+                        if (allDone && remainingDeps.Count > 0)
+                        {
+                            Console.WriteLine($"Task '{depTask.Uid}' ({depTask.Title}) now has all dependencies completed.");
+                        }
+                    }
+                }
+            }
 
             if (settings.Json)
             {
 #pragma warning disable IL2026
-                Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(new { completed = true, id = settings.Id }));
+                Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(new { completed = completed.Count, ids = completed, failed = failed, warnings = warnings }, JsonHelper.Options));
 #pragma warning restore IL2026
             }
             else
             {
-                Console.WriteLine($"Task {settings.Id} marked as completed.");
+                if (warnings.Count > 0)
+                {
+                    foreach (var warning in warnings)
+                    {
+                        Console.Error.WriteLine($"WARNING: {warning}");
+                    }
+                }
+                if (completed.Count > 0)
+                {
+                    Console.WriteLine($"Task(s) {string.Join(", ", completed)} marked as completed.");
+                }
+                if (failed.Count > 0)
+                {
+                    ErrorHelper.ShowError($"Task(s) not found: {string.Join(", ", failed)}");
+                }
             }
 
-            return 0;
+            return failed.Count > 0 && completed.Count == 0 ? 1 : 0;
         }
     }
 }

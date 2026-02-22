@@ -11,33 +11,42 @@ namespace TaskApp
         public class Settings : Program.TaskCommandSettings
         {
             [CommandOption("--status")]
-            [Description("Filter tasks by status: pending or completed (e.g., --status pending)")]
+            [Description("Filter tasks by status: todo, done, or in_progress (e.g., --status todo)")]
             public string? Status { get; set; }
 
             [CommandOption("--priority")]
             [Description("Filter tasks by priority: high, medium, or low (e.g., --priority high)")]
             public string? Priority { get; set; }
+
+            [CommandOption("--project")]
+            [Description("Filter tasks by project name (e.g., --project work)")]
+            public string? Project { get; set; }
         }
 
         public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
         {
-            var db = await Program.GetDatabaseAsync(settings, cancellationToken);
-            var tasks = await db.GetAllTasks(cancellationToken);
+            var status = settings.Status;
+            if (!string.IsNullOrEmpty(status))
+            {
+                status = status.ToLower() switch
+                {
+                    "pending" => "todo",
+                    "completed" => "done",
+                    _ => status
+                };
+            }
 
-            // Filter
-            if (!string.IsNullOrEmpty(settings.Status))
-            {
-                tasks = tasks.Where(t => t.Status == settings.Status).ToList();
-            }
-            if (!string.IsNullOrEmpty(settings.Priority))
-            {
-                tasks = tasks.Where(t => t.Priority == settings.Priority).ToList();
-            }
+            var service = await Program.GetTaskServiceAsync(settings, cancellationToken);
+            var tasks = await service.GetAllTasksAsync(
+                status: status,
+                priority: settings.Priority,
+                project: settings.Project,
+                cancellationToken: cancellationToken);
 
             if (settings.Json)
             {
 #pragma warning disable IL2026
-                Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(tasks));
+                Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(tasks, JsonHelper.Options));
 #pragma warning restore IL2026
             }
             else
@@ -45,13 +54,22 @@ namespace TaskApp
                 var table = new Table();
                 table.AddColumn("ID");
                 table.AddColumn("Title");
+                table.AddColumn("Project");
                 table.AddColumn("Priority");
                 table.AddColumn("Status");
                 table.AddColumn("Due Date");
+                table.AddColumn("Depends On");
 
                 foreach (var task in tasks)
                 {
-                    table.AddRow(task.Uid, task.Title, task.Priority, task.Status, task.DueDateString);
+                    table.AddRow(
+                        task.Uid, 
+                        task.Title, 
+                        task.Project ?? "-",
+                        task.Priority, 
+                        task.Status, 
+                        task.DueDateString,
+                        task.DependsOn.Count > 0 ? string.Join(", ", task.DependsOn) : "-");
                 }
 
                 AnsiConsole.Write(table);

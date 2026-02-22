@@ -21,44 +21,23 @@ namespace TaskApp
 
         public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
         {
-            var db = await Program.GetDatabaseAsync(settings, cancellationToken);
+            var service = await Program.GetTaskServiceAsync(settings, cancellationToken);
 
             if (string.IsNullOrEmpty(settings.Query))
             {
-                Console.Error.WriteLine("ERROR: Query is required.");
+                ErrorHelper.ShowError(
+                    "Query is required.",
+                    "task search 'groceries'",
+                    "task search --help");
                 return 1;
             }
 
-            List<TaskItem> tasks;
-            if (settings.Type == "fts")
-            {
-                // Use FTS search
-                tasks = await db.SearchTasksFTS(settings.Query, cancellationToken);
-            }
-            else if (settings.Type == "semantic")
-            {
-                // Use semantic search
-                tasks = await db.SearchTasksSemantic(settings.Query, cancellationToken);
-            }
-            else if (settings.Type == "hybrid")
-            {
-                // Use hybrid search
-                tasks = await db.SearchTasksHybrid(settings.Query, cancellationToken);
-            }
-            else
-            {
-                // Simple search
-                tasks = (await db.GetAllTasks(cancellationToken)).Where(t => 
-                    t.Title.Contains(settings.Query, StringComparison.OrdinalIgnoreCase) ||
-                    (t.Description ?? "").Contains(settings.Query, StringComparison.OrdinalIgnoreCase) ||
-                    t.Tags.Any(tag => tag.Contains(settings.Query, StringComparison.OrdinalIgnoreCase))
-                ).ToList();
-            }
+            var tasks = await service.SearchTasksAsync(settings.Query, settings.Type, cancellationToken);
 
             if (settings.Json)
             {
 #pragma warning disable IL2026
-                Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(tasks));
+                Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(tasks, JsonHelper.Options));
 #pragma warning restore IL2026
             }
             else

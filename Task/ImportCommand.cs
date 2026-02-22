@@ -23,7 +23,7 @@ namespace TaskApp
 
         public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
         {
-            var db = await Program.GetDatabaseAsync(settings, cancellationToken);
+            var service = await Program.GetTaskServiceAsync(settings, cancellationToken);
 
             if (string.IsNullOrEmpty(settings.Input))
             {
@@ -39,7 +39,21 @@ namespace TaskApp
 
             try
             {
-                List<TaskItem> tasks = new List<TaskItem>();
+                List<TaskItem> tasks;
+                if (string.Equals(settings.Format, "csv", StringComparison.OrdinalIgnoreCase))
+                {
+                    tasks = ImportFromCsv(settings.Input);
+                }
+                else if (string.Equals(settings.Format, "json", StringComparison.OrdinalIgnoreCase))
+                {
+                    tasks = ImportFromJson(settings.Input);
+                }
+                else
+                {
+                    Console.Error.WriteLine($"ERROR: Unsupported format '{settings.Format}'. Supported formats: json, csv.");
+                    return 1;
+                }
+
                 var addTasks = new List<Task>();
                 int imported = 0;
                 AnsiConsole.Progress()
@@ -62,7 +76,7 @@ namespace TaskApp
                                 taskItem.Status = string.IsNullOrEmpty(taskItem.Status) ? "pending" : taskItem.Status;
 
                                 // Add to database (this will generate new UID and timestamps)
-                                addTasks.Add(db.AddTask(taskItem.Title, taskItem.Description, taskItem.Priority, taskItem.DueDate, taskItem.Tags, cancellationToken));
+                                addTasks.Add(service.AddTaskAsync(taskItem.Title, taskItem.Description, taskItem.Priority, taskItem.DueDate, taskItem.Tags, taskItem.Project, taskItem.DependsOn, taskItem.Status, cancellationToken));
                                 imported++;
                                 task.Increment(1);
                             }
@@ -88,7 +102,7 @@ namespace TaskApp
 
         private List<TaskItem> ImportFromJson(string filePath)
         {
-            List<TaskItem> tasks = null;
+            List<TaskItem>? tasks = null;
                 AnsiConsole.Progress()
                     .Start(async ctx =>
                     {
@@ -96,12 +110,12 @@ namespace TaskApp
                     var json = File.ReadAllText(filePath);
                     task.Increment(0.5);
 #pragma warning disable IL2026
-                    tasks = JsonSerializer.Deserialize<List<TaskItem>>(json) ?? new List<TaskItem>();
+                    tasks = JsonSerializer.Deserialize<List<TaskItem>>(json, JsonHelper.Options) ?? new List<TaskItem>();
 #pragma warning restore IL2026
                     task.Increment(0.5);
                     task.StopTask();
                 });
-            return tasks;
+            return tasks ?? new List<TaskItem>();
         }
 
         private List<TaskItem> ImportFromCsv(string filePath)
