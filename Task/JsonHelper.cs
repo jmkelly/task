@@ -1,0 +1,14 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
+namespace TaskApp
+{
+    public static class JsonHelper
+    {
+        public static JsonSerializerOptions Options { get; } = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            WriteIndented = true
+        };
+    }
+}
