@@ -14,12 +14,54 @@ import sys
 import json
 
 # Path to the Task executable
-TASK_EXECUTABLE = "../binaries/task-linux-x64/Task"
+TASK_EXECUTABLE = "../binaries/task-linux-x64/Task.Cli"
 
 def generate_random_task():
     """Generate a random task description."""
     words = ['task', 'item', 'work', 'project', 'fix', 'implement', 'test', 'review', 'update', 'create']
     return ' '.join(random.choices(words, k=random.randint(3, 8)))
+
+def generate_random_description():
+    """Generate a random task description."""
+    descriptions = [
+        'This is a detailed description of the task that needs to be completed.',
+        'A comprehensive task requiring careful attention to detail.',
+        'Important work item that should be prioritized.',
+        'Complex implementation that needs thorough testing.',
+        'Critical update that affects multiple components.',
+        'Routine maintenance and improvement task.',
+        'New feature implementation with testing requirements.',
+        'Bug fix for existing functionality.',
+        'Performance optimization and code review.',
+        'Documentation and knowledge sharing task.'
+    ]
+    return random.choice(descriptions)
+
+def generate_random_tags():
+    """Generate random tags for a task."""
+    all_tags = ['urgent', 'bug', 'feature', 'enhancement', 'documentation', 'testing', 'review', 'performance', 'ui', 'backend', 'frontend', 'api', 'database', 'security']
+    num_tags = random.randint(0, 3)
+    return ','.join(random.sample(all_tags, num_tags)) if num_tags > 0 else None
+
+def generate_random_project():
+    """Generate a random project name."""
+    projects = ['web-app', 'mobile-app', 'api-server', 'database', 'infrastructure', 'testing', 'documentation', 'maintenance', None]
+    return random.choice(projects)
+
+def generate_random_assignee():
+    """Generate a random assignee."""
+    assignees = ['alice', 'bob', 'charlie', 'diana', 'eve', 'frank', 'grace', None]
+    return random.choice(assignees)
+
+def generate_random_priority():
+    """Generate a random priority."""
+    return random.choice(['low', 'medium', 'high'])
+
+def generate_random_due_date():
+    """Generate a random due date within the next 30 days."""
+    days_ahead = random.randint(1, 30)
+    due_date = time.time() + (days_ahead * 24 * 60 * 60)
+    return time.strftime('%Y-%m-%d', time.localtime(due_date))
 
 def run_command(command):
     """Run a Task CLI command."""
@@ -46,7 +88,23 @@ def add_task_stress(num_tasks=100, num_workers=10):
 
     def add_single_task(task_id):
         task_desc = f"Stress test task {task_id}: {generate_random_task()}"
-        success, data, error = run_command(['add', '-t', task_desc])
+        description = generate_random_description()
+        priority = generate_random_priority()
+        due_date = generate_random_due_date()
+        tags = generate_random_tags()
+        project = generate_random_project()
+        assignee = generate_random_assignee()
+        
+        command = ['add', '-t', task_desc, '-d', description, '-p', priority, '--due-date', due_date]
+        
+        if tags:
+            command.extend(['--tags', tags])
+        if project:
+            command.extend(['--project', project])
+        if assignee:
+            command.extend(['--assignee', assignee])
+        
+        success, data, error = run_command(command)
         if success and isinstance(data, dict) and 'uid' in data:
             return data['uid']
         return None

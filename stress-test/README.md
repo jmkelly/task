@@ -15,11 +15,12 @@ This project contains a stress testing script for the Task CLI application. The 
 
 ## What the Stress Test Does
 
-The stress test performs three types of operations concurrently:
+The stress test performs four types of operations concurrently:
 
-1. **Add Tasks**: Creates 1000 new tasks using 50 concurrent workers
-2. **List Tasks**: Lists all tasks 500 times using 50 concurrent workers
-3. **Search Tasks**: Searches for tasks 500 times using 50 concurrent workers
+1. **Add Tasks**: Creates 100 new tasks using 10 concurrent workers. Each task includes random attributes like description, priority, due date, tags, project, and assignee
+2. **Delete Tasks**: Deletes the previously added tasks using 10 concurrent workers
+3. **List Tasks**: Lists all tasks 50 times using 10 concurrent workers
+4. **Search Tasks**: Searches for tasks 50 times using 10 concurrent workers
 
 Each operation measures:
 - Total execution time
@@ -34,9 +35,9 @@ Each operation measures:
 
 You can modify the parameters in `stress_test.py`:
 
-- `num_tasks`: Number of add operations
-- `num_workers`: Number of concurrent threads for add operations
-- `num_requests`: Number of list/search operations
+- `num_tasks`: Number of add operations (default: 100)
+- `num_workers`: Number of concurrent threads for operations (default: 10)
+- `num_requests`: Number of list/search operations (default: 50)
 
 ## Database
 
