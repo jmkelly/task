@@ -182,25 +182,27 @@ Add retry logic for collisions (max 3 attempts).
 No way to undo accidental operations.
 
 ### Solution
-Store action history in memory (cleared on new CLI session).
+**REMOVED:** Undo functionality has been removed from the CLI.
 
-### Files
-- `Task/UndoCommand.cs` (new)
-- `Task/Program.cs`
-- `Task/Database.cs`
-- `Task/ITaskService.cs`
+### Files (removed)
+- `Task/UndoCommand.cs` (removed)
+- `Task/UndoAction.cs` (removed)
+- `Task/Program.cs` (updated)
+- `Task/Database.cs` (would have been updated)
+- `Task/ITaskService.cs` (updated)
+- `Task/ApiClient.cs` (updated)
 
-### Action Types to Track
+### Action Types to Track (removed)
 - `Complete` - stores UID
 - `Delete` - stores full TaskItem (for restore)
 - `Create` - stores UID (for deletion)
 - `Edit` - stores before/after snapshot
 
-### Command Syntax
+### Command Syntax (removed)
 - `task undo` - Undo last action
 - `task undo --list` - Show available undo actions
 
-### Implementation
+### Implementation (removed)
 - Add action stack to Database class (in-memory List)
 - On undo: pop last action, reverse it
 - On any new modifying command: clear undo stack
@@ -217,6 +219,6 @@ Store action history in memory (cleared on new CLI session).
 | 4. Add --status | 4 edits | Medium |
 | 5. Batch ops | 3 edits | Medium |
 | 6. Shorter UID | 1 edit | Medium |
-| 7. Undo | 3 edits, 1 new | Large |
+| 7. Undo | **REMOVED** | - |
 
 **Total:** 7 features, 14 file changes (8 edits, 2 new)
