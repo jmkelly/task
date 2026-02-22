@@ -7,7 +7,7 @@ using System.IO;
 using Task.Core;
 using System.Threading.Tasks;
 
-namespace TaskApp
+namespace Task.Cli
 {
     [Description("Import tasks from JSON or CSV format.")]
     public class ImportCommand : AsyncCommand<ImportCommand.Settings>

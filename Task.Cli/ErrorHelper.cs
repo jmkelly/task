@@ -1,6 +1,6 @@
 using Spectre.Console;
 
-namespace TaskApp
+namespace Task.Cli
 {
     public static class ErrorHelper
     {

@@ -2,7 +2,7 @@ using Spectre.Console.Cli;
 using System.ComponentModel;
 using System.Threading;
 
-namespace TaskApp
+namespace Task.Cli
 {
     [Description("Edit an existing task's properties. Specify the task ID and any fields to update. Use --json for LLM-friendly output.")]
     public class EditCommand : AsyncCommand<EditCommand.Settings>

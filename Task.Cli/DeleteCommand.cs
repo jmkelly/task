@@ -2,7 +2,7 @@ using Spectre.Console.Cli;
 using System.ComponentModel;
 using System.Threading;
 
-namespace TaskApp
+namespace Task.Cli
 {
     [Description("Delete a task permanently. Use --json for structured confirmation output.")]
     public class DeleteCommand : AsyncCommand<DeleteCommand.Settings>

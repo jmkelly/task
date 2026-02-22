@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace TaskApp
+namespace Task.Cli
 {
     public static class JsonHelper
     {

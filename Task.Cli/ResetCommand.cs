@@ -2,7 +2,7 @@ using Spectre.Console.Cli;
 using System.ComponentModel;
 using System.Threading;
 
-namespace TaskApp
+namespace Task.Cli
 {
     [Description("Reset a task's status back to todo. Use --json for structured confirmation output.")]
     public class ResetCommand : AsyncCommand<ResetCommand.Settings>

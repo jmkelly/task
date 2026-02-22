@@ -3,7 +3,7 @@ using Spectre.Console.Cli;
 using System.ComponentModel;
 using System.Threading;
 
-namespace TaskApp
+namespace Task.Cli
 {
     [Description("List all tasks in a table format. Use filters to narrow results. Use --json for structured output suitable for LLMs.")]
     public class ListCommand : AsyncCommand<ListCommand.Settings>

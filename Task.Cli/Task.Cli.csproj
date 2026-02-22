@@ -12,6 +12,7 @@
     <TrimMode>full</TrimMode>
     <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <AssemblyName>Task.Cli</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>

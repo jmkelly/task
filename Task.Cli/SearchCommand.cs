@@ -3,7 +3,7 @@ using Spectre.Console.Cli;
 using System.ComponentModel;
 using System.Threading;
 
-namespace TaskApp
+namespace Task.Cli
 {
     [Description("Search for tasks using full-text, semantic, or hybrid search. Use --json for structured results.")]
     public class SearchCommand : AsyncCommand<SearchCommand.Settings>

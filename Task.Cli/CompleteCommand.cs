@@ -2,7 +2,7 @@ using Spectre.Console.Cli;
 using System.ComponentModel;
 using System.Threading;
 
-namespace TaskApp
+namespace Task.Cli
 {
     [Description("Mark a task as completed. Use --json for structured confirmation output.")]
     public class CompleteCommand : AsyncCommand<CompleteCommand.Settings>

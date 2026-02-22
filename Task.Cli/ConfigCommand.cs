@@ -2,7 +2,7 @@ using Spectre.Console.Cli;
 using System.ComponentModel;
 using System.Threading.Tasks;
 
-namespace TaskApp
+namespace Task.Cli
 {
     public class ConfigSetCommand : AsyncCommand<ConfigSetCommand.Settings>
     {

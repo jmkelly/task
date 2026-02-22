@@ -6,7 +6,7 @@ using System.Text.Json;
 using System.IO;
 using Task.Core;
 
-namespace TaskApp
+namespace Task.Cli
 {
     [Description("Export tasks to JSON or CSV format. Outputs to file if specified, otherwise to stdout.")]
     public class ExportCommand : AsyncCommand<ExportCommand.Settings>

@@ -1,7 +1,7 @@
 using System.Text.Json.Serialization;
 using Task.Core;
 
-namespace TaskApp;
+namespace Task.Cli;
 
 [JsonSerializable(typeof(TaskItem))]
 [JsonSerializable(typeof(List<TaskItem>))]

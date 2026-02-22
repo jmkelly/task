@@ -3,7 +3,7 @@ using Spectre.Console.Cli;
 using System.ComponentModel;
 using System.Threading;
 
-namespace TaskApp
+namespace Task.Cli
 {
     [Description("Add a new task to the task list. Use --json for LLM-friendly structured output.")]
     public class AddCommand : AsyncCommand<AddCommand.Settings>

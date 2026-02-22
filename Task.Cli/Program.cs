@@ -5,7 +5,7 @@ using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using Task.Core;
 
-namespace TaskApp
+namespace Task.Cli
 {
     public static class Program
     {
@@ -126,10 +126,18 @@ namespace TaskApp
 
         public static async System.Threading.Tasks.Task<ITaskService> GetTaskServiceAsync(TaskCommandSettings settings, CancellationToken cancellationToken = default)
         {
-            var apiUrl = settings.ApiUrl ?? "http://localhost:5000";
-            var apiClient = new ApiClient(apiUrl);
-            await apiClient.InitializeAsync(cancellationToken);
-            return apiClient;
+            if (string.IsNullOrEmpty(settings.ApiUrl))
+            {
+                var taskService = new Task.Core.TaskService(settings.DatabasePath);
+                await taskService.InitializeAsync(cancellationToken);
+                return taskService;
+            }
+            else
+            {
+                var apiClient = new ApiClient(settings.ApiUrl);
+                await apiClient.InitializeAsync(cancellationToken);
+                return apiClient;
+            }
         }
     }
 }
