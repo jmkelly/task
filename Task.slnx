@@ -1,7 +1,9 @@
 <Solution>
   <Folder Name="/Tests/">
     <Project Path="Tests/Task.Tests.csproj" />
+    <Project Path="Task.Api.Tests/Task.Api.Tests.csproj" />
   </Folder>
   <Project Path="Task.Core/Task.Core.csproj" />
-  <Project Path="Task/Task.csproj" />
+  <Project Path="Task.Api/Task.Api.csproj" />
+  <Project Path="Task.Cli/Task.Cli.csproj" />
 </Solution>

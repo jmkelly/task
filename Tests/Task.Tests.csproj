@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Task\Task.csproj" />
+    <ProjectReference Include="..\Task.Cli\Task.Cli.csproj" />
     <ProjectReference Include="..\Task.Api\Task.Api.csproj" />
   </ItemGroup>
 
