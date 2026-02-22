@@ -44,6 +44,8 @@ namespace Task.Cli
             [CommandOption("--assignee")]
             [Description("Update the assignee name (e.g., 'john.doe'). Use empty string to unassign.")]
             public string? Assignee { get; set; }
+
+            [CommandOption("--status")]
             [Description("Update the status: todo, done, or in_progress (e.g., 'done')")]
             public string? Status { get; set; }
         }
@@ -124,7 +126,7 @@ namespace Task.Cli
                             ErrorHelper.ShowError($"Invalid dependencies for task {id}. Cannot create circular dependency or self-reference.");
                             continue;
                         }
-                        
+
                         foreach (var depUid in newDeps)
                         {
                             var depTask = await service.GetTaskByUidAsync(depUid, cancellationToken);

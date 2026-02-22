@@ -25,6 +25,10 @@ namespace Task.Cli
             [CommandOption("--assignee")]
             [Description("Filter tasks by assignee name (e.g., --assignee john.doe)")]
             public string? Assignee { get; set; }
+
+            [CommandOption("--sort")]
+            [Description("Sort tasks by field: priority, due, created (e.g., --sort due)")]
+            public string? Sort { get; set; }
         }
 
         public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
@@ -46,6 +50,7 @@ namespace Task.Cli
                 priority: settings.Priority,
                 project: settings.Project,
                 assignee: settings.Assignee,
+                sortBy: settings.Sort,
                 cancellationToken: cancellationToken);
 
             if (settings.Json)
@@ -69,12 +74,12 @@ namespace Task.Cli
                 foreach (var task in tasks)
                 {
                     table.AddRow(
-                        task.Uid, 
-                        task.Title, 
+                        task.Uid,
+                        task.Title,
                         task.Project ?? "-",
                         task.Assignee ?? "-",
-                        task.Priority, 
-                        task.Status, 
+                        task.Priority,
+                        task.Status,
                         task.DueDateString,
                         task.DependsOn.Count > 0 ? string.Join(", ", task.DependsOn) : "-");
                 }

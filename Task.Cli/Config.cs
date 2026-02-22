@@ -25,11 +25,17 @@ namespace Task.Cli
 
                 var json = File.ReadAllText(ConfigFile);
                 var config = JsonSerializer.Deserialize(json, TaskJsonContext.Default.Config) ?? new Config();
-                
+
                 // Set defaults for missing values
                 if (string.IsNullOrEmpty(config.DefaultOutput))
                 {
                     config.DefaultOutput = "plain";
+                }
+
+                // Validate API URL format if set
+                if (!string.IsNullOrEmpty(config.ApiUrl) && !IsValidUrlFormat(config.ApiUrl))
+                {
+                    throw new ArgumentException("Invalid API URL format in config. Must be a valid HTTP or HTTPS URL.");
                 }
 
                 return config;
@@ -75,9 +81,9 @@ namespace Task.Cli
             }
         }
 
-        private static async System.Threading.Tasks.Task ValidateUrlAsync(string url)
+        public static async System.Threading.Tasks.Task ValidateUrlAsync(string url)
         {
-            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
+            if (!IsValidUrlFormat(url))
             {
                 throw new ArgumentException("Invalid URL format. Must be a valid HTTP or HTTPS URL.");
             }
@@ -97,6 +103,11 @@ namespace Task.Cli
             {
                 throw new ArgumentException("URL validation timed out after 5 seconds.");
             }
+        }
+
+        private static bool IsValidUrlFormat(string url)
+        {
+            return Uri.TryCreate(url, UriKind.Absolute, out var uri) && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
         }
 
         public string? GetValue(string key)
