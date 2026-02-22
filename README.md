@@ -14,6 +14,7 @@ The system consists of three main components:
 
 ### CLI Features
 - Add, list, edit, delete, and complete tasks
+- Assign tasks to users/assignees
 - Search tasks (full-text and semantic search)
 - Export and import tasks
 - JSON output for scripting and integration
@@ -33,7 +34,7 @@ The system consists of three main components:
 - SQLite database with schema including FTS5 and vector search
 - Automatic schema migration
 - Optimized indexes for performance
-- Support for tags, priorities, due dates
+- Support for tags, priorities, due dates, assignees
 - Full-text search on title, description, and tags
 - Vector search for semantic similarity (requires sqlite-vss extension)
 
@@ -175,11 +176,13 @@ The CLI can operate in two modes:
 Add a task:
 ```bash
 task add "Buy groceries"
+task add "Review code" --assignee john.doe --priority high
 ```
 
 List tasks:
 ```bash
 task list
+task list --assignee john.doe --status todo
 ```
 
 Complete a task:
@@ -190,6 +193,7 @@ task complete 1
 Edit a task:
 ```bash
 task edit 1 "Buy groceries and milk"
+task edit 1 --assignee jane.smith
 ```
 
 Delete a task:
