@@ -12,11 +12,12 @@ namespace TaskApp.Tests.UnitTests
         private string _testDbPath;
         private Database _db;
 
-    public DatabaseTests()
-    {
-        _testDbPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".db");
-        _db = new Database(_testDbPath);
-    }
+        public DatabaseTests()
+        {
+            _testDbPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".db");
+            _db = new Database(_testDbPath);
+            _db.InitializeAsync().GetAwaiter().GetResult();
+        }
 
         public void Dispose()
         {
@@ -24,23 +25,23 @@ namespace TaskApp.Tests.UnitTests
         }
 
         [Fact]
-        public void AddTask_ShouldCreateTaskWithUniqueUid()
+        public async System.Threading.Tasks.Task AddTask_ShouldCreateTaskWithUniqueUid()
         {
-            var task = _db.AddTask("Test Title", "Test Description", "high");
+            var task = await _db.AddTaskAsync("Test Title", "Test Description", "high", null, new List<string>());
 
             Assert.NotNull(task);
             Assert.Equal("Test Title", task.Title);
             Assert.Equal("Test Description", task.Description);
             Assert.Equal("high", task.Priority);
-            Assert.Equal("pending", task.Status);
+            Assert.Equal("todo", task.Status);
             Assert.NotNull(task.Uid);
             Assert.True(task.Uid.Length == 6);
         }
 
         [Fact]
-        public void AddTask_ShouldHandleNullDescription()
+        public async System.Threading.Tasks.Task AddTask_ShouldHandleNullDescription()
         {
-            var task = _db.AddTask("Test Title");
+            var task = await _db.AddTaskAsync("Test Title", null, "medium", null, new List<string>());
 
             Assert.NotNull(task);
             Assert.Equal("Test Title", task.Title);
@@ -48,12 +49,12 @@ namespace TaskApp.Tests.UnitTests
         }
 
         [Fact]
-        public void GetAllTasks_ShouldReturnAllTasks()
+        public async System.Threading.Tasks.Task GetAllTasks_ShouldReturnAllTasks()
         {
-            var task1 = _db.AddTask("Task 1");
-            var task2 = _db.AddTask("Task 2");
+            var task1 = await _db.AddTaskAsync("Task 1", null, "medium", null, new List<string>());
+            var task2 = await _db.AddTaskAsync("Task 2", null, "medium", null, new List<string>());
 
-            var tasks = _db.GetAllTasks();
+            var tasks = await _db.GetAllTasksAsync();
 
             Assert.Equal(2, tasks.Count);
             Assert.Contains(tasks, t => t.Uid == task1.Uid);
@@ -61,11 +62,11 @@ namespace TaskApp.Tests.UnitTests
         }
 
         [Fact]
-        public void GetTaskByUid_ShouldReturnCorrectTask()
+        public async System.Threading.Tasks.Task GetTaskByUid_ShouldReturnCorrectTask()
         {
-            var addedTask = _db.AddTask("Unique Task");
+            var addedTask = await _db.AddTaskAsync("Unique Task", null, "medium", null, new List<string>());
 
-            var retrievedTask = _db.GetTaskByUid(addedTask.Uid);
+            var retrievedTask = await _db.GetTaskByUidAsync(addedTask.Uid);
 
             Assert.NotNull(retrievedTask);
             Assert.Equal(addedTask.Uid, retrievedTask.Uid);
@@ -73,25 +74,26 @@ namespace TaskApp.Tests.UnitTests
         }
 
         [Fact]
-        public void GetTaskByUid_ShouldReturnNullForNonExistentUid()
+        public async System.Threading.Tasks.Task GetTaskByUid_ShouldReturnNullForNonExistentUid()
         {
-            var task = _db.GetTaskByUid("nonexistent");
+            var task = await _db.GetTaskByUidAsync("nonexistent");
 
             Assert.Null(task);
         }
 
         [Fact]
-        public void UpdateTask_ShouldUpdateFields()
+        public async System.Threading.Tasks.Task UpdateTask_ShouldUpdateFields()
         {
-            var task = _db.AddTask("Original Title", "Original Desc", "low");
+            var task = await _db.AddTaskAsync("Original Title", "Original Desc", "low", null, new List<string>());
             var oldUpdatedAt = task.UpdatedAt;
             task.Title = "Updated Title";
             task.Description = "Updated Desc";
             task.Priority = "high";
 
-            _db.UpdateTask(task);
+            await _db.UpdateTaskAsync(task);
 
-            var updated = _db.GetTaskByUid(task.Uid);
+            var updated = await _db.GetTaskByUidAsync(task.Uid);
+            Assert.NotNull(updated);
             Assert.Equal("Updated Title", updated.Title);
             Assert.Equal("Updated Desc", updated.Description);
             Assert.Equal("high", updated.Priority);
@@ -99,88 +101,88 @@ namespace TaskApp.Tests.UnitTests
         }
 
         [Fact]
-        public void DeleteTask_ShouldRemoveTask()
+        public async System.Threading.Tasks.Task DeleteTask_ShouldRemoveTask()
         {
-            var task = _db.AddTask("To Delete");
+            var task = await _db.AddTaskAsync("To Delete", null, "medium", null, new List<string>());
 
-            _db.DeleteTask(task.Id.ToString());
+            await _db.DeleteTaskAsync(task.Uid);
 
-            var allTasks = _db.GetAllTasks();
+            var allTasks = await _db.GetAllTasksAsync();
             Assert.DoesNotContain(allTasks, t => t.Uid == task.Uid);
         }
 
         [Fact]
-        public void CompleteTask_ShouldSetStatusToCompleted()
+        public async System.Threading.Tasks.Task CompleteTask_ShouldSetStatusToCompleted()
         {
-            var task = _db.AddTask("To Complete");
+            var task = await _db.AddTaskAsync("To Complete", null, "medium", null, new List<string>());
 
-            _db.CompleteTask(task.Id.ToString());
+            await _db.CompleteTaskAsync(task.Uid);
 
-            var completed = _db.GetTaskByUid(task.Uid);
-            Assert.Equal("completed", completed.Status);
+            var completed = await _db.GetTaskByUidAsync(task.Uid);
+            Assert.NotNull(completed);
+            Assert.Equal("done", completed.Status);
         }
 
         [Fact]
-        public void SearchTasksFTS_ShouldFindByTitle()
+        public async System.Threading.Tasks.Task SearchTasksFTS_ShouldFindByTitle()
         {
-            _db.AddTask("Buy groceries", "Milk, bread");
-            _db.AddTask("Clean house");
+            await _db.AddTaskAsync("Buy groceries", "Milk, bread", "medium", null, new List<string>());
+            await _db.AddTaskAsync("Clean house", null, "medium", null, new List<string>());
 
-            var results = _db.SearchTasksFTS("groceries");
+            var results = await _db.SearchTasksFTSAsync("groceries");
 
             Assert.Single(results);
             Assert.Equal("Buy groceries", results[0].Title);
         }
 
         [Fact]
-        public void SearchTasksFTS_ShouldFindByDescription()
+        public async System.Threading.Tasks.Task SearchTasksFTS_ShouldFindByDescription()
         {
-            _db.AddTask("Task", "Important meeting");
-            _db.AddTask("Other task");
+            await _db.AddTaskAsync("Task", "Important meeting", "medium", null, new List<string>());
+            await _db.AddTaskAsync("Other task", null, "medium", null, new List<string>());
 
-            var results = _db.SearchTasksFTS("meeting");
+            var results = await _db.SearchTasksFTSAsync("meeting");
 
             Assert.Single(results);
             Assert.Equal("Important meeting", results[0].Description);
         }
 
         [Fact]
-        public void SearchTasksSemantic_ShouldFindSimilarTasks()
+        public async System.Threading.Tasks.Task SearchTasksSemantic_ShouldFindSimilarTasks()
         {
-            // Semantic search is not implemented yet, so returns empty
-            _db.AddTask("Buy milk at store");
-            _db.AddTask("Purchase groceries");
+            await _db.AddTaskAsync("Buy milk at store", null, "medium", null, new List<string>());
+            await _db.AddTaskAsync("Purchase groceries", null, "medium", null, new List<string>());
 
-            var results = _db.SearchTasksSemantic("get groceries");
+            var results = await _db.SearchTasksSemanticAsync("get groceries");
 
-            Assert.Empty(results); // Currently returns empty as semantic search is stubbed
+            Assert.Empty(results);
         }
 
         [Fact]
-        public void SearchTasksHybrid_ShouldCombineFTSAndSemantic()
+        public async System.Threading.Tasks.Task SearchTasksHybrid_ShouldCombineFTSAndSemantic()
         {
-            _db.AddTask("Buy groceries", "Milk, bread");
-            _db.AddTask("Clean house");
+            await _db.AddTaskAsync("Buy groceries", "Milk, bread", "medium", null, new List<string>());
+            await _db.AddTaskAsync("Clean house", null, "medium", null, new List<string>());
 
-            var results = _db.SearchTasksHybrid("groceries");
+            var results = await _db.SearchTasksHybridAsync("groceries");
 
             Assert.Contains(results, t => t.Title.Contains("groceries"));
         }
 
         [Fact]
-        public void AddTask_ShouldHandleTags()
+        public async System.Threading.Tasks.Task AddTask_ShouldHandleTags()
         {
             var tags = new List<string> { "urgent", "work" };
-            var task = _db.AddTask("Tagged Task", tags: tags);
+            var task = await _db.AddTaskAsync("Tagged Task", null, "medium", null, tags);
 
             Assert.Equal(tags, task.Tags);
         }
 
         [Fact]
-        public void AddTask_ShouldHandleDueDate()
+        public async System.Threading.Tasks.Task AddTask_ShouldHandleDueDate()
         {
             var dueDate = new DateTime(2023, 12, 31);
-            var task = _db.AddTask("Due Task", dueDate: dueDate);
+            var task = await _db.AddTaskAsync("Due Task", null, "medium", dueDate, new List<string>());
 
             Assert.Equal(dueDate, task.DueDate);
         }
