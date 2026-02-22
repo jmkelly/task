@@ -1,11 +1,12 @@
 using Xunit;
 using Task.Api;
+using Task.Core;
 using Microsoft.Data.Sqlite;
 using System.IO;
 using System.Linq;
 using System.Collections.Generic;
 
-namespace TaskApp.Tests.IntegrationTests
+namespace Task.Cli.Tests.IntegrationTests
 {
 	public class DatabaseTests : IDisposable
 	{

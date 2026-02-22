@@ -7,8 +7,9 @@ using System.Net.Http.Json;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.IO;
+using Task.Core;
 
-namespace TaskApp.Tests.IntegrationTests
+namespace Task.Cli.Tests.IntegrationTests
 {
     public class ApiIntegrationTests : IClassFixture<TestWebApplicationFactory>
     {
@@ -27,14 +28,14 @@ namespace TaskApp.Tests.IntegrationTests
         {
             var response = await _client.GetAsync("/api/tasks");
             response.EnsureSuccessStatusCode();
-            var tasks = await response.Content.ReadFromJsonAsync<List<Task.Api.TaskDto>>();
+            var tasks = await response.Content.ReadFromJsonAsync<List<TaskDto>>();
             Assert.Empty(tasks);
         }
 
         [Fact]
         public async System.Threading.Tasks.Task CreateTask_ReturnsCreatedTask()
         {
-            var newTask = new Task.Api.TaskCreateDto
+            var newTask = new TaskCreateDto
             {
                 Title = "Test Task",
                 Description = "Test Description",
@@ -43,7 +44,7 @@ namespace TaskApp.Tests.IntegrationTests
 
             var response = await _client.PostAsJsonAsync("/api/tasks", newTask);
             response.EnsureSuccessStatusCode();
-            var task = await response.Content.ReadFromJsonAsync<Task.Api.TaskDto>();
+            var task = await response.Content.ReadFromJsonAsync<TaskDto>();
 
             Assert.Equal("Test Task", task.Title);
             Assert.Equal("Test Description", task.Description);
@@ -54,14 +55,14 @@ namespace TaskApp.Tests.IntegrationTests
         [Fact]
         public async System.Threading.Tasks.Task GetTask_ReturnsTask_WhenExists()
         {
-            var newTask = new Task.Api.TaskCreateDto { Title = "Get Test", Priority = "medium" };
+            var newTask = new TaskCreateDto { Title = "Get Test", Priority = "medium" };
             var createResponse = await _client.PostAsJsonAsync("/api/tasks", newTask);
-            var createdTask = await createResponse.Content.ReadFromJsonAsync<Task.Api.TaskDto>();
+            var createdTask = await createResponse.Content.ReadFromJsonAsync<TaskDto>();
 
             // Then get it
             var getResponse = await _client.GetAsync($"/api/tasks/{createdTask.Uid}");
             getResponse.EnsureSuccessStatusCode();
-            var retrievedTask = await getResponse.Content.ReadFromJsonAsync<Task.Api.TaskDto>();
+            var retrievedTask = await getResponse.Content.ReadFromJsonAsync<TaskDto>();
 
             Assert.Equal(createdTask.Uid, retrievedTask.Uid);
             Assert.Equal("Get Test", retrievedTask.Title);
@@ -70,12 +71,12 @@ namespace TaskApp.Tests.IntegrationTests
         [Fact]
         public async System.Threading.Tasks.Task UpdateTask_UpdatesExistingTask()
         {
-            var newTask = new Task.Api.TaskCreateDto { Title = "Original", Priority = "low" };
+            var newTask = new TaskCreateDto { Title = "Original", Priority = "low" };
             var createResponse = await _client.PostAsJsonAsync("/api/tasks", newTask);
-            var createdTask = await createResponse.Content.ReadFromJsonAsync<Task.Api.TaskDto>();
+            var createdTask = await createResponse.Content.ReadFromJsonAsync<TaskDto>();
 
             // Update it
-            var updateDto = new Task.Api.TaskUpdateDto
+            var updateDto = new TaskUpdateDto
             {
                 Title = "Updated",
                 Priority = "high"
@@ -85,7 +86,7 @@ namespace TaskApp.Tests.IntegrationTests
 
             // Verify update
             var getResponse = await _client.GetAsync($"/api/tasks/{createdTask.Uid}");
-            var updatedTask = await getResponse.Content.ReadFromJsonAsync<Task.Api.TaskDto>();
+            var updatedTask = await getResponse.Content.ReadFromJsonAsync<TaskDto>();
             Assert.Equal("Updated", updatedTask.Title);
             Assert.Equal("high", updatedTask.Priority);
         }
@@ -93,9 +94,9 @@ namespace TaskApp.Tests.IntegrationTests
         [Fact]
         public async System.Threading.Tasks.Task DeleteTask_RemovesTask()
         {
-            var newTask = new Task.Api.TaskCreateDto { Title = "To Delete", Priority = "medium" };
+            var newTask = new TaskCreateDto { Title = "To Delete", Priority = "medium" };
             var createResponse = await _client.PostAsJsonAsync("/api/tasks", newTask);
-            var createdTask = await createResponse.Content.ReadFromJsonAsync<Task.Api.TaskDto>();
+            var createdTask = await createResponse.Content.ReadFromJsonAsync<TaskDto>();
 
             // Delete it
             var deleteResponse = await _client.DeleteAsync($"/api/tasks/{createdTask.Uid}");
@@ -109,9 +110,9 @@ namespace TaskApp.Tests.IntegrationTests
         [Fact]
         public async System.Threading.Tasks.Task CompleteTask_SetsStatusToCompleted()
         {
-            var newTask = new Task.Api.TaskCreateDto { Title = "To Complete", Priority = "medium" };
+            var newTask = new TaskCreateDto { Title = "To Complete", Priority = "medium" };
             var createResponse = await _client.PostAsJsonAsync("/api/tasks", newTask);
-            var createdTask = await createResponse.Content.ReadFromJsonAsync<Task.Api.TaskDto>();
+            var createdTask = await createResponse.Content.ReadFromJsonAsync<TaskDto>();
 
             // Complete it
             var completeResponse = await _client.PatchAsync($"/api/tasks/{createdTask.Uid}/complete", null);
@@ -119,20 +120,20 @@ namespace TaskApp.Tests.IntegrationTests
 
             // Verify completion
             var getResponse = await _client.GetAsync($"/api/tasks/{createdTask.Uid}");
-            var completedTask = await getResponse.Content.ReadFromJsonAsync<Task.Api.TaskDto>();
+            var completedTask = await getResponse.Content.ReadFromJsonAsync<TaskDto>();
             Assert.Equal("done", completedTask.Status);
         }
 
         [Fact]
         public async System.Threading.Tasks.Task SearchTasks_ReturnsMatchingTasks()
         {
-            await _client.PostAsJsonAsync("/api/tasks", new Task.Api.TaskCreateDto { Title = "Buy groceries", Priority = "medium" });
-            await _client.PostAsJsonAsync("/api/tasks", new Task.Api.TaskCreateDto { Title = "Clean house", Priority = "medium" });
+            await _client.PostAsJsonAsync("/api/tasks", new TaskCreateDto { Title = "Buy groceries", Priority = "medium" });
+            await _client.PostAsJsonAsync("/api/tasks", new TaskCreateDto { Title = "Clean house", Priority = "medium" });
 
             // Search
             var searchResponse = await _client.GetAsync("/api/tasks/search?q=groceries");
             searchResponse.EnsureSuccessStatusCode();
-            var results = await searchResponse.Content.ReadFromJsonAsync<List<Task.Api.TaskDto>>();
+            var results = await searchResponse.Content.ReadFromJsonAsync<List<TaskDto>>();
 
             Assert.Single(results);
             Assert.Equal("Buy groceries", results[0].Title);
@@ -149,7 +150,7 @@ namespace TaskApp.Tests.IntegrationTests
     public class TestWebApplicationFactory : WebApplicationFactory<Task.Api.Program>
     {
         private readonly string _testDbPath;
-        private Task.Api.Database? _database;
+        private Database? _database;
 
         public TestWebApplicationFactory()
         {
@@ -169,10 +170,10 @@ namespace TaskApp.Tests.IntegrationTests
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             builder.UseEnvironment("Testing");
-            _database = new Task.Api.Database(_testDbPath);
+            _database = new Database(_testDbPath);
             builder.ConfigureServices(services =>
             {
-                services.AddSingleton<Task.Api.Database>(_database);
+                services.AddSingleton<Database>(_database);
             });
         }
 

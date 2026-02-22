@@ -1,7 +1,7 @@
 using Xunit;
-using TaskApp;
+using Task.Cli;
 
-namespace TaskApp.Tests
+namespace Task.Cli.Tests
 {
     public class ErrorHelperTests
     {
