@@ -89,16 +89,16 @@ namespace Task.Cli
             if (tasks.Count > 500) // Only show progress for very large exports
             {
                 string result = "";
-                    AnsiConsole.Progress()
-                        .Start(ctx =>
-                        {
-                            var task = ctx.AddTask("Serializing tasks to JSON", maxValue: 1);
+                AnsiConsole.Progress()
+                    .Start(ctx =>
+                    {
+                        var task = ctx.AddTask("Serializing tasks to JSON", maxValue: 1);
 #pragma warning disable IL2026
-                            result = JsonSerializer.Serialize(tasks, JsonHelper.Options);
+                        result = JsonSerializer.Serialize(tasks, JsonHelper.Options);
 #pragma warning restore IL2026
-                            task.Increment(1);
-                            task.StopTask();
-                        });
+                        task.Increment(1);
+                        task.StopTask();
+                    });
                 return result;
             }
             else

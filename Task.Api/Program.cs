@@ -5,70 +5,70 @@ using Task.Core;
 
 namespace Task.Api
 {
-	public class Program
-	{
-		public static async System.Threading.Tasks.Task Main(string[] args)
-		{
-			var builder = WebApplication.CreateBuilder(args);
+    public class Program
+    {
+        public static async System.Threading.Tasks.Task Main(string[] args)
+        {
+            var builder = WebApplication.CreateBuilder(args);
 
-			// Add services to the container.
-			builder.Services.AddControllers();
-			builder.Services.AddRazorPages();
-			builder.Services.AddEndpointsApiExplorer();
-			builder.Services.AddOpenApi();
+            // Add services to the container.
+            builder.Services.AddControllers();
+            builder.Services.AddRazorPages();
+            builder.Services.AddEndpointsApiExplorer();
+            builder.Services.AddOpenApi();
 
-			// Configure CORS
-			builder.Services.AddCors(options =>
-			{
-				options.AddPolicy("AllowAll", policy =>
-				{
-					policy.AllowAnyOrigin()
-						  .AllowAnyMethod()
-						  .AllowAnyHeader();
-				});
-			});
+            // Configure CORS
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowAll", policy =>
+                {
+                    policy.AllowAnyOrigin()
+                          .AllowAnyMethod()
+                          .AllowAnyHeader();
+                });
+            });
 
-			// Configure JSON serialization
-			builder.Services.ConfigureHttpJsonOptions(options =>
-			{
-				options.SerializerOptions.Converters.Add(new DateTimeNullableConverter());
-			});
+            // Configure JSON serialization
+            builder.Services.ConfigureHttpJsonOptions(options =>
+            {
+                options.SerializerOptions.Converters.Add(new DateTimeNullableConverter());
+            });
 
-			// Configure database service
-			builder.Services.AddSingleton<Database>(sp =>
-			{
-				var configuration = sp.GetRequiredService<IConfiguration>();
-				var dbPath = configuration.GetValue<string>("DatabasePath") ?? "tasks.db";
-				return new Database(dbPath);
-			});
+            // Configure database service
+            builder.Services.AddSingleton<Database>(sp =>
+            {
+                var configuration = sp.GetRequiredService<IConfiguration>();
+                var dbPath = configuration.GetValue<string>("DatabasePath") ?? "tasks.db";
+                return new Database(dbPath);
+            });
 
-			var app = builder.Build();
+            var app = builder.Build();
 
-			// Initialize database
-			var database = app.Services.GetRequiredService<Database>();
-			await database.InitializeAsync();
+            // Initialize database
+            var database = app.Services.GetRequiredService<Database>();
+            await database.InitializeAsync();
 
-			// Configure OpenAPI and Scalar
+            // Configure OpenAPI and Scalar
 
-			app.UseMiddleware<ErrorHandlingMiddleware>();
+            app.UseMiddleware<ErrorHandlingMiddleware>();
 
-			app.UseCors("AllowAll");
+            app.UseCors("AllowAll");
 
-			app.UseHttpsRedirection();
+            app.UseHttpsRedirection();
 
-			app.UseStaticFiles();
+            app.UseStaticFiles();
 
-			app.UseAuthorization();
+            app.UseAuthorization();
 
-			app.MapControllers();
-			app.MapRazorPages();
-			if (app.Environment.IsDevelopment())
-			{
-				app.MapOpenApi();
-				app.MapScalarApiReference();
-			}
+            app.MapControllers();
+            app.MapRazorPages();
+            if (app.Environment.IsDevelopment())
+            {
+                app.MapOpenApi();
+                app.MapScalarApiReference();
+            }
 
-			app.Run();
-		}
-	}
+            app.Run();
+        }
+    }
 }

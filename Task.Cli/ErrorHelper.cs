@@ -7,17 +7,17 @@ namespace Task.Cli
         public static void ShowError(string message, string? suggestion = null, string? helpCommand = null)
         {
             var fullMessage = $"Error: {message}";
-            
+
             if (!string.IsNullOrEmpty(suggestion))
             {
                 fullMessage += $" Try: {suggestion}";
             }
-            
+
             if (!string.IsNullOrEmpty(helpCommand))
             {
                 fullMessage += $" See: {helpCommand}";
             }
-            
+
             Console.Error.WriteLine(fullMessage);
         }
 
