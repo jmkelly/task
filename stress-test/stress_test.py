@@ -16,9 +16,6 @@ import json
 # Path to the Task executable
 TASK_EXECUTABLE = "../binaries/task-linux-x64/Task"
 
-# API URL for stress testing
-API_URL = "http://localhost:5157"
-
 def generate_random_task():
     """Generate a random task description."""
     words = ['task', 'item', 'work', 'project', 'fix', 'implement', 'test', 'review', 'update', 'create']
@@ -26,8 +23,9 @@ def generate_random_task():
 
 def run_command(command):
     """Run a Task CLI command."""
-    full_command = [TASK_EXECUTABLE, '--api-url', API_URL, '--json']
+    full_command = [TASK_EXECUTABLE]
     full_command.extend(command)
+    full_command.extend(['--json'])
     try:
         result = subprocess.run(full_command, capture_output=True, text=True, timeout=30, cwd='.')
         success = result.returncode == 0
@@ -49,8 +47,8 @@ def add_task_stress(num_tasks=100, num_workers=10):
     def add_single_task(task_id):
         task_desc = f"Stress test task {task_id}: {generate_random_task()}"
         success, data, error = run_command(['add', '-t', task_desc])
-        if success and isinstance(data, dict) and 'id' in data:
-            return data['id']
+        if success and isinstance(data, dict) and 'uid' in data:
+            return data['uid']
         return None
 
     start_time = time.time()
@@ -137,7 +135,6 @@ def main():
 
     print("=== Task CLI Stress Test ===")
     print(f"Using executable: {TASK_EXECUTABLE}")
-    print(f"API URL: {API_URL}")
     print()
 
     # Run stress tests
