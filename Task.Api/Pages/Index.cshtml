@@ -1,0 +1,100 @@
+@page
+@using Task.Api.Pages
+@model IndexModel
+@{
+    ViewData["Title"] = "Kanban Board";
+}
+
+<!-- Hero-style header with gradient background -->
+<div class="kanban-header">
+    <div class="header-content">
+        <h1>🚀 Task Kanban Board</h1>
+        <p class="header-subtitle">Manage your workflow with drag-and-drop simplicity</p>
+    </div>
+    <button class="btn-primary" hx-get="/Index?handler=CreateModal" hx-target="#modal-container" hx-swap="innerHTML">
+        ➕ Add Task
+    </button>
+</div>
+
+<!-- Main board container with HTMX polling -->
+<div id="board" hx-get="/Index?handler=Refresh" hx-trigger="every 1s" hx-target="#board" hx-swap="innerHTML">
+    @await Html.PartialAsync("_KanbanBoard", Model.TaskItems)
+</div>
+
+<!-- Modal container for task creation -->
+<div id="modal-container"></div>
+
+@Html.AntiForgeryToken()
+
+@section Scripts {
+    <script>
+        document.addEventListener('htmx:configRequest', function(evt) {
+            const token = document.querySelector('input[name="__RequestVerificationToken"]');
+            if (token) {
+                evt.detail.headers['RequestVerificationToken'] = token.value;
+            }
+        });
+
+        let draggedElement = null;
+
+        function handleDragStart(event) {
+            draggedElement = event.target;
+            event.target.classList.add('dragging');
+            event.dataTransfer.setData('text/plain', event.target.dataset.uid);
+        }
+
+        function handleDrop(event) {
+            event.preventDefault();
+            const uid = event.dataTransfer.getData('text/plain');
+            const status = event.currentTarget.closest('.kanban-column').dataset.status;
+
+            if (uid && status && draggedElement) {
+                // Remove dragging class
+                draggedElement.classList.remove('dragging');
+
+                // Send HTMX request
+                htmx.ajax('POST', '/Index?handler=UpdateStatus', {
+                    values: { uid: uid, status: status },
+                    target: '#board',
+                    swap: 'innerHTML'
+                });
+            }
+        }
+
+        // Initialize drag and drop
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add drag over effects
+            document.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                const column = e.target.closest('.kanban-column');
+                if (column) {
+                    column.classList.add('drag-over');
+                }
+            });
+
+            document.addEventListener('dragleave', function(e) {
+                const column = e.target.closest('.kanban-column');
+                if (column && !column.contains(e.relatedTarget)) {
+                    column.classList.remove('drag-over');
+                }
+            });
+
+            document.addEventListener('drop', function(e) {
+                // Remove all drag-over classes
+                document.querySelectorAll('.kanban-column').forEach(col => {
+                    col.classList.remove('drag-over');
+                });
+            });
+
+            // Clean up on drag end
+            document.addEventListener('dragend', function(e) {
+                document.querySelectorAll('.dragging').forEach(el => {
+                    el.classList.remove('dragging');
+                });
+                document.querySelectorAll('.kanban-column').forEach(col => {
+                    col.classList.remove('drag-over');
+                });
+            });
+        });
+    </script>
+}

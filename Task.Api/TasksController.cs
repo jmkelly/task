@@ -1,0 +1,528 @@
+using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
+
+namespace Task.Api;
+
+[ApiController]
+[Route("api/[controller]")]
+public class TasksController : ControllerBase
+{
+    private readonly Database _database;
+    private readonly ILogger<TasksController> _logger;
+
+    public TasksController(Database database, ILogger<TasksController> logger)
+    {
+        _database = database;
+        _logger = logger;
+    }
+
+    // GET /api/tasks
+    [HttpGet]
+    public async Task<IActionResult> GetTasks(
+        [FromQuery] string? status,
+        [FromQuery] string? priority,
+        [FromQuery] string? tags,
+        [FromQuery] DateTime? dueBefore,
+        [FromQuery] DateTime? dueAfter,
+        [FromQuery] int? limit,
+        [FromQuery] int? offset,
+        [FromQuery] string? sortBy,
+        [FromQuery] string? sortOrder)
+    {
+        try
+        {
+            var allTasks = await _database.GetAllTasks();
+
+            // Apply filters
+            if (!string.IsNullOrEmpty(status))
+            {
+                allTasks = allTasks.Where(t => t.Status == status).ToList();
+            }
+
+            if (!string.IsNullOrEmpty(priority))
+            {
+                allTasks = allTasks.Where(t => t.Priority == priority).ToList();
+            }
+
+            if (!string.IsNullOrEmpty(tags))
+            {
+                var tagList = tags.Split(',').Select(t => t.Trim()).ToList();
+                allTasks = allTasks.Where(t => tagList.Any(tag => t.Tags.Contains(tag))).ToList();
+            }
+
+            if (dueBefore.HasValue)
+            {
+                allTasks = allTasks.Where(t => t.DueDate.HasValue && t.DueDate <= dueBefore).ToList();
+            }
+
+            if (dueAfter.HasValue)
+            {
+                allTasks = allTasks.Where(t => t.DueDate.HasValue && t.DueDate >= dueAfter).ToList();
+            }
+
+            // Apply sorting
+            if (!string.IsNullOrEmpty(sortBy))
+            {
+                allTasks = sortBy.ToLower() switch
+                {
+                    "priority" => sortOrder?.ToLower() == "desc" ?
+                        allTasks.OrderByDescending(t => t.Priority).ToList() :
+                        allTasks.OrderBy(t => t.Priority).ToList(),
+                    "duedate" => sortOrder?.ToLower() == "desc" ?
+                        allTasks.OrderByDescending(t => t.DueDate).ToList() :
+                        allTasks.OrderBy(t => t.DueDate).ToList(),
+                    "createdat" => sortOrder?.ToLower() == "desc" ?
+                        allTasks.OrderByDescending(t => t.CreatedAt).ToList() :
+                        allTasks.OrderBy(t => t.CreatedAt).ToList(),
+                    "title" => sortOrder?.ToLower() == "desc" ?
+                        allTasks.OrderByDescending(t => t.Title).ToList() :
+                        allTasks.OrderBy(t => t.Title).ToList(),
+                    _ => allTasks
+                };
+            }
+
+            // Apply pagination
+            if (offset.HasValue)
+            {
+                allTasks = allTasks.Skip(offset.Value).ToList();
+            }
+
+            if (limit.HasValue)
+            {
+                allTasks = allTasks.Take(limit.Value).ToList();
+            }
+
+            var dtos = allTasks.Select(MapToDto).ToList();
+            return Ok(dtos);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting tasks");
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    // GET /api/tasks/{uid}
+    [HttpGet("{uid}")]
+    public async Task<IActionResult> GetTask(string uid)
+    {
+        try
+        {
+            var task = await _database.GetTaskByUid(uid);
+            if (task == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(MapToDto(task));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting task {Uid}", uid);
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    // POST /api/tasks
+    [HttpPost]
+    public async Task<IActionResult> CreateTask([FromBody] TaskCreateDto dto)
+    {
+        try
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var task = await _database.AddTask(
+                dto.Title,
+                dto.Description,
+                dto.Priority,
+                dto.DueDate,
+                dto.Tags);
+
+            return CreatedAtAction(nameof(GetTask), new { uid = task.Uid }, MapToDto(task));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating task");
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    // PUT /api/tasks/{uid}
+    [HttpPut("{uid}")]
+    public async Task<IActionResult> UpdateTask(string uid, [FromBody] TaskUpdateDto dto)
+    {
+        try
+        {
+            var existingTask = await _database.GetTaskByUid(uid);
+            if (existingTask == null)
+            {
+                return NotFound();
+            }
+
+            // Update fields
+            if (!string.IsNullOrEmpty(dto.Title))
+                existingTask.Title = dto.Title;
+            if (dto.Description != null)
+                existingTask.Description = dto.Description;
+            if (!string.IsNullOrEmpty(dto.Priority))
+                existingTask.Priority = dto.Priority;
+            if (dto.DueDate.HasValue)
+                existingTask.DueDate = dto.DueDate;
+            if (dto.Tags != null)
+                existingTask.Tags = dto.Tags;
+            if (!string.IsNullOrEmpty(dto.Status))
+                existingTask.Status = dto.Status;
+
+            await _database.UpdateTask(existingTask);
+
+            return Ok(MapToDto(existingTask));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating task {Uid}", uid);
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    // DELETE /api/tasks/{uid}
+    [HttpDelete("{uid}")]
+    public async Task<IActionResult> DeleteTask(string uid)
+    {
+        try
+        {
+            var existingTask = await _database.GetTaskByUid(uid);
+            if (existingTask == null)
+            {
+                return NotFound();
+            }
+
+            await _database.DeleteTask(existingTask.Id.ToString());
+
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting task {Uid}", uid);
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    // PATCH /api/tasks/{uid}/complete
+    [HttpPatch("{uid}/complete")]
+    public async Task<IActionResult> CompleteTask(string uid)
+    {
+        try
+        {
+            var existingTask = await _database.GetTaskByUid(uid);
+            if (existingTask == null)
+            {
+                return NotFound();
+            }
+
+            await _database.CompleteTask(existingTask.Id.ToString());
+
+            // Re-fetch to get updated data
+            var updatedTask = await _database.GetTaskByUid(uid);
+            return Ok(MapToDto(updatedTask!));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error completing task {Uid}", uid);
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    // GET /api/tasks/search?q={query}&type={fts|semantic|hybrid}
+    [HttpGet("search")]
+    public async Task<IActionResult> SearchTasks([FromQuery] string q, [FromQuery] string? type = "fts")
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(q))
+            {
+                return BadRequest("Query parameter 'q' is required");
+            }
+
+            List<TaskItem> tasks;
+            switch (type?.ToLower())
+            {
+                case "semantic":
+                    tasks = await _database.SearchTasksSemantic(q);
+                    break;
+                case "hybrid":
+                    tasks = await _database.SearchTasksHybrid(q);
+                    break;
+                case "fts":
+                default:
+                    tasks = await _database.SearchTasksFTS(q);
+                    break;
+            }
+
+            var dtos = tasks.Select(MapToDto).ToList();
+            return Ok(dtos);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error searching tasks with query '{Query}'", q);
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    // GET /api/tasks/export?format=json|csv
+    [HttpGet("export")]
+    public async Task<IActionResult> ExportTasks([FromQuery] string format = "json")
+    {
+        try
+        {
+            var tasks = await _database.GetAllTasks();
+
+            if (format.ToLower() == "csv")
+            {
+                var csv = "Id,Uid,Title,Description,Priority,DueDate,Tags,Status,CreatedAt,UpdatedAt\n";
+                foreach (var task in tasks)
+                {
+                    csv += $"{task.Id},{task.Uid},\"{task.Title.Replace("\"", "\"\"")}\",\"{(task.Description ?? "").Replace("\"", "\"\"")}\",{task.Priority},{task.DueDateString},\"{task.TagsString}\",{task.Status},{task.CreatedAt:yyyy-MM-dd HH:mm:ss},{task.UpdatedAt:yyyy-MM-dd HH:mm:ss}\n";
+                }
+                return File(System.Text.Encoding.UTF8.GetBytes(csv), "text/csv", "tasks.csv");
+            }
+            else
+            {
+                var dtos = tasks.Select(MapToDto).ToList();
+                return Ok(dtos);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error exporting tasks");
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    // POST /api/tasks/import?format=json|csv
+    [HttpPost("import")]
+    public async Task<IActionResult> ImportTasks([FromBody] object data, [FromQuery] string format = "json")
+    {
+        try
+        {
+            List<TaskItem> tasksToImport;
+
+            if (string.Equals(format, "csv", StringComparison.OrdinalIgnoreCase))
+            {
+                if (data is not string csvContent)
+                {
+                    return BadRequest("CSV import requires string content in request body");
+                }
+                tasksToImport = ParseCsvTasks(csvContent);
+            }
+            else if (string.Equals(format, "json", StringComparison.OrdinalIgnoreCase))
+            {
+                // For JSON, we expect an array of TaskImportDto or similar
+                var jsonString = System.Text.Json.JsonSerializer.Serialize(data);
+                var importDtos = System.Text.Json.JsonSerializer.Deserialize<List<TaskImportDto>>(jsonString, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+                tasksToImport = importDtos?.Select(MapImportDtoToTaskItem).ToList() ?? new List<TaskItem>();
+            }
+            else
+            {
+                return BadRequest($"Unsupported format: {format}. Supported formats: json, csv");
+            }
+
+            if (!tasksToImport.Any())
+            {
+                return BadRequest("No valid tasks found to import");
+            }
+
+            var importedTasks = new List<TaskDto>();
+            var errors = new List<string>();
+
+            foreach (var task in tasksToImport)
+            {
+                try
+                {
+                    // Validate required fields
+                    if (string.IsNullOrWhiteSpace(task.Title))
+                    {
+                        errors.Add($"Task with empty title skipped");
+                        continue;
+                    }
+
+                    // Set defaults
+                    task.Priority = string.IsNullOrEmpty(task.Priority) ? "medium" : task.Priority;
+                    task.Status = string.IsNullOrEmpty(task.Status) ? "pending" : task.Status;
+
+                    // Add to database
+                    var addedTask = await _database.AddTask(
+                        task.Title,
+                        task.Description,
+                        task.Priority,
+                        task.DueDate,
+                        task.Tags);
+
+                    importedTasks.Add(MapToDto(addedTask));
+                }
+                catch (Exception ex)
+                {
+                    errors.Add($"Failed to import task '{task.Title}': {ex.Message}");
+                }
+            }
+
+            return Ok(new
+            {
+                imported = importedTasks.Count,
+                total = tasksToImport.Count,
+                tasks = importedTasks,
+                errors = errors.Any() ? errors : null
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error importing tasks");
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    // GET /api/tags
+    [HttpGet("/api/tags")]
+    public async Task<IActionResult> GetTags()
+    {
+        try
+        {
+            var tags = await _database.GetAllUniqueTags();
+            return Ok(tags);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting tags");
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    private static List<TaskItem> ParseCsvTasks(string csvContent)
+    {
+        var tasks = new List<TaskItem>();
+        var lines = csvContent.Split('\n').Select(l => l.Trim()).Where(l => !string.IsNullOrEmpty(l)).ToArray();
+
+        if (lines.Length < 2)
+        {
+            throw new Exception("CSV must have at least a header row and one data row");
+        }
+
+        var headers = ParseCsvLine(lines[0]);
+        var headerMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        for (int i = 0; i < headers.Length; i++)
+        {
+            headerMap[headers[i]] = i;
+        }
+
+        // Required column: Title
+        if (!headerMap.ContainsKey("title"))
+        {
+            throw new Exception("CSV must contain a 'Title' column");
+        }
+
+        for (int i = 1; i < lines.Length; i++)
+        {
+            var values = ParseCsvLine(lines[i]);
+            if (values.Length != headers.Length)
+            {
+                throw new Exception($"Row {i + 1} has {values.Length} columns, expected {headers.Length}");
+            }
+
+            var task = new TaskItem
+            {
+                Id = 0, // Will be set by database
+                Uid = "", // Will be generated by database
+                Title = values[headerMap["title"]],
+                Description = headerMap.ContainsKey("description") ? values[headerMap["description"]] : null,
+                Priority = headerMap.ContainsKey("priority") ? values[headerMap["priority"]] : "medium",
+                DueDate = headerMap.ContainsKey("duedate") && !string.IsNullOrEmpty(values[headerMap["duedate"]]) &&
+                         DateTime.TryParse(values[headerMap["duedate"]], out var dd) ? dd : null,
+                Tags = headerMap.ContainsKey("tags") && !string.IsNullOrEmpty(values[headerMap["tags"]]) ?
+                    values[headerMap["tags"]].Split(',').Select(t => t.Trim()).Where(t => !string.IsNullOrEmpty(t)).ToList() :
+                    new List<string>(),
+                Status = headerMap.ContainsKey("status") ? values[headerMap["status"]] : "pending",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            tasks.Add(task);
+        }
+
+        return tasks;
+    }
+
+    private static string[] ParseCsvLine(string line)
+    {
+        var result = new List<string>();
+        bool inQuotes = false;
+        var current = new System.Text.StringBuilder();
+
+        for (int i = 0; i < line.Length; i++)
+        {
+            char c = line[i];
+            if (c == '"')
+            {
+                if (inQuotes && i + 1 < line.Length && line[i + 1] == '"')
+                {
+                    current.Append('"');
+                    i++; // Skip next quote
+                }
+                else
+                {
+                    inQuotes = !inQuotes;
+                }
+            }
+            else if (c == ',' && !inQuotes)
+            {
+                result.Add(current.ToString());
+                current.Clear();
+            }
+            else
+            {
+                current.Append(c);
+            }
+        }
+
+        result.Add(current.ToString());
+        return result.ToArray();
+    }
+
+    private static TaskItem MapImportDtoToTaskItem(TaskImportDto dto)
+    {
+        return new TaskItem
+        {
+            Id = 0, // Will be set by database
+            Uid = "", // Will be generated by database
+            Title = dto.Title,
+            Description = dto.Description,
+            Priority = dto.Priority ?? "medium",
+            DueDate = dto.DueDate,
+            Tags = dto.Tags ?? new List<string>(),
+            Status = dto.Status ?? "pending",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+    }
+
+    private static TaskDto MapToDto(TaskItem task)
+    {
+        return new TaskDto
+        {
+            Id = task.Id,
+            Uid = task.Uid,
+            Title = task.Title,
+            Description = task.Description,
+            Priority = task.Priority,
+            DueDate = task.DueDate,
+            Tags = task.Tags,
+            Status = task.Status,
+            CreatedAt = task.CreatedAt,
+            UpdatedAt = task.UpdatedAt
+        };
+    }
+}

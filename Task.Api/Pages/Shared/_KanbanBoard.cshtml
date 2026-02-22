@@ -1,0 +1,154 @@
+@using TaskItem = Task.Api.TaskItem
+@model IEnumerable<TaskItem>
+
+<div class="kanban-board">
+    <div class="kanban-column" data-status="todo" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
+        <h2 class="column-header">📋 Todo</h2>
+        <div class="task-list" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
+            @if (Model.Where(t => t.Status == "todo").Any())
+            {
+                @foreach (var task in Model.Where(t => t.Status == "todo"))
+                {
+                    <div class="task-card" draggable="true" data-uid="@task.Uid" ondragstart="handleDragStart(event)">
+                        <div class="task-header">
+                            <h3 class="task-title">@task.Title</h3>
+                            <span class="task-priority priority-@task.Priority.ToLower()">@task.Priority</span>
+                        </div>
+                        @if (!string.IsNullOrEmpty(task.Description))
+                        {
+                            <p class="task-description">@task.Description</p>
+                        }
+                        @if (task.Tags.Any())
+                        {
+                            <div class="task-tags">
+                                @foreach (var tag in task.Tags)
+                                {
+                                    <span class="tag">@tag</span>
+                                }
+                            </div>
+                        }
+                        @if (task.DueDate.HasValue)
+                        {
+                            <div class="task-due-date">
+                                Due: @task.DueDate.Value.ToString("MMM dd, yyyy")
+                            </div>
+                        }
+                        <div class="task-actions">
+                            <button class="btn-small" hx-post="/Index?handler=DeleteTask" hx-vals='{"uid": "@task.Uid"}' hx-target="#board" hx-swap="innerHTML" onclick="return confirm('Delete this task?')">
+                                🗑️ Delete
+                            </button>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="empty-state">
+                    <div class="empty-icon">📝</div>
+                    <p>No tasks to do yet</p>
+                    <small>Drag tasks here to get started</small>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="kanban-column" data-status="in_progress" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
+        <h2 class="column-header">🔄 In Progress</h2>
+        <div class="task-list" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
+            @if (Model.Where(t => t.Status == "in_progress").Any())
+            {
+                @foreach (var task in Model.Where(t => t.Status == "in_progress"))
+                {
+                    <div class="task-card" draggable="true" data-uid="@task.Uid" ondragstart="handleDragStart(event)">
+                        <div class="task-header">
+                            <h3 class="task-title">@task.Title</h3>
+                            <span class="task-priority priority-@task.Priority.ToLower()">@task.Priority</span>
+                        </div>
+                        @if (!string.IsNullOrEmpty(task.Description))
+                        {
+                            <p class="task-description">@task.Description</p>
+                        }
+                        @if (task.Tags.Any())
+                        {
+                            <div class="task-tags">
+                                @foreach (var tag in task.Tags)
+                                {
+                                    <span class="tag">@tag</span>
+                                }
+                            </div>
+                        }
+                        @if (task.DueDate.HasValue)
+                        {
+                            <div class="task-due-date">
+                                Due: @task.DueDate.Value.ToString("MMM dd, yyyy")
+                            </div>
+                        }
+                        <div class="task-actions">
+                            <button class="btn-small" hx-post="/Index?handler=DeleteTask" hx-vals='{"uid": "@task.Uid"}' hx-target="#board" hx-swap="innerHTML" onclick="return confirm('Delete this task?')">
+                                🗑️ Delete
+                            </button>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="empty-state">
+                    <div class="empty-icon">⚡</div>
+                    <p>Ready for work?</p>
+                    <small>Move tasks here when you start them</small>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="kanban-column" data-status="done" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
+        <h2 class="column-header">✅ Done</h2>
+        <div class="task-list" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
+            @if (Model.Where(t => t.Status == "done").Any())
+            {
+                @foreach (var task in Model.Where(t => t.Status == "done"))
+                {
+                    <div class="task-card" draggable="true" data-uid="@task.Uid" ondragstart="handleDragStart(event)">
+                        <div class="task-header">
+                            <h3 class="task-title">@task.Title</h3>
+                            <span class="task-priority priority-@task.Priority.ToLower()">@task.Priority</span>
+                        </div>
+                        @if (!string.IsNullOrEmpty(task.Description))
+                        {
+                            <p class="task-description">@task.Description</p>
+                        }
+                        @if (task.Tags.Any())
+                        {
+                            <div class="task-tags">
+                                @foreach (var tag in task.Tags)
+                                {
+                                    <span class="tag">@tag</span>
+                                }
+                            </div>
+                        }
+                        @if (task.DueDate.HasValue)
+                        {
+                            <div class="task-due-date">
+                                Due: @task.DueDate.Value.ToString("MMM dd, yyyy")
+                            </div>
+                        }
+                        <div class="task-actions">
+                            <button class="btn-small" hx-post="/Index?handler=DeleteTask" hx-vals='{"uid": "@task.Uid"}' hx-target="#board" hx-swap="innerHTML" onclick="return confirm('Delete this task?')">
+                                🗑️ Delete
+                            </button>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="empty-state">
+                    <div class="empty-icon">🎉</div>
+                    <p>All caught up!</p>
+                    <small>Completed tasks will appear here</small>
+                </div>
+            }
+        </div>
+    </div>
+</div>
