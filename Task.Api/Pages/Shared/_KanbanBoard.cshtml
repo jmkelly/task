@@ -14,12 +14,27 @@
                             <h3 class="task-title">@task.Title</h3>
                             <div class="task-meta">
                                 <span class="task-priority priority-@task.Priority.ToLower()">@task.Priority</span>
-                                @if (!string.IsNullOrEmpty(task.Project))
-                                {
-                                    <span class="task-project">@task.Project</span>
-                                }
                             </div>
                         </div>
+                        @if (!string.IsNullOrEmpty(task.Project) || !string.IsNullOrEmpty(task.Assignee))
+                        {
+                            <div class="task-context">
+                                @if (!string.IsNullOrEmpty(task.Project))
+                                {
+                                    <div class="task-project">
+                                        <span class="context-icon">📁</span>
+                                        <span class="context-text">@task.Project</span>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrEmpty(task.Assignee))
+                                {
+                                    <div class="task-assignee">
+                                        <span class="context-icon">👤</span>
+                                        <span class="context-text">@task.Assignee</span>
+                                    </div>
+                                }
+                            </div>
+                        }
                         @if (!string.IsNullOrEmpty(task.Description))
                         {
                             <p class="task-description">@task.Description</p>
@@ -73,12 +88,27 @@
                             <h3 class="task-title">@task.Title</h3>
                             <div class="task-meta">
                                 <span class="task-priority priority-@task.Priority.ToLower()">@task.Priority</span>
-                                @if (!string.IsNullOrEmpty(task.Project))
-                                {
-                                    <span class="task-project">@task.Project</span>
-                                }
                             </div>
                         </div>
+                        @if (!string.IsNullOrEmpty(task.Project) || !string.IsNullOrEmpty(task.Assignee))
+                        {
+                            <div class="task-context">
+                                @if (!string.IsNullOrEmpty(task.Project))
+                                {
+                                    <div class="task-project">
+                                        <span class="context-icon">📁</span>
+                                        <span class="context-text">@task.Project</span>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrEmpty(task.Assignee))
+                                {
+                                    <div class="task-assignee">
+                                        <span class="context-icon">👤</span>
+                                        <span class="context-text">@task.Assignee</span>
+                                    </div>
+                                }
+                            </div>
+                        }
                         @if (!string.IsNullOrEmpty(task.Description))
                         {
                             <p class="task-description">@task.Description</p>
@@ -132,12 +162,27 @@
                             <h3 class="task-title">@task.Title</h3>
                             <div class="task-meta">
                                 <span class="task-priority priority-@task.Priority.ToLower()">@task.Priority</span>
-                                @if (!string.IsNullOrEmpty(task.Project))
-                                {
-                                    <span class="task-project">@task.Project</span>
-                                }
                             </div>
                         </div>
+                        @if (!string.IsNullOrEmpty(task.Project) || !string.IsNullOrEmpty(task.Assignee))
+                        {
+                            <div class="task-context">
+                                @if (!string.IsNullOrEmpty(task.Project))
+                                {
+                                    <div class="task-project">
+                                        <span class="context-icon">📁</span>
+                                        <span class="context-text">@task.Project</span>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrEmpty(task.Assignee))
+                                {
+                                    <div class="task-assignee">
+                                        <span class="context-icon">👤</span>
+                                        <span class="context-text">@task.Assignee</span>
+                                    </div>
+                                }
+                            </div>
+                        }
                         @if (!string.IsNullOrEmpty(task.Description))
                         {
                             <p class="task-description">@task.Description</p>

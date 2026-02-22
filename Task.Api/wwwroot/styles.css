@@ -325,6 +325,45 @@ body {
     opacity: 0.9;
 }
 
+/* Task Context (Project & Assignee) */
+.task-context {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin: 0.75rem 0;
+    padding: 0.75rem;
+    background: rgba(0, 212, 255, 0.05);
+    border-radius: var(--border-radius-small);
+    border: 1px solid rgba(0, 212, 255, 0.1);
+}
+
+.task-project,
+.task-assignee {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.task-project {
+    color: var(--text-accent);
+}
+
+.task-assignee {
+    color: var(--text-primary);
+    opacity: 0.8;
+}
+
+.context-icon {
+    font-size: 0.9rem;
+    opacity: 0.7;
+}
+
+.context-text {
+    font-weight: 600;
+}
+
 /* Task Tags */
 .task-tags {
     display: flex;
