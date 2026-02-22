@@ -43,6 +43,15 @@ msbuild.log
 msbuild.err
 msbuild.wrn
 
+# Additional binary patterns
+bin/
+dist/
+target/
+binaries/
+*.db
+*.so
+*.exe
+
 # Node.js build artifacts
 node_modules/
 package-lock.json
