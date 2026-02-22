@@ -14,13 +14,13 @@ namespace Task.Cli
     {
         public class Settings : Program.TaskCommandSettings
         {
+            [CommandArgument(0, "[input]")]
+            [Description("Input file path")]
+            public string? Input { get; set; }
+
             [CommandOption("-f|--format")]
             [Description("Import format: json or csv (default: json)")]
             public string Format { get; set; } = "json";
-
-            [CommandOption("-i|--input")]
-            [Description("Input file path")]
-            public string? Input { get; set; }
         }
 
         public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
@@ -105,9 +105,9 @@ namespace Task.Cli
         private List<TaskItem> ImportFromJson(string filePath)
         {
             List<TaskItem>? tasks = null;
-                AnsiConsole.Progress()
-                    .Start(async ctx =>
-                    {
+            AnsiConsole.Progress()
+                .Start(async ctx =>
+                {
                     var task = ctx.AddTask("Reading JSON file", maxValue: 1);
                     var json = File.ReadAllText(filePath);
                     task.Increment(0.5);

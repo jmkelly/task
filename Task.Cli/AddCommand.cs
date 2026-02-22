@@ -51,11 +51,11 @@ namespace Task.Cli
             public string? DependsOn { get; set; }
 
             [CommandOption("--assignee")]
-            [Description("Assignee name for the task. " +
-                         "Example: --assignee john.doe")]
+            [Description("Assignee name for the task. Example: --assignee john.doe")]
             public string? Assignee { get; set; }
-            [Description("Initial status of the task. Valid values: todo, done, in_progress. " +
-                        "Default: todo. Example: --status in_progress")]
+
+            [CommandOption("--status")]
+            [Description("Initial status of the task. Valid values: todo, done, in_progress. Default: todo. Example: --status in_progress")]
             public string? Status { get; set; }
         }
 
@@ -151,33 +151,33 @@ namespace Task.Cli
                     dueDate = DateTime.Parse(dueDateInput);
                 }
 
-                    var availableTags = await service.GetAllUniqueTagsAsync(cancellationToken);
-                    if (availableTags.Count > 0)
-                    {
-                        var selectedTags = AnsiConsole.Prompt(
-                            new MultiSelectionPrompt<string>()
-                                .Title("Tags (use space to select, enter to confirm):")
-                                .NotRequired()
-                                .AddChoices(availableTags));
+                var availableTags = await service.GetAllUniqueTagsAsync(cancellationToken);
+                if (availableTags.Count > 0)
+                {
+                    var selectedTags = AnsiConsole.Prompt(
+                        new MultiSelectionPrompt<string>()
+                            .Title("Tags (use space to select, enter to confirm):")
+                            .NotRequired()
+                            .AddChoices(availableTags));
 
-                        tags = selectedTags.ToList();
-                    }
-                    else
-                    {
-                        var tagsInput = AnsiConsole.Prompt(
-                            new TextPrompt<string?>("Tags (comma-separated, optional):")
-                                .AllowEmpty());
-                        
-                        if (!string.IsNullOrEmpty(tagsInput))
-                        {
-                            tags = tagsInput.Split(',').Select(t => t.Trim()).Where(t => !string.IsNullOrEmpty(t)).ToList();
-                        }
-                    }
-
-                    assignee = AnsiConsole.Prompt(
-                        new TextPrompt<string?>("Assignee (optional):")
-                            .AllowEmpty());
+                    tags = selectedTags.ToList();
                 }
+                else
+                {
+                    var tagsInput = AnsiConsole.Prompt(
+                        new TextPrompt<string?>("Tags (comma-separated, optional):")
+                            .AllowEmpty());
+
+                    if (!string.IsNullOrEmpty(tagsInput))
+                    {
+                        tags = tagsInput.Split(',').Select(t => t.Trim()).Where(t => !string.IsNullOrEmpty(t)).ToList();
+                    }
+                }
+
+                assignee = AnsiConsole.Prompt(
+                    new TextPrompt<string?>("Assignee (optional):")
+                        .AllowEmpty());
+            }
             else
             {
                 // Non-interactive mode validation
@@ -191,7 +191,7 @@ namespace Task.Cli
             }
 
             var task = await service.AddTaskAsync(title, description, priority, dueDate, tags, project, dependsOn, assignee, settings.Status, cancellationToken);
-            
+
             Console.Error.WriteLine($"DEBUG: project='{project}', settings.Project='{settings.Project}'");
             Console.Error.WriteLine($"DEBUG: task.Project='{task.Project}'");
 
