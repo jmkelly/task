@@ -22,6 +22,7 @@ namespace Task.Cli
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ConfigGetCommand))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ConfigUnsetCommand))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ConfigListCommand))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(HelpCommand))]
         public static int Main(string[] args)
         {
             var app = new CommandApp();
@@ -33,52 +34,68 @@ namespace Task.Cli
 
                 // Commands
                 config.AddCommand<AddCommand>("add")
-                    .WithDescription("Add a new task to the task list. " +
-                        "Supports quick add with just a title, or full options for detailed tasks. " +
-                        "Use without arguments for interactive mode.")
-                    .WithExample(new[] { "add", "\"Buy milk\"" })
-                    .WithExample(new[] { "add", "--title", "\"Refactor code\"", "--priority", "high", "--tags", "code,refactor" })
-                    .WithExample(new[] { "add", "--title", "\"Upload report\"", "--due-date", "2024-04-01" })
-                    .WithExample(new[] { "add", "--title", "\"Team meeting\"", "--project", "work", "--status", "in_progress" })
+                    .WithDescription("Create a new task with optional properties like priority, due date, tags, and project assignment")
+                    .WithExample(new[] { "add", "Buy groceries" })
+                    .WithExample(new[] { "add", "--title", "Refactor code", "--priority", "high", "--tags", "code,refactor" })
+                    .WithExample(new[] { "add", "--title", "Upload report", "--due-date", "2024-04-01" })
+                    .WithExample(new[] { "add", "--title", "Team meeting", "--project", "work", "--status", "in_progress" })
+                    .WithExample(new[] { "add", "Buy groceries", "--priority", "high", "--assignee", "john.doe", "--tags", "errands", "--due-date", "2026-03-01" })
                     .WithExample(new[] { "add" });
 
                 config.AddCommand<ListCommand>("list")
+                    .WithDescription("Display tasks with advanced filtering by status, priority, assignee, project, tags, and due date")
                     .WithExample(new[] { "list" })
-                    .WithExample(new[] { "list", "--status", "todo" });
+                    .WithExample(new[] { "list", "--status", "todo", "--assignee", "john.doe", "--json", "--sort", "due" });
 
                 config.AddCommand<EditCommand>("edit")
-                    .WithExample(new[] { "edit", "abc123", "--title", "\"New title\"" })
-                    .WithExample(new[] { "edit", "abc123", "--priority", "high" });
+                    .WithDescription("Modify existing task properties including title, description, priority, due date, and assignee")
+                    .WithExample(new[] { "edit", "abc123", "--title", "New title" })
+                    .WithExample(new[] { "edit", "abc123", "--priority", "high" })
+                    .WithExample(new[] { "edit", "321", "--assignee", "jane.smith", "--priority", "low" });
 
                 config.AddCommand<DeleteCommand>("delete")
+                    .WithDescription("Permanently remove one or more tasks (supports bulk deletion with confirmation)")
                     .WithExample(new[] { "delete", "abc123" })
                     .WithExample(new[] { "delete", "abc123", "def456" });
 
                 config.AddCommand<CompleteCommand>("complete")
+                    .WithDescription("Mark tasks as completed (supports bulk completion)")
                     .WithExample(new[] { "complete", "abc123" })
                     .WithExample(new[] { "complete", "--all" });
 
                 config.AddCommand<ResetCommand>("reset")
+                    .WithDescription("Reset a completed task back to pending status")
                     .WithExample(new[] { "reset", "abc123" });
 
                 config.AddCommand<SearchCommand>("search")
+                    .WithDescription("Perform full-text or semantic similarity search across task titles and descriptions")
                     .WithExample(new[] { "search", "groceries" })
                     .WithExample(new[] { "search", "urgent", "--type", "hybrid" });
 
                 config.AddCommand<ExportCommand>("export")
+                    .WithDescription("Export all tasks to JSON or CSV format for backup or migration")
                     .WithExample(new[] { "export" })
                     .WithExample(new[] { "export", "--format", "json" });
 
                 config.AddCommand<ImportCommand>("import")
+                    .WithDescription("Import tasks from JSON or CSV files, merging with existing data")
                     .WithExample(new[] { "import", "tasks.json" });
 
                 config.AddBranch("config", branch =>
                 {
-                    branch.AddCommand<ConfigSetCommand>("set");
-                    branch.AddCommand<ConfigGetCommand>("get");
-                    branch.AddCommand<ConfigUnsetCommand>("unset");
-                    branch.AddCommand<ConfigListCommand>("list");
+                    branch.SetDescription("Manage CLI configuration settings");
+                    branch.AddCommand<ConfigSetCommand>("set")
+                        .WithDescription("Set a configuration value");
+                    branch.AddCommand<ConfigGetCommand>("get")
+                        .WithDescription("Retrieve a configuration value");
+                    branch.AddCommand<ConfigUnsetCommand>("unset")
+                        .WithDescription("Remove a configuration setting");
+                    branch.AddCommand<ConfigListCommand>("list")
+                        .WithDescription("Display all current configuration settings");
                 });
+
+                config.AddCommand<HelpCommand>("help")
+                    .WithDescription("Show detailed help information");
             });
 
             return app.Run(args);
@@ -134,6 +151,7 @@ namespace Task.Cli
             }
             else
             {
+                await Config.ValidateUrlAsync(settings.ApiUrl);
                 var apiClient = new ApiClient(settings.ApiUrl);
                 await apiClient.InitializeAsync(cancellationToken);
                 return apiClient;
