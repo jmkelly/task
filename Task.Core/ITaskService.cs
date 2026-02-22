@@ -20,7 +20,7 @@ namespace Task.Core
             string? sortOrder = null,
             CancellationToken cancellationToken = default);
         System.Threading.Tasks.Task<TaskItem?> GetTaskByUidAsync(string uid, CancellationToken cancellationToken = default);
-        System.Threading.Tasks.Task<TaskItem> AddTaskAsync(string title, string? description, string priority, DateTime? dueDate, List<string> tags, string? project = null, List<string>? dependsOn = null, string? assignee = null, string? status = "todo", CancellationToken cancellationToken = default);
+        System.Threading.Tasks.Task<TaskItem> AddTaskAsync(string title, string? description, string priority, DateTime? dueDate, List<string> tags, string? project = null, List<string>? dependsOn = null, string? assignee = null, string status = "todo", CancellationToken cancellationToken = default);
         System.Threading.Tasks.Task UpdateTaskAsync(TaskItem task, CancellationToken cancellationToken = default);
         System.Threading.Tasks.Task DeleteTaskAsync(string uid, CancellationToken cancellationToken = default);
         System.Threading.Tasks.Task CompleteTaskAsync(string uid, CancellationToken cancellationToken = default);

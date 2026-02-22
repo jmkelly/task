@@ -68,7 +68,7 @@ namespace Task.Core
             // Add project column if it doesn't exist (for migration)
             var checkSql = "SELECT COUNT(*) FROM pragma_table_info('tasks') WHERE name='project'";
             using var checkCommand = new SqliteCommand(checkSql, connection);
-            var count = (long)checkCommand.ExecuteScalar();
+            var count = Convert.ToInt64(checkCommand.ExecuteScalar());
             if (count == 0)
             {
                 var alterSql = "ALTER TABLE tasks ADD COLUMN project TEXT";
@@ -79,7 +79,7 @@ namespace Task.Core
             // Add assignee column if it doesn't exist (for migration)
             var checkAssigneeSql = "SELECT COUNT(*) FROM pragma_table_info('tasks') WHERE name='assignee'";
             using var checkAssigneeCommand = new SqliteCommand(checkAssigneeSql, connection);
-            var assigneeCount = (long)checkAssigneeCommand.ExecuteScalar();
+            var assigneeCount = Convert.ToInt64(checkAssigneeCommand.ExecuteScalar());
             if (assigneeCount == 0)
             {
                 var alterAssigneeSql = "ALTER TABLE tasks ADD COLUMN assignee TEXT";
@@ -129,7 +129,7 @@ namespace Task.Core
             // Add project column if it doesn't exist (for migration)
             var checkSql = "SELECT COUNT(*) FROM pragma_table_info('tasks') WHERE name='project'";
             using var checkCommand = new SqliteCommand(checkSql, connection);
-            var count = (long)await checkCommand.ExecuteScalarAsync(cancellationToken);
+            var count = Convert.ToInt64(await checkCommand.ExecuteScalarAsync(cancellationToken));
             if (count == 0)
             {
                 var alterSql = "ALTER TABLE tasks ADD COLUMN project TEXT";
@@ -140,7 +140,7 @@ namespace Task.Core
             // Add assignee column if it doesn't exist (for migration)
             var checkAssigneeSql = "SELECT COUNT(*) FROM pragma_table_info('tasks') WHERE name='assignee'";
             using var checkAssigneeCommand = new SqliteCommand(checkAssigneeSql, connection);
-            var assigneeCount = (long)await checkAssigneeCommand.ExecuteScalarAsync(cancellationToken);
+            var assigneeCount = Convert.ToInt64(await checkAssigneeCommand.ExecuteScalarAsync(cancellationToken));
             if (assigneeCount == 0)
             {
                 var alterAssigneeSql = "ALTER TABLE tasks ADD COLUMN assignee TEXT";
@@ -374,7 +374,7 @@ namespace Task.Core
 
                 var sqlId = "SELECT last_insert_rowid()";
                 using var commandId = new SqliteCommand(sqlId, connection, transaction);
-                var id = (long)await commandId.ExecuteScalarAsync(cancellationToken);
+                var id = Convert.ToInt64(await commandId.ExecuteScalarAsync(cancellationToken));
 
                 await transaction.CommitAsync(cancellationToken);
 
