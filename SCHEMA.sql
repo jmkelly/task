@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS tasks (
     priority TEXT CHECK(priority IN ('high', 'medium', 'low')) DEFAULT 'medium',
     due_date TEXT, -- ISO 8601 format (e.g., '2023-12-31')
     tags TEXT, -- Comma-separated tags
-    status TEXT CHECK(status IN ('pending', 'completed')) DEFAULT 'pending',
+    status TEXT CHECK(status IN ('todo', 'in_progress', 'done')) DEFAULT 'todo',
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now'))
 );
