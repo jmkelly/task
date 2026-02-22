@@ -55,6 +55,30 @@ namespace Task.Cli
             return true;
         }
 
+        public static bool ValidateAssignee(string? assignee, out string? errorMessage)
+        {
+            errorMessage = null;
+            if (string.IsNullOrEmpty(assignee))
+            {
+                return true;
+            }
+
+            if (assignee.Length > 50)
+            {
+                errorMessage = "Assignee name must be 50 characters or less. See: task add --help";
+                return false;
+            }
+
+            var allowedChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-";
+            if (!assignee.All(c => allowedChars.Contains(c)))
+            {
+                errorMessage = "Assignee name can only contain letters, numbers, dots, underscores, and dashes. See: task add --help";
+                return false;
+            }
+
+            return true;
+        }
+
         public static bool ValidateDate(string? dateStr, out string? errorMessage)
         {
             errorMessage = null;

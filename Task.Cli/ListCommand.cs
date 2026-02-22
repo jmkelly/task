@@ -21,6 +21,10 @@ namespace Task.Cli
             [CommandOption("--project")]
             [Description("Filter tasks by project name (e.g., --project work)")]
             public string? Project { get; set; }
+
+            [CommandOption("--assignee")]
+            [Description("Filter tasks by assignee name (e.g., --assignee john.doe)")]
+            public string? Assignee { get; set; }
         }
 
         public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
@@ -41,6 +45,7 @@ namespace Task.Cli
                 status: status,
                 priority: settings.Priority,
                 project: settings.Project,
+                assignee: settings.Assignee,
                 cancellationToken: cancellationToken);
 
             if (settings.Json)
@@ -55,6 +60,7 @@ namespace Task.Cli
                 table.AddColumn("ID");
                 table.AddColumn("Title");
                 table.AddColumn("Project");
+                table.AddColumn("Assignee");
                 table.AddColumn("Priority");
                 table.AddColumn("Status");
                 table.AddColumn("Due Date");
@@ -66,6 +72,7 @@ namespace Task.Cli
                         task.Uid, 
                         task.Title, 
                         task.Project ?? "-",
+                        task.Assignee ?? "-",
                         task.Priority, 
                         task.Status, 
                         task.DueDateString,

@@ -78,7 +78,7 @@ namespace Task.Cli
                                 taskItem.Status = string.IsNullOrEmpty(taskItem.Status) ? "pending" : taskItem.Status;
 
                                 // Add to database (this will generate new UID and timestamps)
-                                addTasks.Add(service.AddTaskAsync(taskItem.Title, taskItem.Description, taskItem.Priority, taskItem.DueDate, taskItem.Tags, taskItem.Project, taskItem.DependsOn, taskItem.Status, cancellationToken));
+                                addTasks.Add(service.AddTaskAsync(taskItem.Title, taskItem.Description, taskItem.Priority, taskItem.DueDate, taskItem.Tags, taskItem.Project, taskItem.DependsOn, taskItem.Assignee, taskItem.Status, cancellationToken));
                                 imported++;
                                 task.Increment(1);
                             }

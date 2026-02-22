@@ -31,6 +31,7 @@ public class ApiClient : ITaskService
         string? status = null,
         string? priority = null,
         string? project = null,
+        string? assignee = null,
         string? tags = null,
         DateTime? dueBefore = null,
         DateTime? dueAfter = null,
@@ -45,6 +46,7 @@ public class ApiClient : ITaskService
         if (!string.IsNullOrEmpty(status)) queryParams.Add($"status={Uri.EscapeDataString(status)}");
         if (!string.IsNullOrEmpty(priority)) queryParams.Add($"priority={Uri.EscapeDataString(priority)}");
         if (!string.IsNullOrEmpty(project)) queryParams.Add($"project={Uri.EscapeDataString(project)}");
+        if (!string.IsNullOrEmpty(assignee)) queryParams.Add($"assignee={Uri.EscapeDataString(assignee)}");
         if (!string.IsNullOrEmpty(tags)) queryParams.Add($"tags={Uri.EscapeDataString(tags)}");
         if (dueBefore.HasValue) queryParams.Add($"dueBefore={dueBefore.Value:yyyy-MM-dd}");
         if (dueAfter.HasValue) queryParams.Add($"dueAfter={dueAfter.Value:yyyy-MM-dd}");
@@ -86,6 +88,7 @@ public class ApiClient : ITaskService
         List<string> tags,
         string? project = null,
         List<string>? dependsOn = null,
+        string? assignee = null,
         string? status = "todo",
         CancellationToken cancellationToken = default)
     {
@@ -101,6 +104,7 @@ public class ApiClient : ITaskService
             DueDate = dueDate,
             Tags = tags,
             Project = project,
+            Assignee = assignee,
             DependsOn = dependsOn,
             Status = taskStatus
         };
@@ -175,6 +179,15 @@ public class ApiClient : ITaskService
         return await response.Content.ReadFromJsonAsync<List<string>>(_jsonOptions, cancellationToken) ?? new List<string>();
     }
 
+    public async System.Threading.Tasks.Task<List<string>> GetAllUniqueAssigneesAsync(CancellationToken cancellationToken = default)
+    {
+        var url = $"{_baseUrl}/api/assignees";
+        var response = await _httpClient.GetAsync(url, cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<List<string>>(_jsonOptions, cancellationToken) ?? new List<string>();
+    }
+
     public async System.Threading.Tasks.Task<List<TaskItem>> GetTasksDependingOnAsync(string uid, CancellationToken cancellationToken = default)
     {
         var url = $"{_baseUrl}/api/tasks/{uid}/dependencies";
@@ -204,6 +217,7 @@ public class ApiClient : ITaskService
             DueDate = dto.DueDate,
             Tags = dto.Tags,
             Project = dto.Project,
+            Assignee = dto.Assignee,
             DependsOn = dto.DependsOn ?? new List<string>(),
             Status = dto.Status ?? "todo",
             CreatedAt = dto.CreatedAt,

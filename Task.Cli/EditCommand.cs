@@ -41,7 +41,9 @@ namespace Task.Cli
             [Description("Update comma-separated task UIDs this task depends on (e.g., 'a1b2c3,d4e5f6'). Use empty string to clear dependencies.")]
             public string? DependsOn { get; set; }
 
-            [CommandOption("-s|--status")]
+            [CommandOption("--assignee")]
+            [Description("Update the assignee name (e.g., 'john.doe'). Use empty string to unassign.")]
+            public string? Assignee { get; set; }
             [Description("Update the status: todo, done, or in_progress (e.g., 'done')")]
             public string? Status { get; set; }
         }
@@ -134,6 +136,15 @@ namespace Task.Cli
                         }
                         task.DependsOn = newDeps;
                     }
+                }
+                if (settings.Assignee != null)
+                {
+                    if (!ErrorHelper.ValidateAssignee(settings.Assignee, out var assigneeError))
+                    {
+                        ErrorHelper.ShowError(assigneeError!);
+                        continue;
+                    }
+                    task.Assignee = string.IsNullOrEmpty(settings.Assignee) ? null : settings.Assignee;
                 }
                 if (!string.IsNullOrEmpty(settings.Status))
                 {
