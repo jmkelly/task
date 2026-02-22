@@ -129,19 +129,10 @@ namespace TaskApp
 
         public static async System.Threading.Tasks.Task<ITaskService> GetTaskServiceAsync(TaskCommandSettings settings, CancellationToken cancellationToken = default)
         {
-            if (!string.IsNullOrEmpty(settings.ApiUrl))
-            {
-                var apiClient = new ApiClient(settings.ApiUrl);
-                await apiClient.InitializeAsync(cancellationToken);
-                return apiClient;
-            }
-            else
-            {
-                var dbPath = Path.GetFullPath(settings.DatabasePath);
-                var db = new Database(dbPath);
-                await db.InitializeAsync(cancellationToken);
-                return db;
-            }
+            var apiUrl = settings.ApiUrl ?? "http://localhost:5000";
+            var apiClient = new ApiClient(apiUrl);
+            await apiClient.InitializeAsync(cancellationToken);
+            return apiClient;
         }
     }
 }
