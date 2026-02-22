@@ -29,6 +29,7 @@ namespace Task.Api.Tests.IntegrationTests
             var response = await _client.GetAsync("/api/tasks");
             response.EnsureSuccessStatusCode();
             var tasks = await response.Content.ReadFromJsonAsync<List<TaskDto>>();
+            Assert.NotNull(tasks);
             Assert.Empty(tasks);
         }
 
@@ -46,6 +47,7 @@ namespace Task.Api.Tests.IntegrationTests
             var response = await _client.PostAsJsonAsync("/api/tasks", newTask);
             response.EnsureSuccessStatusCode();
             var task = await response.Content.ReadFromJsonAsync<TaskDto>();
+            Assert.NotNull(task);
 
             Assert.Equal("Test Task", task.Title);
             Assert.Equal("Test Description", task.Description);
@@ -60,11 +62,13 @@ namespace Task.Api.Tests.IntegrationTests
             var newTask = new TaskCreateDto { Title = "Get Test", Priority = "medium" };
             var createResponse = await _client.PostAsJsonAsync("/api/tasks", newTask);
             var createdTask = await createResponse.Content.ReadFromJsonAsync<TaskDto>();
+            Assert.NotNull(createdTask);
 
             // Then get it
             var getResponse = await _client.GetAsync($"/api/tasks/{createdTask.Uid}");
             getResponse.EnsureSuccessStatusCode();
             var retrievedTask = await getResponse.Content.ReadFromJsonAsync<TaskDto>();
+            Assert.NotNull(retrievedTask);
 
             Assert.Equal(createdTask.Uid, retrievedTask.Uid);
             Assert.Equal("Get Test", retrievedTask.Title);
@@ -76,6 +80,7 @@ namespace Task.Api.Tests.IntegrationTests
             var newTask = new TaskCreateDto { Title = "Original", Priority = "low" };
             var createResponse = await _client.PostAsJsonAsync("/api/tasks", newTask);
             var createdTask = await createResponse.Content.ReadFromJsonAsync<TaskDto>();
+            Assert.NotNull(createdTask);
 
             // Update it
             var updateDto = new TaskUpdateDto
@@ -89,6 +94,7 @@ namespace Task.Api.Tests.IntegrationTests
             // Verify update
             var getResponse = await _client.GetAsync($"/api/tasks/{createdTask.Uid}");
             var updatedTask = await getResponse.Content.ReadFromJsonAsync<TaskDto>();
+            Assert.NotNull(updatedTask);
             Assert.Equal("Updated", updatedTask.Title);
             Assert.Equal("high", updatedTask.Priority);
         }
@@ -99,6 +105,7 @@ namespace Task.Api.Tests.IntegrationTests
             var newTask = new TaskCreateDto { Title = "To Delete", Priority = "medium" };
             var createResponse = await _client.PostAsJsonAsync("/api/tasks", newTask);
             var createdTask = await createResponse.Content.ReadFromJsonAsync<TaskDto>();
+            Assert.NotNull(createdTask);
 
             // Delete it
             var deleteResponse = await _client.DeleteAsync($"/api/tasks/{createdTask.Uid}");
@@ -115,6 +122,7 @@ namespace Task.Api.Tests.IntegrationTests
             var newTask = new TaskCreateDto { Title = "To Complete", Priority = "medium" };
             var createResponse = await _client.PostAsJsonAsync("/api/tasks", newTask);
             var createdTask = await createResponse.Content.ReadFromJsonAsync<TaskDto>();
+            Assert.NotNull(createdTask);
 
             // Complete it
             var completeResponse = await _client.PatchAsync($"/api/tasks/{createdTask.Uid}/complete", null);
@@ -123,6 +131,7 @@ namespace Task.Api.Tests.IntegrationTests
             // Verify completion
             var getResponse = await _client.GetAsync($"/api/tasks/{createdTask.Uid}");
             var completedTask = await getResponse.Content.ReadFromJsonAsync<TaskDto>();
+            Assert.NotNull(completedTask);
             Assert.Equal("done", completedTask.Status);
         }
 
@@ -136,6 +145,7 @@ namespace Task.Api.Tests.IntegrationTests
             var searchResponse = await _client.GetAsync("/api/tasks/search?q=groceries");
             searchResponse.EnsureSuccessStatusCode();
             var results = await searchResponse.Content.ReadFromJsonAsync<List<TaskDto>>();
+            Assert.NotNull(results);
 
             Assert.Single(results);
             Assert.Equal("Buy groceries", results[0].Title);
