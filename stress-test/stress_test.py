@@ -11,27 +11,34 @@ import random
 import string
 import os
 import sys
+import json
 
 # Path to the Task executable
 TASK_EXECUTABLE = "../binaries/task-linux-x64/Task"
 
-# Database file for stress testing
-STRESS_DB = "stress_test.db"
+# API URL for stress testing
+API_URL = "http://localhost:5157"
 
 def generate_random_task():
     """Generate a random task description."""
     words = ['task', 'item', 'work', 'project', 'fix', 'implement', 'test', 'review', 'update', 'create']
     return ' '.join(random.choices(words, k=random.randint(3, 8)))
 
-def run_command(command, db_path=None):
+def run_command(command):
     """Run a Task CLI command."""
-    full_command = [TASK_EXECUTABLE]
-    if db_path:
-        full_command.extend(['--db', db_path])
+    full_command = [TASK_EXECUTABLE, '--api-url', API_URL, '--json']
     full_command.extend(command)
     try:
         result = subprocess.run(full_command, capture_output=True, text=True, timeout=30, cwd='.')
-        return result.returncode == 0, result.stdout, result.stderr
+        success = result.returncode == 0
+        if success:
+            try:
+                data = json.loads(result.stdout)
+                return True, data, ""
+            except json.JSONDecodeError:
+                return True, result.stdout, ""
+        else:
+            return False, "", result.stderr
     except subprocess.TimeoutExpired:
         return False, "", "Command timed out"
 
@@ -41,7 +48,10 @@ def add_task_stress(num_tasks=100, num_workers=10):
 
     def add_single_task(task_id):
         task_desc = f"Stress test task {task_id}: {generate_random_task()}"
-        return run_command(['add', '-t', task_desc])
+        success, data, error = run_command(['add', '-t', task_desc])
+        if success and isinstance(data, dict) and 'id' in data:
+            return data['id']
+        return None
 
     start_time = time.time()
     with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
@@ -51,17 +61,18 @@ def add_task_stress(num_tasks=100, num_workers=10):
     end_time = time.time()
     duration = end_time - start_time
 
-    success_count = sum(1 for success, _, _ in results if success)
+    added_ids = [rid for rid in results if rid is not None]
+    success_count = len(added_ids)
     print(f"Add tasks completed in {duration:.2f} seconds")
     print(f"Success rate: {success_count}/{num_tasks} ({success_count/num_tasks*100:.1f}%)")
-    return duration, success_count
+    return duration, added_ids
 
 def list_tasks_stress(num_requests=100, num_workers=10):
     """Stress test listing tasks concurrently."""
     print(f"Starting list tasks stress test: {num_requests} requests with {num_workers} workers")
 
     def list_tasks():
-        return run_command(['list', '--plain'])
+        return run_command(['list'])
 
     start_time = time.time()
     with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
@@ -76,6 +87,26 @@ def list_tasks_stress(num_requests=100, num_workers=10):
     print(f"Success rate: {success_count}/{num_requests} ({success_count/num_requests*100:.1f}%)")
     return duration, success_count
 
+def delete_task_stress(ids, num_workers=10):
+    """Stress test deleting tasks concurrently."""
+    print(f"Starting delete task stress test: {len(ids)} tasks with {num_workers} workers")
+
+    def delete_single_task(task_id):
+        return run_command(['delete', task_id])
+
+    start_time = time.time()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
+        futures = [executor.submit(delete_single_task, tid) for tid in ids]
+        results = [future.result() for future in concurrent.futures.as_completed(futures)]
+
+    end_time = time.time()
+    duration = end_time - start_time
+
+    success_count = sum(1 for success, _, _ in results if success)
+    print(f"Delete tasks completed in {duration:.2f} seconds")
+    print(f"Success rate: {success_count}/{len(ids)} ({success_count/len(ids)*100:.1f}%)")
+    return duration, success_count
+
 def search_tasks_stress(num_requests=100, num_workers=10):
     """Stress test searching tasks concurrently."""
     print(f"Starting search tasks stress test: {num_requests} requests with {num_workers} workers")
@@ -84,7 +115,7 @@ def search_tasks_stress(num_requests=100, num_workers=10):
 
     def search_tasks():
         term = random.choice(search_terms)
-        return run_command(['search', term, '--plain'])
+        return run_command(['search', term])
 
     start_time = time.time()
     with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
@@ -99,29 +130,21 @@ def search_tasks_stress(num_requests=100, num_workers=10):
     print(f"Success rate: {success_count}/{num_requests} ({success_count/num_requests*100:.1f}%)")
     return duration, success_count
 
-def cleanup_db():
-    """Remove the stress test database."""
-    if os.path.exists(STRESS_DB):
-        os.remove(STRESS_DB)
-        print(f"Cleaned up {STRESS_DB}")
-
 def main():
     if not os.path.exists(TASK_EXECUTABLE):
         print(f"Error: Task executable not found at {TASK_EXECUTABLE}")
         sys.exit(1)
 
-    # Clean up any existing tasks.db
-    if os.path.exists('tasks.db'):
-        os.remove('tasks.db')
-        print("Cleaned up existing tasks.db")
-
     print("=== Task CLI Stress Test ===")
     print(f"Using executable: {TASK_EXECUTABLE}")
-    print(f"Database: tasks.db (in current directory)")
+    print(f"API URL: {API_URL}")
     print()
 
     # Run stress tests
-    add_duration, add_success = add_task_stress(num_tasks=100, num_workers=10)
+    add_duration, added_ids = add_task_stress(num_tasks=100, num_workers=10)
+    print()
+
+    delete_duration, delete_success = delete_task_stress(added_ids, num_workers=10)
     print()
 
     list_duration, list_success = list_tasks_stress(num_requests=50, num_workers=10)
@@ -132,13 +155,10 @@ def main():
 
     # Summary
     print("=== Summary ===")
-    print(f"Add tasks: {add_success}/100 successful ({add_success:.1f}%), {add_duration:.2f}s")
-    print(f"List tasks: {list_success}/50 successful ({list_success:.1f}%), {list_duration:.2f}s")
-    print(f"Search tasks: {search_success}/50 successful ({search_success:.1f}%), {search_duration:.2f}s")
-
-    # Cleanup
-    if os.path.exists('tasks.db'):
-        os.remove('tasks.db')
+    print(f"Add tasks: {len(added_ids)}/100 successful ({len(added_ids)/100*100:.1f}%), {add_duration:.2f}s")
+    print(f"Delete tasks: {delete_success}/{len(added_ids)} successful ({delete_success/len(added_ids)*100:.1f}%), {delete_duration:.2f}s")
+    print(f"List tasks: {list_success}/50 successful ({list_success/50*100:.1f}%), {list_duration:.2f}s")
+    print(f"Search tasks: {search_success}/50 successful ({search_success/50*100:.1f}%), {search_duration:.2f}s")
 
 if __name__ == "__main__":
     main()
