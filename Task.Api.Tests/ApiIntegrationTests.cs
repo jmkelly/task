@@ -39,7 +39,8 @@ namespace Task.Api.Tests.IntegrationTests
             {
                 Title = "Test Task",
                 Description = "Test Description",
-                Priority = "high"
+                Priority = "high",
+                Assignee = "john.doe"
             };
 
             var response = await _client.PostAsJsonAsync("/api/tasks", newTask);
@@ -49,6 +50,7 @@ namespace Task.Api.Tests.IntegrationTests
             Assert.Equal("Test Task", task.Title);
             Assert.Equal("Test Description", task.Description);
             Assert.Equal("high", task.Priority);
+            Assert.Equal("john.doe", task.Assignee);
             Assert.Equal("todo", task.Status);
         }
 

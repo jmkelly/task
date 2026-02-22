@@ -22,6 +22,8 @@ public class TasksController : ControllerBase
     public async Task<IActionResult> GetTasks(
         [FromQuery] string? status,
         [FromQuery] string? priority,
+        [FromQuery] string? project,
+        [FromQuery] string? assignee,
         [FromQuery] string? tags,
         [FromQuery] DateTime? dueBefore,
         [FromQuery] DateTime? dueAfter,
@@ -43,6 +45,16 @@ public class TasksController : ControllerBase
             if (!string.IsNullOrEmpty(priority))
             {
                 allTasks = allTasks.Where(t => t.Priority == priority).ToList();
+            }
+
+            if (!string.IsNullOrEmpty(project))
+            {
+                allTasks = allTasks.Where(t => t.Project == project).ToList();
+            }
+
+            if (!string.IsNullOrEmpty(assignee))
+            {
+                allTasks = allTasks.Where(t => t.Assignee == assignee).ToList();
             }
 
             if (!string.IsNullOrEmpty(tags))
@@ -141,7 +153,8 @@ public class TasksController : ControllerBase
                 dto.Priority,
                 dto.DueDate,
                 dto.Tags,
-                dto.Project);
+                dto.Project,
+                dto.Assignee);
 
             return CreatedAtAction(nameof(GetTask), new { uid = task.Uid }, MapToDto(task));
         }
@@ -179,6 +192,8 @@ public class TasksController : ControllerBase
                 existingTask.Status = dto.Status;
             if (!string.IsNullOrEmpty(dto.Project))
                 existingTask.Project = dto.Project;
+            if (dto.Assignee != null)
+                existingTask.Assignee = dto.Assignee;
 
             await _database.UpdateTaskAsync(existingTask);
 
@@ -406,6 +421,23 @@ public class TasksController : ControllerBase
         }
     }
 
+    // GET /api/assignees
+    [HttpGet("/api/assignees")]
+    public async Task<IActionResult> GetAssignees()
+    {
+        try
+        {
+            var tasks = await _database.GetAllTasksAsync();
+            var assignees = tasks.Where(t => !string.IsNullOrEmpty(t.Assignee)).Select(t => t.Assignee!).Distinct().OrderBy(a => a).ToList();
+            return Ok(assignees);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting assignees");
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
     private static List<TaskItem> ParseCsvTasks(string csvContent)
     {
         var tasks = new List<TaskItem>();
@@ -507,6 +539,8 @@ public class TasksController : ControllerBase
             Priority = dto.Priority ?? "medium",
             DueDate = dto.DueDate,
             Tags = dto.Tags ?? new List<string>(),
+            Project = dto.Project,
+            Assignee = dto.Assignee,
             Status = dto.Status ?? "pending",
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
@@ -524,6 +558,8 @@ public class TasksController : ControllerBase
             Priority = task.Priority,
             DueDate = task.DueDate,
             Tags = task.Tags,
+            Project = task.Project,
+            Assignee = task.Assignee,
             Status = task.Status,
             CreatedAt = task.CreatedAt,
             UpdatedAt = task.UpdatedAt

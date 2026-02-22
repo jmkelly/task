@@ -278,6 +278,7 @@ namespace Task.Cli.Tests.IntegrationTests
 				DateTime.Parse("2024-12-31"),
 				new List<string> { "work", "urgent" },
 				"work",
+				null,
 				"todo",
 				default);
 
@@ -302,6 +303,7 @@ namespace Task.Cli.Tests.IntegrationTests
 				"medium",
 				null,
 				new List<string>(),
+				null,
 				null,
 				"in_progress",
 				default);
