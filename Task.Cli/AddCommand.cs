@@ -190,7 +190,7 @@ namespace Task.Cli
                 }
             }
 
-            var task = await service.AddTaskAsync(title, description, priority, dueDate, tags, project, dependsOn, assignee, settings.Status, cancellationToken);
+            var task = await service.AddTaskAsync(title, description, priority, dueDate, tags, project, dependsOn, assignee, settings.Status ?? "todo", cancellationToken);
 
             Console.Error.WriteLine($"DEBUG: project='{project}', settings.Project='{settings.Project}'");
             Console.Error.WriteLine($"DEBUG: task.Project='{task.Project}'");
