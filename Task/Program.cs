@@ -14,7 +14,6 @@ namespace TaskApp
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(DeleteCommand))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(CompleteCommand))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ResetCommand))]
-        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(UndoCommand))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(SearchCommand))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ExportCommand))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ImportCommand))]
@@ -60,9 +59,6 @@ namespace TaskApp
 
                 config.AddCommand<ResetCommand>("reset")
                     .WithExample(new[] { "reset", "abc123" });
-
-                config.AddCommand<UndoCommand>("undo")
-                    .WithExample(new[] { "undo" });
 
                 config.AddCommand<SearchCommand>("search")
                     .WithExample(new[] { "search", "groceries" })

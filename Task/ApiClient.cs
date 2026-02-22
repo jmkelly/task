@@ -164,18 +164,6 @@ public class ApiClient : ITaskService
         return await response.Content.ReadFromJsonAsync<List<string>>(_jsonOptions, cancellationToken) ?? new List<string>();
     }
 
-    public async Task<bool> UndoLastActionAsync(CancellationToken cancellationToken = default)
-    {
-        var url = $"{_baseUrl}/api/undo";
-        var response = await _httpClient.PostAsync(url, null, cancellationToken);
-        return response.IsSuccessStatusCode;
-    }
-
-    public List<UndoAction> GetUndoStack()
-    {
-        return new List<UndoAction>();
-    }
-
     public async Task<List<string>> GetAllUniqueProjectsAsync(CancellationToken cancellationToken = default)
     {
         var url = $"{_baseUrl}/api/projects";

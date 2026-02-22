@@ -25,7 +25,5 @@ namespace TaskApp
         Task<List<string>> GetAllUniqueProjectsAsync(CancellationToken cancellationToken = default);
         Task<List<TaskItem>> GetTasksDependingOnAsync(string uid, CancellationToken cancellationToken = default);
         Task<bool> ValidateDependenciesAsync(string uid, List<string> dependsOn, CancellationToken cancellationToken = default);
-        Task<bool> UndoLastActionAsync(CancellationToken cancellationToken = default);
-        List<UndoAction> GetUndoStack();
     }
 }
