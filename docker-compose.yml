@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  task-api:
+    build: ./Task.Api
+    ports:
+      - "8080:80"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - DatabasePath=/app/data/tasks.db
+    restart: unless-stopped
