@@ -9,7 +9,7 @@ Add 7 usability improvements to the Task CLI to make it easier to use.
 3. Add reset command
 4. Add --status to add command
 5. Batch operations
-6. Shorter UID (6 characters)
+6. Shorter UUID (6-character alpha code) (6 characters)
 7. Undo command (session-only)
 
 ---
@@ -68,7 +68,7 @@ Create new `reset` command that sets task status back to `todo`.
 - `Task/Program.cs`
 
 ### New Command Syntax
-- `task reset <id>` - Reset single task to todo
+- `task reset <uid>` - Reset single task to todo
 - `task reset --all` - Reset all done tasks to todo
 
 ### Implementation
@@ -77,7 +77,7 @@ public class ResetCommand : AsyncCommand<ResetCommand.Settings>
 {
     public class Settings : Program.TaskCommandSettings
     {
-        [CommandArgument(0, "<id>")]
+        [CommandArgument(0, "<uid>")]
         public string? Id { get; set; }
         
         [CommandOption("--all")]
@@ -125,7 +125,7 @@ Task<TaskItem> AddTaskAsync(string title, string? description, string priority, 
 Can only operate on one task at a time.
 
 ### Solution
-Allow multiple IDs in complete, edit, and delete commands.
+Allow multiple UID (6-character alpha code)s in complete, edit, and delete commands.
 
 ### Files
 - `Task/CompleteCommand.cs`
@@ -133,13 +133,13 @@ Allow multiple IDs in complete, edit, and delete commands.
 - `Task/DeleteCommand.cs`
 
 ### Changes
-1. Change from single ID to array:
+1. Change from single UUID (6-character alpha code) to array of UUID (6-character alpha code)s:
 ```csharp
 [CommandArgument(0, "[ids]")]
 public string[] Ids { get; set; } = Array.Empty<string>();
 ```
 
-2. Loop through all IDs, process each, collect results
+2. Loop through all UID (6-character alpha code)s, process each, collect results
 
 3. Add `--all` flag to CompleteCommand:
 ```csharp
@@ -149,13 +149,13 @@ public bool All { get; set; }
 
 ---
 
-## Feature 6: Shorter UID (6 characters)
+## Feature 6: Shorter UUID (6-character alpha code) (6 characters)
 
 ### Problem
-8-character UIDs are unwieldy to type.
+8-character UUID (6-character alpha code)s are unwieldy to type.
 
 ### Solution
-Reduce UID to 6 characters, alphanumeric only (exclude confusing chars: 0,O,1,I,l).
+Task UUID (6-character alpha code) format: 6 characters, uppercase letters and numbers (A-Z, 2-9), excluding 0,O,1,I,l (not numeric).
 
 ### Files
 - `Task/Database.cs`
@@ -193,9 +193,9 @@ No way to undo accidental operations.
 - `Task/ApiClient.cs` (updated)
 
 ### Action Types to Track (removed)
-- `Complete` - stores UID
+- `Complete` - stores UUID (6-character alpha code)
 - `Delete` - stores full TaskItem (for restore)
-- `Create` - stores UID (for deletion)
+- `Create` - stores UUID (6-character alpha code) (for deletion)
 - `Edit` - stores before/after snapshot
 
 ### Command Syntax (removed)
@@ -218,7 +218,7 @@ No way to undo accidental operations.
 | 3. Reset command | 1 new, 1 edit | Small |
 | 4. Add --status | 4 edits | Medium |
 | 5. Batch ops | 3 edits | Medium |
-| 6. Shorter UID | 1 edit | Medium |
+| 6. Shorter UUID (6-character alpha code) | 1 edit | Medium |
 | 7. Undo | **REMOVED** | - |
 
 **Total:** 7 features, 14 file changes (8 edits, 2 new)

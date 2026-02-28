@@ -34,7 +34,7 @@ task edit --id a2b3k9 --title "Updated title" --priority medium
 
 ### Complete a Task
 ```
-task complete --id a2b3k9
+task complete a2b3k9
 ```
 
 ### Delete a Task

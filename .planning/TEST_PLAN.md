@@ -10,9 +10,9 @@ This outlines the testing strategy using xUnit for unit tests and Spectre.Consol
 ## Unit Tests (Tests/UnitTests/)
 
 ### DatabaseService Tests
-- **CRUD Operations**: Test add, get, update, delete tasks with valid/invalid inputs, including ID generation uniqueness.
+- **CRUD Operations**: Test add, get, update, delete tasks with valid/invalid inputs, including 6-character Task UID generation uniqueness, following formatting rules: uppercase letters (A-Z, no I, O, L), digits 2-9 only, length = 6, and uniqueness by DB constraint.
 - **Transactions**: Ensure atomicity for multi-step operations.
-- **Edge Cases**: Null values, duplicate IDs (should fail UNIQUE constraint), constraint violations.
+- **Edge Cases**: Null values, duplicate UIDs (should fail UNIQUE constraint for 6-character task IDs) (should fail UNIQUE constraint), constraint violations.
 
 ### SearchService Tests
 - **FTS Queries**: Test full-text search on title, description, tags with exact/partial matches.

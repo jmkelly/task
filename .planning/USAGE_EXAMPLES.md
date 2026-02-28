@@ -24,7 +24,7 @@ This provides practical examples for both human users and LLM agents integrating
 
 4. Complete tasks:
    ```
-   task complete --id a2b3k9
+   task complete a2b3k9
    ```
 
 ### Interactive Mode

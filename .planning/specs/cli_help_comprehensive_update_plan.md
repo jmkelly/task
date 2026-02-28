@@ -96,8 +96,8 @@ COMMAND-SPECIFIC OPTIONS (examples):
 WORKFLOW EXAMPLES:
   task add "Buy groceries" --priority high --assignee john.doe --tag errands --due 2026-03-01
   task list --status todo --assignee john.doe --json --sort due
-  task complete 123 456 789
-  task edit 321 --assignee jane.smith --priority low
+  task complete a2b3k9 d4e5f6 g7h8i9
+  task edit a2b3k9 --assignee jane.smith --priority low
   task search "quarterly review"
   task --db custom_tasks.db list --json
   task --api-url http://localhost:8080 list --assignee team_lead
@@ -107,7 +107,7 @@ TROUBLESHOOTING & EDGE CASES:
   - If you receive 'file not found', verify database path with --db.
   - For 'invalid flag' errors, see available options above or use --help with specific command.
   - To resolve API connection errors, check --api-url and network status.
-  - Task IDs must be numeric.
+  - Task UIDs are always 6-character codes using uppercase letters (A-Z, excluding I, O, L) and numbers (2-9).
   - Dates should be formatted as YYYY-MM-DD.
 
 For more info, visit docs: https://example.com/docs/task-cli or README.md
