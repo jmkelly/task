@@ -43,7 +43,7 @@ Architecture Diagram (ASCII):
 
 ### Phase 1: API Foundation (2-3 weeks)
 1. **Create new ASP.NET Core Web API project** (`Task.Api`)
-   - Use .NET 8+ for consistency
+   - Use .NET 10+ for consistency
    - Add necessary NuGet packages: Microsoft.Data.Sqlite, SQLitePCLRaw.bundle_green, etc.
    - Configure dependency injection for Database service
 

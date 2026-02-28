@@ -101,7 +101,7 @@ This file provides essential guidance for Copilot and other AI assistants to wor
 ## Additional Notes
 
 - Stress testing scripts are in `stress-test/` (see its README for usage).
-- All build/test commands assume .NET 8.0 SDK is installed.
+- All build/test commands assume .NET 10.0 SDK is installed.
 - For custom database paths, use CLI `--db <path>` or set `DatabasePath` in API environment.
 
 ---

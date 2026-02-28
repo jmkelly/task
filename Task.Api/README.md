@@ -29,7 +29,7 @@ This project depends on Task.Core for core logic and data access.
 ### Building and Running from Source
 
 Requirements:
-- .NET 8.0 SDK
+- .NET 10.0 SDK
 
 1. Navigate to the Task.Api directory.
 2. Run:

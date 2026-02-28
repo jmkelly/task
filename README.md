@@ -184,7 +184,7 @@ COMMANDS:
 #### Building CLI from Source
 
 Requirements:
-- .NET 8.0 SDK
+- .NET 10.0 SDK
 
 Clone the repository and build:
 
@@ -248,7 +248,7 @@ The easiest way to run the API backend is using Docker Compose:
 #### Building and Running API from Source
 
 Requirements:
-- .NET 8.0 SDK
+- .NET 10.0 SDK
 
 1. Navigate to the API directory:
    ```bash
