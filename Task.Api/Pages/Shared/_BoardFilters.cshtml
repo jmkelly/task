@@ -1,0 +1,70 @@
+@model global::Task.Api.Pages.IndexModel
+
+<!-- Filter Section -->
+<section class="filter-section">
+    <div class="filter-container">
+        <form id="filter-form"
+              hx-get="/Index?handler=Refresh"
+              hx-target="#board-container"
+              hx-trigger="input delay:300ms, change"
+              hx-indicator=".filter-loading"
+              hx-swap="outerHTML"
+              hx-push-url="true">
+            <div class="filter-bar">
+                <div class="search-group">
+                    <span class="search-icon emoji">🔍</span>
+                    <input type="text" id="SearchQuery" name="SearchQuery" placeholder="Search tasks..." value="@Model.SearchQuery" class="form-control search-input" autocomplete="off" />
+                </div>
+
+                <button type="button" class="filter-toggle" data-filter-toggle aria-expanded="false" aria-controls="filter-advanced">
+                    <span class="filter-toggle-label">Filters</span>
+                    <span class="filter-toggle-icon" aria-hidden="true">⚙️</span>
+                </button>
+
+                <div class="filter-group" id="filter-advanced" data-filter-advanced>
+                    <select name="FilterStatus" id="FilterStatus" class="form-select">
+                        <option value="">All Statuses</option>
+                        <option value="todo" selected="@(Model.FilterStatus == "todo")">Todo</option>
+                        <option value="in_progress" selected="@(Model.FilterStatus == "in_progress")">In Progress</option>
+                        <option value="done" selected="@(Model.FilterStatus == "done")">Done</option>
+                    </select>
+
+                    <select name="FilterAssignee" id="FilterAssignee" class="form-select">
+                        <option value="">All Assignees</option>
+                        @foreach (var assignee in Model.AllAssignees)
+                        {
+                            if (Model.FilterAssignee == assignee)
+                            {
+                                <option value="@assignee" selected>@assignee</option>
+                            }
+                            else
+                            {
+                                <option value="@assignee">@assignee</option>
+                            }
+                        }
+                    </select>
+
+                    <select name="FilterLabel" id="FilterLabel" class="form-select">
+                        <option value="">All Labels</option>
+                        @foreach (var label in Model.AllLabels)
+                        {
+                            if (Model.FilterLabel == label)
+                            {
+                                <option value="@label" selected>@label</option>
+                            }
+                            else
+                            {
+                                <option value="@label">@label</option>
+                            }
+                        }
+                    </select>
+
+                    <!-- Loading indicator for HTMX requests -->
+                    <div class="htmx-indicator filter-loading">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</section>

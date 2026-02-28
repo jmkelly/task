@@ -17,15 +17,34 @@ namespace Task.Api.Pages
 
         public List<TaskItem> TaskItems { get; set; } = new();
 
+        [BindProperty(SupportsGet = true)]
+        public string? SearchQuery { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public string? FilterStatus { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public string? FilterAssignee { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public string? FilterLabel { get; set; }
+
+        public List<string> AllLabels { get; set; } = new();
+        public List<string> AllAssignees { get; set; } = new();
+
         public async System.Threading.Tasks.Task OnGetAsync()
         {
-            TaskItems = await _database.GetAllTasksAsync();
+            var tasks = await _database.GetAllTasksAsync();
+            PopulateOptions(tasks);
+            TaskItems = FilterTasks(tasks);
         }
 
         public async System.Threading.Tasks.Task<IActionResult> OnGetRefresh()
         {
-            TaskItems = await _database.GetAllTasksAsync();
-            return Partial("_KanbanBoard", TaskItems);
+            var tasks = await _database.GetAllTasksAsync();
+            PopulateOptions(tasks);
+            TaskItems = FilterTasks(tasks);
+            return Partial("_BoardContainer", this);
         }
 
         public async System.Threading.Tasks.Task<IActionResult> OnPostUpdateStatus(string uid, string status)
@@ -39,8 +58,10 @@ namespace Task.Api.Pages
             task.Status = status;
             await _database.UpdateTaskAsync(task);
 
-            TaskItems = await _database.GetAllTasksAsync();
-            return Partial("_KanbanBoard", TaskItems);
+            var tasks = await _database.GetAllTasksAsync();
+            PopulateOptions(tasks);
+            TaskItems = FilterTasks(tasks);
+            return Partial("_BoardContainer", this);
         }
 
         public async System.Threading.Tasks.Task<IActionResult> OnPostCreateTask(string title, string? description, string priority, DateTime? dueDate, List<string>? tags, string? project, string? assignee)
@@ -52,9 +73,12 @@ namespace Task.Api.Pages
 
             tags ??= new List<string>();
 
-            var task = await _database.AddTaskAsync(title, description, priority, dueDate, tags, project, assignee);
-            TaskItems = await _database.GetAllTasksAsync();
-            return Partial("_KanbanBoard", TaskItems);
+            await _database.AddTaskAsync(title, description, priority, dueDate, tags, project, assignee);
+            
+            var tasks = await _database.GetAllTasksAsync();
+            PopulateOptions(tasks);
+            TaskItems = FilterTasks(tasks);
+            return Partial("_BoardContainer", this);
         }
 
         public async System.Threading.Tasks.Task<IActionResult> OnPostEditTask(string uid, string title, string? description, string priority, DateTime? dueDate, List<string>? tags, string? project, string? assignee)
@@ -81,8 +105,10 @@ namespace Task.Api.Pages
 
             await _database.UpdateTaskAsync(task);
 
-            TaskItems = await _database.GetAllTasksAsync();
-            return Partial("_KanbanBoard", TaskItems);
+            var tasks = await _database.GetAllTasksAsync();
+            PopulateOptions(tasks);
+            TaskItems = FilterTasks(tasks);
+            return Partial("_BoardContainer", this);
         }
 
         public IActionResult OnGetCreateModal()
@@ -110,16 +136,54 @@ namespace Task.Api.Pages
 
             await _database.DeleteTaskAsync(task.Uid);
 
-            TaskItems = await _database.GetAllTasksAsync();
-            return Partial("_KanbanBoard", TaskItems);
+            var tasks = await _database.GetAllTasksAsync();
+            PopulateOptions(tasks);
+            TaskItems = FilterTasks(tasks);
+            return Partial("_BoardContainer", this);
         }
 
         public async System.Threading.Tasks.Task<IActionResult> OnPostClearBoard()
         {
             await _database.ClearAllTasksAsync();
 
-            TaskItems = await _database.GetAllTasksAsync();
-            return Partial("_KanbanBoard", TaskItems);
+            var tasks = await _database.GetAllTasksAsync();
+            PopulateOptions(tasks);
+            TaskItems = FilterTasks(tasks);
+            return Partial("_BoardContainer", this);
+        }
+
+        private void PopulateOptions(List<TaskItem> tasks)
+        {
+            AllLabels = tasks.SelectMany(t => t.Tags ?? new List<string>()).Distinct().OrderBy(t => t).ToList();
+            AllAssignees = tasks.Where(t => !string.IsNullOrEmpty(t.Assignee)).Select(t => t.Assignee!).Distinct().OrderBy(a => a).ToList();
+        }
+
+        private List<TaskItem> FilterTasks(List<TaskItem> tasks)
+        {
+            var query = tasks.AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(SearchQuery))
+            {
+                query = query.Where(t => t.Title.Contains(SearchQuery, StringComparison.OrdinalIgnoreCase) || 
+                                        (t.Description != null && t.Description.Contains(SearchQuery, StringComparison.OrdinalIgnoreCase)));
+            }
+
+            if (!string.IsNullOrWhiteSpace(FilterStatus))
+            {
+                query = query.Where(t => t.Status.Equals(FilterStatus, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (!string.IsNullOrWhiteSpace(FilterAssignee))
+            {
+                query = query.Where(t => string.Equals(t.Assignee, FilterAssignee, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (!string.IsNullOrWhiteSpace(FilterLabel))
+            {
+                query = query.Where(t => t.Tags != null && t.Tags.Contains(FilterLabel));
+            }
+
+            return query.ToList();
         }
     }
 }

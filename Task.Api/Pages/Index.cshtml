@@ -16,19 +16,14 @@
             <button class="btn-primary" hx-get="/Index?handler=CreateModal" hx-target="body" hx-swap="beforeend">
                 <span class="emoji emoji-leading">➕</span>Add Task
             </button>
-            <button class="btn-secondary" hx-post="/Index?handler=ClearBoard" hx-target="#board" hx-swap="innerHTML" onclick="return confirm('Are you sure you want to clear all tasks? This action cannot be undone.')">
+            <button class="btn-secondary" hx-post="/Index?handler=ClearBoard" hx-include="#filter-form" hx-target="#board-container" hx-swap="outerHTML" onclick="return confirm('Are you sure you want to clear all tasks? This action cannot be undone.')">
                 <span class="emoji emoji-leading">🗑️</span>Clear Board
             </button>
         </div>
     </div>
 </section>
 
-<!-- Main board container with HTMX polling -->
-<section class="board-section">
-    <div id="board" class="board-surface" hx-get="/Index?handler=Refresh" hx-trigger="every 1s" hx-target="#board" hx-swap="innerHTML">
-        @await Html.PartialAsync("_KanbanBoard", Model.TaskItems)
-    </div>
-</section>
+@await Html.PartialAsync("_BoardContainer", Model)
 
 <!-- Modal container for task creation -->
 <div id="modal-container"></div>
@@ -61,17 +56,62 @@
                 // Remove dragging class
                 draggedElement.classList.remove('dragging');
 
+                // We must include the filter form values when updating status
+                const formData = new FormData(document.getElementById('filter-form'));
+                formData.append('uid', uid);
+                formData.append('status', status);
+
                 // Send HTMX request
                 htmx.ajax('POST', '/Index?handler=UpdateStatus', {
-                    values: { uid: uid, status: status },
-                    target: '#board',
-                    swap: 'innerHTML'
+                    values: Object.fromEntries(formData),
+                    target: '#board-container',
+                    swap: 'outerHTML'
                 });
             }
         }
 
-        // Initialize drag and drop
+        function updateFilterToggleState(toggleButton, advancedFilters, shouldExpand) {
+            const isExpanded = shouldExpand ?? toggleButton.getAttribute('aria-expanded') === 'true';
+            const nextState = !isExpanded;
+            toggleButton.setAttribute('aria-expanded', String(nextState));
+            advancedFilters.classList.toggle('is-visible', nextState);
+        }
+
+        function setupFilterToggle() {
+            const toggleButton = document.querySelector('[data-filter-toggle]');
+            const advancedFilters = document.querySelector('[data-filter-advanced]');
+
+            if (!toggleButton || !advancedFilters) {
+                return;
+            }
+
+            toggleButton.addEventListener('click', function() {
+                updateFilterToggleState(toggleButton, advancedFilters);
+            });
+
+            const mobileQuery = window.matchMedia('(max-width: 768px)');
+            function handleMediaChange(event) {
+                if (!event.matches) {
+                    toggleButton.setAttribute('aria-expanded', 'true');
+                    advancedFilters.classList.add('is-visible');
+                    return;
+                }
+
+                toggleButton.setAttribute('aria-expanded', 'false');
+                advancedFilters.classList.remove('is-visible');
+            }
+
+            handleMediaChange(mobileQuery);
+            if (typeof mobileQuery.addEventListener === 'function') {
+                mobileQuery.addEventListener('change', handleMediaChange);
+            } else if (typeof mobileQuery.addListener === 'function') {
+                mobileQuery.addListener(handleMediaChange);
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
+            setupFilterToggle();
+
             // Add drag over effects
             document.addEventListener('dragover', function(e) {
                 e.preventDefault();

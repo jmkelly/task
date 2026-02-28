@@ -62,7 +62,7 @@
                             <button class="btn-small" hx-get="/Index?handler=EditModal&uid=@task.Uid" hx-target="body" hx-swap="beforeend">
                                 <span class="emoji emoji-leading">✏️</span>Edit
                             </button>
-                            <button class="btn-small" hx-post="/Index?handler=DeleteTask" hx-vals='{"uid": "@task.Uid"}' hx-target="#board" hx-swap="innerHTML" onclick="return confirm('Delete this task?')">
+                            <button class="btn-small" hx-post="/Index?handler=DeleteTask" hx-include="#filter-form" hx-vals='{"uid": "@task.Uid"}' hx-target="#board-container" hx-swap="outerHTML" onclick="return confirm('Delete this task?')">
                                 <span class="emoji emoji-leading">🗑️</span>Delete
                             </button>
                         </div>
@@ -140,7 +140,7 @@
                             <button class="btn-small" hx-get="/Index?handler=EditModal&uid=@task.Uid" hx-target="body" hx-swap="beforeend">
                                 <span class="emoji emoji-leading">✏️</span>Edit
                             </button>
-                            <button class="btn-small" hx-post="/Index?handler=DeleteTask" hx-vals='{"uid": "@task.Uid"}' hx-target="#board" hx-swap="innerHTML" onclick="return confirm('Delete this task?')">
+                            <button class="btn-small" hx-post="/Index?handler=DeleteTask" hx-include="#filter-form" hx-vals='{"uid": "@task.Uid"}' hx-target="#board-container" hx-swap="outerHTML" onclick="return confirm('Delete this task?')">
                                 <span class="emoji emoji-leading">🗑️</span>Delete
                             </button>
                         </div>
@@ -218,7 +218,7 @@
                             <button class="btn-small" hx-get="/Index?handler=EditModal&uid=@task.Uid" hx-target="body" hx-swap="beforeend">
                                 <span class="emoji emoji-leading">✏️</span>Edit
                             </button>
-                            <button class="btn-small" hx-post="/Index?handler=DeleteTask" hx-vals='{"uid": "@task.Uid"}' hx-target="#board" hx-swap="innerHTML" onclick="return confirm('Delete this task?')">
+                            <button class="btn-small" hx-post="/Index?handler=DeleteTask" hx-include="#filter-form" hx-vals='{"uid": "@task.Uid"}' hx-target="#board-container" hx-swap="outerHTML" onclick="return confirm('Delete this task?')">
                                 <span class="emoji emoji-leading">🗑️</span>Delete
                             </button>
                         </div>

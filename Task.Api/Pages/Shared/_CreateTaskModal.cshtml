@@ -1,7 +1,7 @@
 <div class="modal-overlay" onclick="this.remove()">
     <div class="modal-content" onclick="event.stopPropagation()">
         <h2>Create New Task</h2>
-        <form hx-post="/Index?handler=CreateTask" hx-target="#board" hx-swap="innerHTML" hx-on:htmx:after-request="this.closest('.modal-overlay').remove()">
+        <form hx-post="/Index?handler=CreateTask" hx-include="#filter-form" hx-target="#board-container" hx-swap="outerHTML" hx-on:htmx:after-request="this.closest('.modal-overlay').remove()">
             <div class="form-group">
                 <label for="title">Title *</label>
                 <input type="text" id="title" name="title" required maxlength="200">

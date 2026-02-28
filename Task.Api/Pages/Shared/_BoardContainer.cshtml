@@ -1,0 +1,12 @@
+@model global::Task.Api.Pages.IndexModel
+
+<div id="board-container">
+    @await Html.PartialAsync("_BoardFilters", Model)
+
+    <!-- Main board container with HTMX polling -->
+    <section class="board-section">
+        <div id="board" class="board-surface" hx-get="/Index?handler=Refresh" hx-trigger="every 5s" hx-include="#filter-form" hx-target="#board-container" hx-swap="outerHTML">
+            @await Html.PartialAsync("_KanbanBoard", Model.TaskItems)
+        </div>
+    </section>
+</div>
