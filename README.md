@@ -288,7 +288,7 @@ task list --assignee john.doe --status todo
 
 Complete a task:
 ```bash
-task complete 1
+task complete a2b3k9
 ```
 
 Edit a task:
