@@ -2,7 +2,7 @@
 
 > **Build workflows for both humans and LLM/AI agents—without SaaS limits.**
 >
-> Modern teams (and their coding agents or LLMs) need a task platform that’s open, scriptable, and agent-friendly.
+> Modern teams (and their coding agents or LLMs) need a task platform that’s open, and agent-friendly.
 >
 > Tired of apps that lock you in and don’t talk to your automations or agents? This system gives you:
 >
