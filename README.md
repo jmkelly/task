@@ -18,12 +18,25 @@
 
 A cross-platform task management system with separate CLI client, REST API backend, and SQLite storage for advanced task management capabilities.
 
-## Project Links
+## Demo Video
 
-- [LICENSE](LICENSE)
-- [CONTRIBUTING](CONTRIBUTING.md)
-- [CODE_OF_CONDUCT](CODE_OF_CONDUCT.md)
-- [CHANGELOG](CHANGELOG.md)
+Check out a demo of the Task Management System in action:
+
+[▶️ Watch the demo video](docs/assets/videos/TaskViaAI.mp4)
+
+Most browsers will play the video in-page or download it directly.
+
+## Screenshots
+
+### Add Task Modal
+![Add Task](docs/assets/images/add-task.png)
+
+### API Overview
+![API](docs/assets/images/api.png)
+
+### Kanban Board
+![Board](docs/assets/images/board.png)
+
 
 ## Architecture Overview
 
@@ -92,6 +105,13 @@ The system consists of three main components:
 - Support for tags, priorities, due dates, assignees
 - Full-text search on title, description, and tags
 - Vector search for semantic similarity (requires sqlite-vss extension)
+
+## Project Links
+
+- [LICENSE](LICENSE)
+- [CONTRIBUTING](CONTRIBUTING.md)
+- [CODE_OF_CONDUCT](CODE_OF_CONDUCT.md)
+- [CHANGELOG](CHANGELOG.md)
 
 ## Installation
 
@@ -379,15 +399,14 @@ The database file is created automatically. In Docker deployments, it's stored i
 
 See `SCHEMA.sql` for the complete database schema definition.
 
-## Screenshots
+## Demo Video
 
-Below are some screenshots of the Task Management System web UI and API, located in [docs/assets/images](docs/assets/images):
+Check out a demo of the Task Management System in action:
 
-### Add Task Modal
-![Add Task](docs/assets/images/add-task.png)
+[▶️ Watch the demo video](docs/assets/videos/TaskViaAI.mp4)
 
-### API Overview
-![API](docs/assets/images/api.png)
+Most browsers will play the video in-page or download it directly.
 
-### Kanban Board
-![Board](docs/assets/images/board.png)
+---
+
+<!-- Demo video and screenshots moved to top for better visibility -->
