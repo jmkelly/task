@@ -381,4 +381,13 @@ See `SCHEMA.sql` for the complete database schema definition.
 
 ## Screenshots
 
-Screenshots are available in [docs/assets/images](docs/assets/images).
+Below are some screenshots of the Task Management System web UI and API, located in [docs/assets/images](docs/assets/images):
+
+### Add Task Modal
+![Add Task](docs/assets/images/add-task.png)
+
+### API Overview
+![API](docs/assets/images/api.png)
+
+### Kanban Board
+![Board](docs/assets/images/board.png)
