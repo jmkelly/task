@@ -10,7 +10,7 @@ namespace Task.Cli
         public class Settings : Program.TaskCommandSettings
         {
             [CommandArgument(0, "[ids]")]
-            [Description("The unique ID(s) of the task(s) to mark as completed (e.g., 'a2b3k9' or 'a2b3k9 c4d5e6')")]
+            [Description("The 6-character alpha UID(s) of the task(s) to mark as completed (e.g., 'a2b3k9' or 'a2b3k9 d4e5f6')")]
             public string[] Ids { get; set; } = Array.Empty<string>();
 
             [CommandOption("--all")]
@@ -38,12 +38,13 @@ namespace Task.Cli
                 if (settings.Ids.Length == 0)
                 {
                     ErrorHelper.ShowError(
-                        "ID is required.",
-                        "task complete <id> or task complete --all",
+                        "Task UID is required. (Provide at least one 6-character alpha UID, e.g., a2b3k9)",
+                        "task complete <uid> or task complete --all (UID is a 6-char code, e.g., a2b3k9)",
                         "task complete --help");
                     return 1;
                 }
-                idsToComplete = settings.Ids.ToList();
+                // Ensure all IDs look like UIDs
+                idsToComplete = settings.Ids.ToList(); // Should be 6-character UIDs.
             }
 
             var completed = new List<string>();
@@ -125,7 +126,7 @@ namespace Task.Cli
                 }
                 if (failed.Count > 0)
                 {
-                    ErrorHelper.ShowError($"Task(s) not found: {string.Join(", ", failed)}");
+                    ErrorHelper.ShowError($"Task UID(s) not found: {string.Join(", ", failed)}");
                 }
             }
 

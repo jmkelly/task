@@ -62,7 +62,7 @@ namespace Task.Cli
             else
             {
                 var table = new Table();
-                table.AddColumn("ID");
+                table.AddColumn("UID");
                 table.AddColumn("Title");
                 table.AddColumn("Project");
                 table.AddColumn("Assignee");

@@ -61,10 +61,10 @@ namespace Task.Cli
 			AnsiConsole.MarkupLine("[yellow]Task Management[/]");
 			AnsiConsole.WriteLine("add                 Create a new task with optional properties like priority, due date, tags, and project assignment");
 			AnsiConsole.WriteLine("list                Display tasks with advanced filtering by status, priority, assignee, project, tags, and due date");
-			AnsiConsole.WriteLine("edit <ID>           Modify existing task properties including title, description, priority, due date, and assignee");
-			AnsiConsole.WriteLine("delete <ID...>      Permanently remove one or more tasks (supports bulk deletion with confirmation)");
-			AnsiConsole.WriteLine("complete <ID...>    Mark tasks as completed (supports bulk completion)");
-			AnsiConsole.WriteLine("reset <ID>          Reset a completed task back to pending status");
+			AnsiConsole.WriteLine("edit <UID>          Modify existing task properties (title, description, priority, due date, and assignee) (UID is a 6-letter code)");
+			AnsiConsole.WriteLine("delete <UID...>      Permanently remove one or more tasks (supports bulk deletion with confirmation; UID is a 6-letter code, e.g., a2b3k9)");
+			AnsiConsole.WriteLine("complete <UID...>    Mark tasks as completed (supports bulk completion; UID is a 6-letter code, e.g., a2b3k9)");
+			AnsiConsole.WriteLine("reset <UID>         Reset a completed task back to pending status (UID is a 6-letter code)");
 			AnsiConsole.WriteLine();
 
 			// Search and Discovery
@@ -154,10 +154,10 @@ namespace Task.Cli
 			AnsiConsole.MarkupLine("[yellow]Bulk Operations[/]");
 			AnsiConsole.WriteLine("```bash");
 			AnsiConsole.WriteLine("# Complete multiple tasks");
-			AnsiConsole.WriteLine("task complete abc123 def456 ghi789");
+			AnsiConsole.WriteLine("task complete a2b3k9 d4e5f6 g7h8i9");
 			AnsiConsole.WriteLine();
 			AnsiConsole.WriteLine("# Delete tasks with confirmation");
-			AnsiConsole.WriteLine("task delete abc123 def456");
+			AnsiConsole.WriteLine("task delete a2b3k9 d4e5f6");
 			AnsiConsole.WriteLine("```");
 			AnsiConsole.WriteLine();
 

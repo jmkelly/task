@@ -10,7 +10,7 @@ namespace Task.Cli
         public class Settings : Program.TaskCommandSettings
         {
             [CommandArgument(0, "<id>")]
-            [Description("The unique ID of the task to reset (e.g., 'a2b3k9')")]
+            [Description("The 6-character alpha UID of the task to reset (e.g., 'a2b3k9')")]
             public string? Id { get; set; }
 
             [CommandOption("--all")]
@@ -52,7 +52,7 @@ namespace Task.Cli
 
             if (string.IsNullOrEmpty(settings.Id))
             {
-                Console.Error.WriteLine("ERROR: ID is required. Use --all to reset all done tasks.");
+                Console.Error.WriteLine("ERROR: Task UID is required. Provide a 6-character alpha UID or use --all to reset all done tasks.");
                 return 1;
             }
 
@@ -60,7 +60,7 @@ namespace Task.Cli
 
             if (taskItem == null)
             {
-                Console.Error.WriteLine($"ERROR: Task with ID {settings.Id} not found.");
+                Console.Error.WriteLine($"ERROR: Task with UID {settings.Id} not found.");
                 return 1;
             }
 

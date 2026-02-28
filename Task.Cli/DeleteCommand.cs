@@ -10,7 +10,7 @@ namespace Task.Cli
         public class Settings : Program.TaskCommandSettings
         {
             [CommandArgument(0, "[ids]")]
-            [Description("The unique ID(s) of the task(s) to delete (e.g., 'a2b3k9' or 'a2b3k9 c4d5e6')")]
+            [Description("The 6-character alpha UID(s) of the task(s) to delete (e.g., 'a2b3k9' or 'a2b3k9 c4d5e6')")]
             public string? Ids { get; set; }
         }
 
@@ -21,8 +21,8 @@ namespace Task.Cli
             if (string.IsNullOrEmpty(settings.Ids))
             {
                 ErrorHelper.ShowError(
-                    "ID is required.",
-                    "task delete <id>",
+                    "Task UID is required. (Provide at least one 6-character alpha UID, e.g., a2b3k9)",
+                    "task delete <uid>",
                     "task delete --help");
                 return 1;
             }
@@ -68,7 +68,7 @@ namespace Task.Cli
                 }
                 if (failed.Count > 0)
                 {
-                    ErrorHelper.ShowError($"Task(s) not found: {string.Join(", ", failed)}");
+                    ErrorHelper.ShowError($"Task UID(s) not found: {string.Join(", ", failed)}");
                 }
             }
 
