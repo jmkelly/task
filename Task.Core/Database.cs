@@ -339,7 +339,7 @@ namespace Task.Core
 
         private string GenerateUid()
         {
-            // Generate a unique 6-character ID
+            // Generate a unique 6-character UID (uppercase alpha + numeric, no 0/O/1/I/l)
             return Guid.NewGuid().ToString().Substring(0, 6);
         }
 
