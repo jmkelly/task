@@ -26,14 +26,15 @@ Check out a demo of the Task Management System in action:
 
 ## Screenshots
 
+### Kanban Board
+![Board](docs/assets/images/board.png)
+
 ### Add Task Modal
 ![Add Task](docs/assets/images/add-task.png)
 
 ### API Overview
 ![API](docs/assets/images/api.png)
 
-### Kanban Board
-![Board](docs/assets/images/board.png)
 
 
 ## Architecture Overview
