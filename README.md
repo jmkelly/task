@@ -1,13 +1,68 @@
 # Task Management System
 
+> **Build workflows for both humans and LLM/AI agents—without SaaS limits.**
+>
+> Modern teams (and their coding agents or LLMs) need a task platform that’s open, scriptable, and agent-friendly.
+>
+> Tired of apps that lock you in and don’t talk to your automations or agents? This system gives you:
+>
+> - A developer-first CLI—ideal for scripts, automations, and LLM agents
+> - A human-friendly Kanban web UI for drag-and-drop workflow
+> - A robust API for LLM agents and bots to create, search, assign, and complete tasks automatically
+> - Full data ownership, privacy by default, and no vendor lock-in
+> - Machine-readable outputs and clear error handling—built for agent resilience
+>
+> **Let your team—and your AI agents—manage work together in the terminal, browser, or with code. Get started below!**
+
+[![License](https://img.shields.io/badge/License-See%20LICENSE-blue)](LICENSE)
+
 A cross-platform task management system with separate CLI client, REST API backend, and SQLite storage for advanced task management capabilities.
 
-## Architecture
+## Project Links
+
+- [LICENSE](LICENSE)
+- [CONTRIBUTING](CONTRIBUTING.md)
+- [CODE_OF_CONDUCT](CODE_OF_CONDUCT.md)
+- [CHANGELOG](CHANGELOG.md)
+
+## Architecture Overview
+
+The project is structured around a clear separation of concerns for usability, automation, and scalability. Here is a high-level architecture:
+
+```
+                        +------------------------+
+                        |    User/Developer      |
+                        |  (CLI & Browser)       |
+                        +-----------+------------+
+                                    |
+                 +------------------+-------------------+
+                 |                                      |
+         +-------v--------+                      +-------v---------+
+         |     CLI        |                      |    Web UI       |
+         |   (Task.Cli)   |                      | (Kanban Razor)  |
+         +-------+--------+                      +-------+---------+
+                 |                                      |
+   (API mode: HTTP via API, or local SQLite)           |
+                 |                            [Server-side, accesses]
+         +-------v--------+                  +---------+-------------+
+         |     API        |<----------------+   Task.Api (Razor)    |
+         |   (Task.Api)   |   [shared logic & direct DB access]     |
+         +-------+--------+                  +---------+-------------+
+                 |                                      |
+                 +------------------v-------------------+
+                                 SQLite DB
+                          (tasks, tags, FTS, etc)
+```
+**Legend:**
+- **CLI**: Command-line tool (`Task.Cli`) — can connect to the API with HTTP (API mode) or directly to SQLite DB (local mode).
+- **Web UI**: Kanban board (Razor pages) — accesses data directly using Task.Core logic (no HTTP/REST).
+- **API**: REST backend (`Task.Api`) — serves the CLI in API mode and remote services; also hosts Razor pages.
+- **SQLite DB**: Persistent storage, accessed directly by Task.Api/Razor and optionally by CLI through Task.Api
 
 The system consists of three main components:
 
 - **CLI Client** (`Task.Cli/`): A command-line interface for managing tasks
-- **REST API Backend** (`Task.Api/`): A web API server providing REST endpoints
+- **REST API Backend** (`Task.Api/`): A web API server providing REST endpoints and Kanban Board Web UI
 - **Storage**: SQLite database with full-text search and vector search capabilities
 
 ## Features
@@ -74,11 +129,57 @@ Download the appropriate single executable for your platform from the releases p
    - On Windows: Move `Task.exe` to a directory in your PATH, such as `C:\Windows\System32\` or create a custom directory and add it to PATH via System Properties > Environment Variables.
 
 4. **Verify Installation**: Open a new terminal and run:
-   ```bash
-   task --help
-   ```
+    ```bash
+    task --help
+    ```
 
 To run without installing to PATH, simply execute the file from its download location.
+
+---
+
+## CLI Command Reference
+
+The output below shows all available global options and commands for the CLI:
+
+```text
+USAGE:
+    task [OPTIONS] <COMMAND>
+
+EXAMPLES:
+    task add Buy groceries
+    task add --title Refactor code --priority high --tags code,refactor
+    task add --title Upload report --due-date 2024-04-01
+    task add --title Team meeting --project work --status in_progress
+    task add Buy groceries --priority high --assignee john.doe --tags errands 
+    --due-date 2026-03-01
+
+OPTIONS:
+    -h, --help       Prints help information   
+    -v, --version    Prints version information
+
+COMMANDS:
+    add               Create a new task with optional properties like priority, 
+                      due date, tags, and project assignment                    
+    list              Display tasks with advanced filtering by status, priority,
+                      assignee, project, tags, and due date                     
+    edit <ids>        Modify existing task properties including title,          
+                      description, priority, due date, and assignee             
+    delete            Permanently remove one or more tasks (supports bulk       
+                      deletion with confirmation)                               
+    complete          Mark tasks as completed (supports bulk completion)        
+    reset <id>        Reset a completed task back to pending status             
+    search <query>    Perform full-text or semantic similarity search across    
+                      task titles and descriptions                              
+    export            Export all tasks to JSON or CSV format for backup or      
+                      migration                                                 
+    import            Import tasks from JSON or CSV files, merging with existing
+                      data                                                      
+    config            Manage CLI configuration settings                         
+    help              Show detailed help information                            
+```
+
+---
+
 
 #### Building CLI from Source
 
@@ -277,3 +378,7 @@ The database file is created automatically. In Docker deployments, it's stored i
 ### Database Schema
 
 See `SCHEMA.sql` for the complete database schema definition.
+
+## Screenshots
+
+Screenshots are available in [docs/assets/images](docs/assets/images).
