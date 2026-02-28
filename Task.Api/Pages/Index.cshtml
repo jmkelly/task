@@ -6,23 +6,29 @@
 }
 
 <!-- Hero-style header with gradient background -->
-<div class="kanban-header">
-    <div class="header-content">
-        <h1>🚀 Task Kanban Board</h1>
-        <p class="header-subtitle">Manage your workflow with drag-and-drop simplicity</p>
+<section class="hero-section">
+    <div class="hero-container">
+        <div class="hero-content">
+            <h1><span class="emoji emoji-leading">🚀</span>Task Board</h1>
+            <p class="header-subtitle">Manage your workflow with drag-and-drop simplicity</p>
+        </div>
+        <div class="hero-actions">
+            <button class="btn-primary" hx-get="/Index?handler=CreateModal" hx-target="body" hx-swap="beforeend">
+                <span class="emoji emoji-leading">➕</span>Add Task
+            </button>
+            <button class="btn-secondary" hx-post="/Index?handler=ClearBoard" hx-target="#board" hx-swap="innerHTML" onclick="return confirm('Are you sure you want to clear all tasks? This action cannot be undone.')">
+                <span class="emoji emoji-leading">🗑️</span>Clear Board
+            </button>
+        </div>
     </div>
-    <button class="btn-primary" hx-get="/Index?handler=CreateModal" hx-target="body" hx-swap="beforeend">
-        ➕ Add Task
-    </button>
-    <button class="btn-secondary" hx-post="/Index?handler=ClearBoard" hx-target="#board" hx-swap="innerHTML" onclick="return confirm('Are you sure you want to clear all tasks? This action cannot be undone.')">
-        🗑️ Clear Board
-    </button>
-</div>
+</section>
 
 <!-- Main board container with HTMX polling -->
-<div id="board" hx-get="/Index?handler=Refresh" hx-trigger="every 1s" hx-target="#board" hx-swap="innerHTML">
-    @await Html.PartialAsync("_KanbanBoard", Model.TaskItems)
-</div>
+<section class="board-section">
+    <div id="board" class="board-surface" hx-get="/Index?handler=Refresh" hx-trigger="every 1s" hx-target="#board" hx-swap="innerHTML">
+        @await Html.PartialAsync("_KanbanBoard", Model.TaskItems)
+    </div>
+</section>
 
 <!-- Modal container for task creation -->
 <div id="modal-container"></div>

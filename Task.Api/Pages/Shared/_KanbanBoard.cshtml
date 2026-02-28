@@ -1,35 +1,38 @@
 @using TaskItem = Task.Core.TaskItem
 @model IEnumerable<TaskItem>
 
-<div class="kanban-board">
-    <div class="kanban-column" data-status="todo" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
-        <h2 class="column-header">📋 Todo</h2>
-        <div class="task-list" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
+<div class="kanban-board board-grid">
+    <div class="kanban-column board-column" data-status="todo" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
+        <div class="column-header">
+            <h2>Todo</h2>
+        </div>
+        <div class="column-body task-list" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
             @if (Model.Where(t => t.Status == "todo").Any())
             {
                 @foreach (var task in Model.Where(t => t.Status == "todo"))
                 {
-                    <div class="task-card" draggable="true" data-uid="@task.Uid" ondragstart="handleDragStart(event)">
-                        <div class="task-header">
+                    <div class="task-card card" draggable="true" data-uid="@task.Uid" ondragstart="handleDragStart(event)">
+                        <div class="task-header card-header">
                             <h3 class="task-title">@task.Title</h3>
                             <div class="task-meta">
                                 <span class="task-priority priority-@task.Priority.ToLower()">@task.Priority</span>
                             </div>
                         </div>
+                        <div class="card-body">
                         @if (!string.IsNullOrEmpty(task.Project) || !string.IsNullOrEmpty(task.Assignee))
                         {
                             <div class="task-context">
                                 @if (!string.IsNullOrEmpty(task.Project))
                                 {
                                     <div class="task-project">
-                                        <span class="context-icon">📁</span>
+                                        <span class="context-icon"><span class="emoji">📁</span></span>
                                         <span class="context-text">@task.Project</span>
                                     </div>
                                 }
                                 @if (!string.IsNullOrEmpty(task.Assignee))
                                 {
                                     <div class="task-assignee">
-                                        <span class="context-icon">👤</span>
+                                        <span class="context-icon"><span class="emoji">👤</span></span>
                                         <span class="context-text">@task.Assignee</span>
                                     </div>
                                 }
@@ -54,12 +57,13 @@
                                 Due: @task.DueDate.Value.ToString("MMM dd, yyyy")
                             </div>
                         }
-                        <div class="task-actions">
+                        </div>
+                        <div class="task-actions card-footer">
                             <button class="btn-small" hx-get="/Index?handler=EditModal&uid=@task.Uid" hx-target="body" hx-swap="beforeend">
-                                ✏️ Edit
+                                <span class="emoji emoji-leading">✏️</span>Edit
                             </button>
                             <button class="btn-small" hx-post="/Index?handler=DeleteTask" hx-vals='{"uid": "@task.Uid"}' hx-target="#board" hx-swap="innerHTML" onclick="return confirm('Delete this task?')">
-                                🗑️ Delete
+                                <span class="emoji emoji-leading">🗑️</span>Delete
                             </button>
                         </div>
                     </div>
@@ -68,7 +72,7 @@
             else
             {
                 <div class="empty-state">
-                    <div class="empty-icon">📝</div>
+                    <div class="empty-icon"><span class="emoji">📝</span></div>
                     <p>No tasks to do yet</p>
                     <small>Drag tasks here to get started</small>
                 </div>
@@ -76,34 +80,37 @@
         </div>
     </div>
 
-    <div class="kanban-column" data-status="in_progress" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
-        <h2 class="column-header">🔄 In Progress</h2>
-        <div class="task-list" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
+    <div class="kanban-column board-column" data-status="in_progress" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
+        <div class="column-header">
+            <h2>In Progress</h2>
+        </div>
+        <div class="column-body task-list" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
             @if (Model.Where(t => t.Status == "in_progress").Any())
             {
                 @foreach (var task in Model.Where(t => t.Status == "in_progress"))
                 {
-                    <div class="task-card" draggable="true" data-uid="@task.Uid" ondragstart="handleDragStart(event)">
-                        <div class="task-header">
+                    <div class="task-card card" draggable="true" data-uid="@task.Uid" ondragstart="handleDragStart(event)">
+                        <div class="task-header card-header">
                             <h3 class="task-title">@task.Title</h3>
                             <div class="task-meta">
                                 <span class="task-priority priority-@task.Priority.ToLower()">@task.Priority</span>
                             </div>
                         </div>
+                        <div class="card-body">
                         @if (!string.IsNullOrEmpty(task.Project) || !string.IsNullOrEmpty(task.Assignee))
                         {
                             <div class="task-context">
                                 @if (!string.IsNullOrEmpty(task.Project))
                                 {
                                     <div class="task-project">
-                                        <span class="context-icon">📁</span>
+                                        <span class="context-icon"><span class="emoji">📁</span></span>
                                         <span class="context-text">@task.Project</span>
                                     </div>
                                 }
                                 @if (!string.IsNullOrEmpty(task.Assignee))
                                 {
                                     <div class="task-assignee">
-                                        <span class="context-icon">👤</span>
+                                        <span class="context-icon"><span class="emoji">👤</span></span>
                                         <span class="context-text">@task.Assignee</span>
                                     </div>
                                 }
@@ -128,12 +135,13 @@
                                 Due: @task.DueDate.Value.ToString("MMM dd, yyyy")
                             </div>
                         }
-                        <div class="task-actions">
+                        </div>
+                        <div class="task-actions card-footer">
                             <button class="btn-small" hx-get="/Index?handler=EditModal&uid=@task.Uid" hx-target="body" hx-swap="beforeend">
-                                ✏️ Edit
+                                <span class="emoji emoji-leading">✏️</span>Edit
                             </button>
                             <button class="btn-small" hx-post="/Index?handler=DeleteTask" hx-vals='{"uid": "@task.Uid"}' hx-target="#board" hx-swap="innerHTML" onclick="return confirm('Delete this task?')">
-                                🗑️ Delete
+                                <span class="emoji emoji-leading">🗑️</span>Delete
                             </button>
                         </div>
                     </div>
@@ -142,7 +150,7 @@
             else
             {
                 <div class="empty-state">
-                    <div class="empty-icon">⚡</div>
+                    <div class="empty-icon"><span class="emoji">⚡</span></div>
                     <p>Ready for work?</p>
                     <small>Move tasks here when you start them</small>
                 </div>
@@ -150,34 +158,37 @@
         </div>
     </div>
 
-    <div class="kanban-column" data-status="done" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
-        <h2 class="column-header">✅ Done</h2>
-        <div class="task-list" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
+    <div class="kanban-column board-column" data-status="done" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
+        <div class="column-header">
+            <h2>Done</h2>
+        </div>
+        <div class="column-body task-list" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
             @if (Model.Where(t => t.Status == "done").Any())
             {
                 @foreach (var task in Model.Where(t => t.Status == "done"))
                 {
-                    <div class="task-card" draggable="true" data-uid="@task.Uid" ondragstart="handleDragStart(event)">
-                        <div class="task-header">
+                    <div class="task-card card" draggable="true" data-uid="@task.Uid" ondragstart="handleDragStart(event)">
+                        <div class="task-header card-header">
                             <h3 class="task-title">@task.Title</h3>
                             <div class="task-meta">
                                 <span class="task-priority priority-@task.Priority.ToLower()">@task.Priority</span>
                             </div>
                         </div>
+                        <div class="card-body">
                         @if (!string.IsNullOrEmpty(task.Project) || !string.IsNullOrEmpty(task.Assignee))
                         {
                             <div class="task-context">
                                 @if (!string.IsNullOrEmpty(task.Project))
                                 {
                                     <div class="task-project">
-                                        <span class="context-icon">📁</span>
+                                        <span class="context-icon"><span class="emoji">📁</span></span>
                                         <span class="context-text">@task.Project</span>
                                     </div>
                                 }
                                 @if (!string.IsNullOrEmpty(task.Assignee))
                                 {
                                     <div class="task-assignee">
-                                        <span class="context-icon">👤</span>
+                                        <span class="context-icon"><span class="emoji">👤</span></span>
                                         <span class="context-text">@task.Assignee</span>
                                     </div>
                                 }
@@ -202,12 +213,13 @@
                                 Due: @task.DueDate.Value.ToString("MMM dd, yyyy")
                             </div>
                         }
-                        <div class="task-actions">
+                        </div>
+                        <div class="task-actions card-footer">
                             <button class="btn-small" hx-get="/Index?handler=EditModal&uid=@task.Uid" hx-target="body" hx-swap="beforeend">
-                                ✏️ Edit
+                                <span class="emoji emoji-leading">✏️</span>Edit
                             </button>
                             <button class="btn-small" hx-post="/Index?handler=DeleteTask" hx-vals='{"uid": "@task.Uid"}' hx-target="#board" hx-swap="innerHTML" onclick="return confirm('Delete this task?')">
-                                🗑️ Delete
+                                <span class="emoji emoji-leading">🗑️</span>Delete
                             </button>
                         </div>
                     </div>
@@ -216,7 +228,7 @@
             else
             {
                 <div class="empty-state">
-                    <div class="empty-icon">🎉</div>
+                    <div class="empty-icon"><span class="emoji">🎉</span></div>
                     <p>All caught up!</p>
                     <small>Completed tasks will appear here</small>
                 </div>

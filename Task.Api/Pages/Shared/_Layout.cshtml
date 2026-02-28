@@ -8,10 +8,27 @@
     <script src="https://unpkg.com/htmx.org@2.0.8/dist/ext/ws.js"></script>
     <link rel="stylesheet" href="~/styles.css" />
 </head>
-<body>
-    <div class="container">
+<body class="min-h-screen flex flex-col bg-bg-default text-text-default">
+    <!-- Header + Navigation -->
+    <header class="w-full bg-bg-header border-b border-border-default">
+        <div class="header-inner w-full max-w-5xl mx-auto px-4 md:px-8 py-4 flex items-center justify-between gap-4">
+            <div class="header-brand text-lg font-semibold tracking-tight">
+            </div>
+            <div class="header-actions flex items-center gap-2">
+                <!-- Extra header actions/controls can go here -->
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 w-full max-w-5xl mx-auto px-4 md:px-8 py-8 main-container">
         @RenderBody()
-    </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full px-4 md:px-8 py-4 bg-bg-footer border-t border-border-default text-sm text-center mt-8">
+        © @DateTime.Now.Year Task Board. All rights reserved.
+    </footer>
 
     @await RenderSectionAsync("Scripts", required: false)
 </body>
