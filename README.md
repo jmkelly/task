@@ -22,9 +22,7 @@ A cross-platform task management system with separate CLI client, REST API backe
 
 Check out a demo of the Task Management System in action:
 
-[▶️ Watch the demo video](docs/assets/videos/TaskViaAI.mp4)
-
-Most browsers will play the video in-page or download it directly.
+![Task Board Demo](docs/assets/videos/TaskViaAI.gif)
 
 ## Screenshots
 
