@@ -5,7 +5,7 @@ REST API backend for the Task Management System.
 ## Features
 
 - RESTful endpoints for task management
-- Swagger/OpenAPI documentation
+- Scalar/OpenAPI documentation
 - CORS support for web integrations
 - Advanced filtering and sorting
 - Tag management
@@ -44,7 +44,7 @@ For production, configure ASPNETCORE_ENVIRONMENT and DatabasePath.
 
 ## Usage
 
-- Swagger UI: http://localhost:8080/swagger
+- Scalar UI: http://localhost:8080/scalar
 - API Base URL: http://localhost:8080/api
 
 ### Key Endpoints

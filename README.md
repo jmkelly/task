@@ -79,7 +79,7 @@ The system consists of three main components:
 
 ### API Features
 - RESTful endpoints for task management
-- Swagger/OpenAPI documentation
+- Scalar/OpenAPI documentation
 - CORS support for web integrations
 - Advanced filtering and sorting
 - Tag management
@@ -238,7 +238,7 @@ The easiest way to run the API backend is using Docker Compose:
 
 3. Verify the API is running:
    - API endpoints: http://localhost:8080/api/tasks
-   - Swagger UI: http://localhost:8080/swagger
+   - Scalar UI: http://localhost:8080/scalar
 
 4. To stop the services:
    ```bash
@@ -335,7 +335,7 @@ task --api-url http://localhost:8080 list
 
 The API provides REST endpoints for task management. When running locally, access:
 
-- **Swagger UI**: http://localhost:8080/swagger (when using Docker) or http://localhost:5000/swagger (development)
+- **Scalar UI**: http://localhost:8080/scalar (when using Docker) or http://localhost:5000/scalar (development)
 - **API Base URL**: http://localhost:8080/api (Docker) or http://localhost:5000/api (development)
 
 #### Key Endpoints
