@@ -191,10 +191,8 @@ namespace Task.Cli.Tests.IntegrationTests
         [Fact]
         public async System.Threading.Tasks.Task EndToEnd_AddAndListTasks()
         {
-
             var task = await db.AddTaskAsync("Integration Test Task", "Test description", "high", null, new List<string>());
 
-            // List all tasks
             var tasks = await db.GetAllTasksAsync();
 
             Assert.Single(tasks);
@@ -207,19 +205,15 @@ namespace Task.Cli.Tests.IntegrationTests
         [Fact]
         public async System.Threading.Tasks.Task EndToEnd_AddEditCompleteWorkflow()
         {
-
             var task = await db.AddTaskAsync("Workflow Task", "Original description", "medium", null, new List<string>());
 
-            // Edit task
             task.Title = "Updated Workflow Task";
             task.Description = "Updated description";
             task.Priority = "high";
             await db.UpdateTaskAsync(task);
 
-            // Complete task
             await db.CompleteTaskAsync(task.Uid);
 
-            // Verify final state
             var finalTask = await db.GetTaskByUidAsync(task.Uid);
             Assert.NotNull(finalTask);
             Assert.Equal("Updated Workflow Task", finalTask.Title);
@@ -231,12 +225,10 @@ namespace Task.Cli.Tests.IntegrationTests
         [Fact]
         public async System.Threading.Tasks.Task EndToEnd_FullTextSearch()
         {
-
             await db.AddTaskAsync("Buy groceries", "Milk, bread, eggs", "medium", null, new List<string>());
             await db.AddTaskAsync("Clean the house", "Vacuum and dust", "medium", null, new List<string>());
             await db.AddTaskAsync("Write report", "Q4 financial report", "medium", null, new List<string>());
 
-            // Search for "house"
             var results = await db.SearchTasksAsync("house");
 
             Assert.Single(results);
@@ -246,11 +238,9 @@ namespace Task.Cli.Tests.IntegrationTests
         [Fact]
         public async System.Threading.Tasks.Task EndToEnd_HybridSearch()
         {
-
             await db.AddTaskAsync("Buy groceries", "Milk and bread", "medium", null, new List<string>());
             await db.AddTaskAsync("Purchase items", "Shopping list", "medium", null, new List<string>());
 
-            // Hybrid search (currently just FTS since semantic is stubbed)
             var results = await db.SearchTasksAsync("buy");
 
             Assert.Contains(results, t => t.Title.Contains("Buy"));
@@ -270,7 +260,6 @@ namespace Task.Cli.Tests.IntegrationTests
         [Fact]
         public async System.Threading.Tasks.Task QuickAdd_WithAllOptions_CreatesTask()
         {
-
             var task = await db.AddTaskAsync(
                 "Complex task",
                 "Full description",
@@ -292,11 +281,9 @@ namespace Task.Cli.Tests.IntegrationTests
             Assert.Contains("urgent", tasks[0].Tags);
         }
 
-
         [Fact]
         public async System.Threading.Tasks.Task QuickAdd_WithValidStatus_CreatesTask()
         {
-
             var task = await db.AddTaskAsync(
                 "Test task",
                 null,
@@ -311,6 +298,70 @@ namespace Task.Cli.Tests.IntegrationTests
             var tasks = await db.GetAllTasksAsync();
             Assert.Single(tasks);
             Assert.Equal("in_progress", tasks[0].Status);
+        }
+
+        [Fact]
+        public async System.Threading.Tasks.Task DeleteTask_ShouldArchiveAndHideFromQueries()
+        {
+            var task = await db.AddTaskAsync("Archive me", null, "medium", null, new List<string>());
+
+            await db.DeleteTaskAsync(task.Uid);
+
+            var byUid = await db.GetTaskByUidAsync(task.Uid);
+            var all = await db.GetAllTasksAsync();
+
+            Assert.Null(byUid);
+            Assert.DoesNotContain(all, t => t.Uid == task.Uid);
+        }
+
+        [Fact]
+        public async System.Threading.Tasks.Task ClearAllTasksAsync_ShouldArchiveAllTasks()
+        {
+            await db.AddTaskAsync("One", null, "medium", null, new List<string>());
+            await db.AddTaskAsync("Two", null, "medium", null, new List<string>());
+
+            await db.ClearAllTasksAsync();
+
+            var tasks = await db.GetAllTasksAsync();
+            Assert.Empty(tasks);
+        }
+
+        [Fact]
+        public async System.Threading.Tasks.Task GetAllUniqueTagsAsync_ShouldExcludeArchivedTasks()
+        {
+            var active = await db.AddTaskAsync("Active", null, "medium", null, new List<string> { "alpha", "beta" });
+            var archived = await db.AddTaskAsync("Archived", null, "medium", null, new List<string> { "legacy" });
+
+            await db.DeleteTaskAsync(archived.Uid);
+
+            var tags = await db.GetAllUniqueTagsAsync();
+            Assert.Equal(new[] { "alpha", "beta" }, tags);
+        }
+
+        [Fact]
+        public async System.Threading.Tasks.Task SearchTasksFTS_ShouldExcludeArchivedTasks()
+        {
+            var active = await db.AddTaskAsync("Visible task", "keep", "medium", null, new List<string>());
+            var archived = await db.AddTaskAsync("Hidden task", "archive", "medium", null, new List<string>());
+
+            await db.DeleteTaskAsync(archived.Uid);
+
+            var results = await db.SearchTasksFTSAsync("task");
+
+            Assert.Contains(results, t => t.Uid == active.Uid);
+            Assert.DoesNotContain(results, t => t.Uid == archived.Uid);
+        }
+
+        [Fact]
+        public async System.Threading.Tasks.Task AddTask_ShouldPersistAssigneeAndProject()
+        {
+            var task = await db.AddTaskAsync("Assigned", "desc", "medium", null, new List<string>(), "alpha", "jordan");
+
+            var fetched = await db.GetTaskByUidAsync(task.Uid);
+
+            Assert.NotNull(fetched);
+            Assert.Equal("alpha", fetched!.Project);
+            Assert.Equal("jordan", fetched.Assignee);
         }
     }
 }
