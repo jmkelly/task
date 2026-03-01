@@ -65,12 +65,7 @@ task search --query "urgent tasks" --mode hybrid
 task search --query "work" --status pending --priority high --json
 ```
 
-## Export and Import
-
-### Export to JSON
-```
-task export --format json --output tasks_backup.json
-```
+## Import
 
 ### Import from CSV
 ```

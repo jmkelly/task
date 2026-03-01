@@ -7,7 +7,7 @@ The app uses standardized exit codes and error formats for reliable scripting an
 - **1**: General Error - Unexpected failure (e.g., database corruption, system error).
 - **2**: Invalid Input - User provided incorrect arguments or data (e.g., invalid priority, missing required fields).
 - **3**: Not Found - Requested resource doesn't exist (e.g., task UUID (6-character alpha code) not found).
-- **4**: Permission Denied - Access issue (rare for local SQLite, but possible for file exports).
+- **4**: Permission Denied - Access issue (rare for local SQLite, but possible for file access operations).
 - **5**: Conflict - Operation would violate constraints (e.g., duplicate task if uniqueness enforced).
 
 ## Error Types and Examples

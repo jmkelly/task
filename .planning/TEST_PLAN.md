@@ -39,7 +39,7 @@ This outlines the testing strategy using xUnit for unit tests and Spectre.Consol
 ### CLI Command Workflows
 - **Add-List Cycle**: Add task via CLI, verify in list output.
 - **Search End-to-End**: Add tasks, perform searches, check results.
-- **Export-Import**: Export to JSON/CSV, import, verify data integrity.
+- **Import**: Import JSON/CSV, verify data integrity.
 - **Interactive Mode**: Simulate user input for guided prompts (use Spectre.TestConsole).
 
 ### Error Scenarios

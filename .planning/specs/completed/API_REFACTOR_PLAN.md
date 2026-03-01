@@ -34,8 +34,8 @@ Architecture Diagram (ASCII):
 │   Task CLI      │────────────│   Task API      │───────────│   SQLite DB     │
 │                 │            │  (Web API)      │           │                 │
 │ - Commands      │            │ - Controllers   │           │ - tasks table   │
-│ - User Input    │            │ - Business Logic│           │ - FTS tables    │
-│ - Output        │            │ - Database.cs   │           │ - VSS tables    │
+│ - User Input    │            │ - Business Logic│           │ - Database.cs   │
+│ - Output        │            │ - Database.cs   │           │ - FTS tables    │
 └─────────────────┘            └─────────────────┘           └─────────────────┘
 ```
 
@@ -61,7 +61,6 @@ Architecture Diagram (ASCII):
       - `DELETE /api/tasks/{uid}` - Delete task
       - `PATCH /api/tasks/{uid}/complete` - Mark task complete
       - `GET /api/tasks/search?q={query}&type={fts|semantic|hybrid}` - Search tasks
-      - `GET /api/tasks/export?format=json|csv` - Export tasks
       - `POST /api/tasks/import?format=json|csv` - Import tasks
       - `GET /api/tags` - Get all unique tags
 
@@ -89,9 +88,8 @@ Architecture Diagram (ASCII):
    - Modify GetDatabaseAsync to return ApiClient instead
 
 ### Phase 3: Enhanced Features (1 week)
- 9. **Implement advanced search, export, and import endpoints**
+ 9. **Implement advanced search and import endpoints**
     - Enhanced search with type parameter (fts, semantic, hybrid)
-    - Export tasks in JSON/CSV format
     - Import tasks from JSON/CSV body
 
 10. **Add API versioning and documentation**
@@ -101,7 +99,7 @@ Architecture Diagram (ASCII):
 ### Phase 4: Testing and Validation (1-2 weeks)
  11. **Update unit tests**
      - Modify Database tests to work with API
-     - Add integration tests for API endpoints (including enhanced search, export, import)
+     - Add integration tests for API endpoints (including enhanced search, import)
      - Update CLI integration tests
 
 12. **Performance testing**
@@ -160,5 +158,4 @@ Architecture Diagram (ASCII):
 
 9. **Database Connection**: Single connection vs connection pooling in API? connection pooling
 
-10. **CORS**: Which origins to allow for CORS in development/production?</content>
-<parameter name="filePath">.planning/specs/API_REFACTOR_PLAN.md
+10. **CORS**: Which origins to allow for CORS in development/production?

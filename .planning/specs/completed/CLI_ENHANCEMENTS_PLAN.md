@@ -58,7 +58,7 @@ In ExecuteAsync:
 ## Feature 3: Add reset command
 
 ### Problem
-No way to mark a done task back to todo without export/import workaround.
+No way to mark a done task back to todo without a workaround.
 
 ### Solution
 Create new `reset` command that sets task status back to `todo`.

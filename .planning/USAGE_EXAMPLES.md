@@ -34,11 +34,6 @@ task add
 ```
 Follows prompts for each field with validation.
 
-### Export for Backup
-```
-task export --format json --output ~/backups/tasks_2024-02-19.json
-```
-
 ## For LLM Agents
 
 ### Structured JSON I/O
@@ -103,12 +98,5 @@ Uses jq to analyze completed tasks by priority.
 
 ### Cron Job for Overdue Alerts
 ```
-task list --status pending --json | jq -r '.[] | select(.dueDate < "'$(date +%Y-%m-%d)'") | .title' | while read title; do echo "Overdue: $title"; done
+task list --status pending --json | jq -r '.[] | select(.dueDate < "'$(date +%Y-%m-%d)'" ) | .title' | while read title; do echo "Overdue: $title"; done
 ```
-
-### Integration with Other Tools
-Export to CSV for spreadsheet analysis:
-```
-task export --format csv --output tasks.csv
-```
-Then open in Excel or Google Sheets.

@@ -7,7 +7,7 @@ This plan outlines the development of a CLI application for recording tasks in .
 - **Basic Task Management**: Add, list, edit, delete, complete tasks. Tasks include: id, title, description, priority (high/medium/low), due date, tags, status (pending/completed).
 - **Search Functionality**: Full-text search on title/description/tags using SQLite FTS5. Semantic search via vector embeddings for meaning-based matching (e.g., "get food" matches "buy groceries"). Hybrid mode combines both.
 - **Data Persistence**: Store tasks in local SQLite DB (single file, portable). Includes creation/update timestamps.
-- **Export/Import**: JSON/CSV export for backups; import with progress indicators.
+- **Import**: Import with progress indicators.
 - **Reporting**: CLI commands for stats (e.g., completed tasks by priority, overdue tasks).
 - **Interactive Mode**: Guided prompts for task creation using Spectre.Console.
 
@@ -58,7 +58,7 @@ Tasks are prioritized (1=highest/critical, 2=medium/features, 3=lowest/polish). 
 ### Priority 3 (5 tasks)
 - **configure-help**: Configure descriptive help: auto-generated from attributes with examples and styles for human/agent readability
 - **add-interactive-mode**: Add interactive mode: prompts for task creation, multi-select for tags using Spectre.Console
-- **implement-export-import**: Implement export/import commands with progress indicators and JSON/CSV support
+- **implement-import**: Implement import command with progress indicators and JSON/CSV support
 - **optimize-performance**: Tune SQLite pragmas (WAL mode, cache size) and benchmark search performance for large datasets
 - **document-readme**: Update README with usage examples, agent-specific flags, and installation notes
 
@@ -71,5 +71,4 @@ Tasks are prioritized (1=highest/critical, 2=medium/features, 3=lowest/polish). 
 ## Next Steps
 Start with Priority 1 tasks. Each task should be implemented with code comments, tests, and linting. Use `dotnet run` for testing. For commits, follow: "feat: [description]". No force pushes.
 
-Ready for implementation!</content>
-<parameter name="filePath">PLAN.md
+Ready for implementation!
