@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 using Task.Core;
+using Task.Core.Providers.Telegram;
 
 namespace Task.Api;
 
@@ -10,14 +11,18 @@ public class TasksController : ControllerBase
 {
     private readonly Database _database;
     private readonly ILogger<TasksController> _logger;
+    private readonly TelegramNotificationService _telegramNotifications;
 
-    public TasksController(Database database, ILogger<TasksController> logger)
+    public TasksController(
+        Database database,
+        ILogger<TasksController> logger,
+        TelegramNotificationService telegramNotifications)
     {
         _database = database;
         _logger = logger;
+        _telegramNotifications = telegramNotifications;
     }
 
-    // GET /api/tasks
     [HttpGet]
     public async Task<IActionResult> GetTasks(
         [FromQuery] string? status,
@@ -35,77 +40,77 @@ public class TasksController : ControllerBase
         try
         {
             var allTasks = await _database.GetAllTasksAsync();
+            var filteredTasks = allTasks;
 
-            // Apply filters
             if (!string.IsNullOrEmpty(status))
             {
-                allTasks = allTasks.Where(t => t.Status == status).ToList();
+                filteredTasks = filteredTasks.Where(t => t.Status == status).ToList();
             }
 
             if (!string.IsNullOrEmpty(priority))
             {
-                allTasks = allTasks.Where(t => t.Priority == priority).ToList();
+                filteredTasks = filteredTasks.Where(t => t.Priority == priority).ToList();
             }
 
             if (!string.IsNullOrEmpty(project))
             {
-                allTasks = allTasks.Where(t => t.Project == project).ToList();
+                filteredTasks = filteredTasks.Where(t => t.Project == project).ToList();
             }
 
             if (!string.IsNullOrEmpty(assignee))
             {
-                allTasks = allTasks.Where(t => t.Assignee == assignee).ToList();
+                filteredTasks = filteredTasks.Where(t => t.Assignee == assignee).ToList();
             }
 
             if (!string.IsNullOrEmpty(tags))
             {
                 var tagList = tags.Split(',').Select(t => t.Trim()).ToList();
-                allTasks = allTasks.Where(t => tagList.Any(tag => t.Tags.Contains(tag))).ToList();
+                filteredTasks = filteredTasks.Where(t => tagList.Any(tag => t.Tags.Contains(tag))).ToList();
             }
 
             if (dueBefore.HasValue)
             {
-                allTasks = allTasks.Where(t => t.DueDate.HasValue && t.DueDate <= dueBefore).ToList();
+                filteredTasks = filteredTasks.Where(t => t.DueDate.HasValue && t.DueDate <= dueBefore).ToList();
             }
 
             if (dueAfter.HasValue)
             {
-                allTasks = allTasks.Where(t => t.DueDate.HasValue && t.DueDate >= dueAfter).ToList();
+                filteredTasks = filteredTasks.Where(t => t.DueDate.HasValue && t.DueDate >= dueAfter).ToList();
             }
 
-            // Apply sorting
             if (!string.IsNullOrEmpty(sortBy))
             {
-                allTasks = sortBy.ToLower() switch
+                filteredTasks = sortBy.ToLower() switch
                 {
                     "priority" => sortOrder?.ToLower() == "desc" ?
-                        allTasks.OrderByDescending(t => t.Priority).ToList() :
-                        allTasks.OrderBy(t => t.Priority).ToList(),
+                        filteredTasks.OrderByDescending(t => t.Priority).ToList() :
+                        filteredTasks.OrderBy(t => t.Priority).ToList(),
                     "duedate" => sortOrder?.ToLower() == "desc" ?
-                        allTasks.OrderByDescending(t => t.DueDate).ToList() :
-                        allTasks.OrderBy(t => t.DueDate).ToList(),
+                        filteredTasks.OrderByDescending(t => t.DueDate).ToList() :
+                        filteredTasks.OrderBy(t => t.DueDate).ToList(),
                     "createdat" => sortOrder?.ToLower() == "desc" ?
-                        allTasks.OrderByDescending(t => t.CreatedAt).ToList() :
-                        allTasks.OrderBy(t => t.CreatedAt).ToList(),
+                        filteredTasks.OrderByDescending(t => t.CreatedAt).ToList() :
+                        filteredTasks.OrderBy(t => t.CreatedAt).ToList(),
                     "title" => sortOrder?.ToLower() == "desc" ?
-                        allTasks.OrderByDescending(t => t.Title).ToList() :
-                        allTasks.OrderBy(t => t.Title).ToList(),
-                    _ => allTasks
+                        filteredTasks.OrderByDescending(t => t.Title).ToList() :
+                        filteredTasks.OrderBy(t => t.Title).ToList(),
+                    _ => filteredTasks
                 };
             }
 
-            // Apply pagination
             if (offset.HasValue)
             {
-                allTasks = allTasks.Skip(offset.Value).ToList();
+                filteredTasks = filteredTasks.Skip(offset.Value).ToList();
             }
 
             if (limit.HasValue)
             {
-                allTasks = allTasks.Take(limit.Value).ToList();
+                filteredTasks = filteredTasks.Take(limit.Value).ToList();
             }
 
-            var dtos = allTasks.Select(MapToDto).ToList();
+            await _telegramNotifications.NotifyWhenNoActiveTasksAsync(allTasks, HttpContext.RequestAborted);
+
+            var dtos = filteredTasks.Select(MapToDto).ToList();
             return Ok(dtos);
         }
         catch (Exception ex)
@@ -115,7 +120,6 @@ public class TasksController : ControllerBase
         }
     }
 
-    // GET /api/tasks/{uid}
     [HttpGet("{uid}")]
     public async Task<IActionResult> GetTask(string uid)
     {
@@ -136,7 +140,6 @@ public class TasksController : ControllerBase
         }
     }
 
-    // POST /api/tasks
     [HttpPost]
     public async Task<IActionResult> CreateTask([FromBody] TaskCreateDto dto)
     {
@@ -172,7 +175,6 @@ public class TasksController : ControllerBase
         }
     }
 
-    // PUT /api/tasks/{uid}
     [HttpPut("{uid}")]
     public async Task<IActionResult> UpdateTask(string uid, [FromBody] TaskUpdateDto dto)
     {
@@ -184,7 +186,6 @@ public class TasksController : ControllerBase
                 return NotFound();
             }
 
-            // Update fields
             if (!string.IsNullOrEmpty(dto.Title))
                 existingTask.Title = dto.Title;
             if (dto.Description != null)
@@ -217,7 +218,6 @@ public class TasksController : ControllerBase
         }
     }
 
-    // DELETE /api/tasks/{uid}
     [HttpDelete("{uid}")]
     public async Task<IActionResult> DeleteTask(string uid)
     {
@@ -240,7 +240,6 @@ public class TasksController : ControllerBase
         }
     }
 
-    // PATCH /api/tasks/{uid}/complete
     [HttpPatch("{uid}/complete")]
     public async Task<IActionResult> CompleteTask(string uid)
     {
@@ -254,7 +253,6 @@ public class TasksController : ControllerBase
 
             await _database.CompleteTaskAsync(existingTask.Uid);
 
-            // Re-fetch to get updated data
             var updatedTask = await _database.GetTaskByUidAsync(uid);
             return Ok(MapToDto(updatedTask!));
         }
@@ -265,7 +263,6 @@ public class TasksController : ControllerBase
         }
     }
 
-    // GET /api/tasks/search?q={query}&type={fts|semantic|hybrid}
     [HttpGet("search")]
     public async Task<IActionResult> SearchTasks([FromQuery] string q, [FromQuery] string? type = "fts")
     {
@@ -301,7 +298,6 @@ public class TasksController : ControllerBase
         }
     }
 
-    // GET /api/tasks/export?format=json|csv
     [HttpGet("export")]
     public async Task<IActionResult> ExportTasks([FromQuery] string format = "json")
     {
@@ -318,11 +314,9 @@ public class TasksController : ControllerBase
                 }
                 return File(System.Text.Encoding.UTF8.GetBytes(csv), "text/csv", "tasks.csv");
             }
-            else
-            {
-                var dtos = tasks.Select(MapToDto).ToList();
-                return Ok(dtos);
-            }
+
+            var dtos = tasks.Select(MapToDto).ToList();
+            return Ok(dtos);
         }
         catch (Exception ex)
         {
@@ -331,7 +325,6 @@ public class TasksController : ControllerBase
         }
     }
 
-    // POST /api/tasks/import?format=json|csv
     [HttpPost("import")]
     public async Task<IActionResult> ImportTasks([FromBody] object data, [FromQuery] string format = "json")
     {
@@ -349,7 +342,6 @@ public class TasksController : ControllerBase
             }
             else if (string.Equals(format, "json", StringComparison.OrdinalIgnoreCase))
             {
-                // For JSON, we expect an array of TaskImportDto or similar
                 var jsonString = JsonSerializer.Serialize(data);
                 var importDtos = JsonSerializer.Deserialize<List<TaskImportDto>>(jsonString, new JsonSerializerOptions
                 {
@@ -374,18 +366,15 @@ public class TasksController : ControllerBase
             {
                 try
                 {
-                    // Validate required fields
                     if (string.IsNullOrWhiteSpace(task.Title))
                     {
                         errors.Add("Task with empty title skipped");
                         continue;
                     }
 
-                    // Set defaults
                     task.Priority = string.IsNullOrEmpty(task.Priority) ? "medium" : task.Priority;
                     task.Status = string.IsNullOrEmpty(task.Status) ? "pending" : task.Status;
 
-                    // Add to database
                     var addedTask = await _database.AddTaskAsync(
                         task.Title,
                         task.Description,
@@ -425,7 +414,6 @@ public class TasksController : ControllerBase
         }
     }
 
-    // GET /api/tags
     [HttpGet("/api/tags")]
     public async Task<IActionResult> GetTags()
     {
@@ -441,7 +429,6 @@ public class TasksController : ControllerBase
         }
     }
 
-    // GET /api/assignees
     [HttpGet("/api/assignees")]
     public async Task<IActionResult> GetAssignees()
     {
@@ -475,7 +462,6 @@ public class TasksController : ControllerBase
             headerMap[headers[i]] = i;
         }
 
-        // Required column: Title
         if (!headerMap.ContainsKey("title"))
         {
             throw new Exception("CSV must contain a 'Title' column");
@@ -491,8 +477,8 @@ public class TasksController : ControllerBase
 
             var task = new TaskItem
             {
-                Id = 0, // Will be set by database
-                Uid = "", // Will be generated by database
+                Id = 0,
+                Uid = "",
                 Title = values[headerMap["title"]],
                 Description = headerMap.ContainsKey("description") ? values[headerMap["description"]] : null,
                 Priority = headerMap.ContainsKey("priority") ? values[headerMap["priority"]] : "medium",
@@ -531,7 +517,7 @@ public class TasksController : ControllerBase
                 if (inQuotes && i + 1 < line.Length && line[i + 1] == '"')
                 {
                     current.Append('"');
-                    i++; // Skip next quote
+                    i++;
                 }
                 else
                 {
@@ -557,8 +543,8 @@ public class TasksController : ControllerBase
     {
         return new TaskItem
         {
-            Id = 0, // Will be set by database
-            Uid = "", // Will be generated by database
+            Id = 0,
+            Uid = "",
             Title = dto.Title,
             Description = dto.Description,
             Priority = dto.Priority ?? "medium",
