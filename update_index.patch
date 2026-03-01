@@ -1,0 +1,57 @@
+--- Task.Api/Pages/Index.cshtml
++++ Task.Api/Pages/Index.cshtml
+@@ -19,9 +19,45 @@
+     </div>
+ </section>
+ 
++<!-- Filter Section -->
++<section class="filter-section">
++    <div class="filter-container">
++        <form id="filter-form" hx-get="/Index?handler=Refresh" hx-target="#board" hx-trigger="input delay:300ms, change" hx-indicator=".filter-loading">
++            <div class="filter-bar">
++                <div class="search-group">
++                    <span class="search-icon emoji">🔍</span>
++                    <input type="text" id="SearchQuery" name="SearchQuery" placeholder="Search tasks..." value="@Model.SearchQuery" class="form-control search-input" autocomplete="off" />
++                </div>
++                
++                <div class="filter-group">
++                    <select name="FilterStatus" id="FilterStatus" class="form-select">
++                        <option value="">All Statuses</option>
++                        <option value="todo" selected="@(Model.FilterStatus == "todo")">Todo</option>
++                        <option value="in_progress" selected="@(Model.FilterStatus == "in_progress")">In Progress</option>
++                        <option value="done" selected="@(Model.FilterStatus == "done")">Done</option>
++                    </select>
++
++                    <select name="FilterAssignee" id="FilterAssignee" class="form-select">
++                        <option value="">All Assignees</option>
++                        @foreach (var assignee in Model.AllAssignees)
++                        {
++                            <option value="@assignee" selected="@(Model.FilterAssignee == assignee)">@assignee</option>
++                        }
++                    </select>
++
++                    <select name="FilterLabel" id="FilterLabel" class="form-select">
++                        <option value="">All Labels</option>
++                        @foreach (var label in Model.AllLabels)
++                        {
++                            <option value="@label" selected="@(Model.FilterLabel == label)">@label</option>
++                        }
++                    </select>
++                    
++                    <!-- Loading indicator for HTMX requests -->
++                    <div class="htmx-indicator filter-loading">
++                        <div class="spinner"></div>
++                    </div>
++                </div>
++            </div>
++        </form>
++    </div>
++</section>
++
+ <!-- Main board container with HTMX polling -->
+ <section class="board-section">
+-    <div id="board" class="board-surface" hx-get="/Index?handler=Refresh" hx-trigger="every 1s" hx-target="#board" hx-swap="innerHTML">
++    <div id="board" class="board-surface" hx-get="/Index?handler=Refresh" hx-trigger="every 1s" hx-include="#filter-form" hx-target="#board" hx-swap="innerHTML">
+         @await Html.PartialAsync("_KanbanBoard", Model.TaskItems)
+     </div>
+ </section>
