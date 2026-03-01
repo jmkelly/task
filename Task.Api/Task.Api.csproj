@@ -4,6 +4,10 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <VectorSoLocal>$(MSBuildProjectDirectory)/vector0.so</VectorSoLocal>
+    <VectorSoCli>$(MSBuildProjectDirectory)/../Task.Cli/vector0.so</VectorSoCli>
+    <VssSoLocal>$(MSBuildProjectDirectory)/vss0.so</VssSoLocal>
+    <VssSoCore>$(MSBuildProjectDirectory)/../Task.Core/vss0.so</VssSoCore>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,10 +19,18 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="vector0.so">
+    <Content Include="$(VectorSoLocal)" Condition="Exists('$(VectorSoLocal)')">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="vss0.so">
+    <Content Include="$(VectorSoCli)" Condition="!Exists('$(VectorSoLocal)') and Exists('$(VectorSoCli)')">
+      <Link>vector0.so</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(VssSoLocal)" Condition="Exists('$(VssSoLocal)')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(VssSoCore)" Condition="!Exists('$(VssSoLocal)') and Exists('$(VssSoCore)')">
+      <Link>vss0.so</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

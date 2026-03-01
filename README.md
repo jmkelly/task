@@ -36,8 +36,6 @@ Check out a demo of the Task Management System in action:
 ### API Overview
 ![API](docs/assets/images/api.png)
 
-
-
 ## Architecture Overview
 
 The project is structured around a clear separation of concerns for usability, automation, and scalability. Here is a high-level architecture:
@@ -105,6 +103,44 @@ The system consists of three main components:
 - Support for tags, priorities, due dates, assignees
 - Full-text search on title, description, and tags
 - Vector search for semantic similarity (requires sqlite-vss extension)
+
+### Telegram Provider (Task.Api)
+
+The Telegram provider sends a notification when there are no active tasks in
+`todo` or `in_progress`. Configuration is read from the `Telegram` section in
+`appsettings.json`, `appsettings.{Environment}.json`, or environment variables.
+Environment variables override JSON values (use `__` instead of `:` for nested
+keys).
+
+```json
+{
+  "Telegram": {
+    "Enabled": false,
+    "BotToken": "",
+    "ChatId": "",
+    "DefaultMessage": "No tasks are currently in todo or in_progress."
+  }
+}
+```
+
+#### Configuration keys
+
+- `Telegram:Enabled`: Enables or disables sending notifications. When `false`,
+  the provider logs and skips sends.
+- `Telegram:BotToken`: Telegram bot token used to call the Telegram API.
+- `Telegram:ChatId`: Target chat ID for the message.
+- `Telegram:DefaultMessage`: Message body for notifications. Blank or whitespace
+  falls back to the default string shown above.
+
+If `Telegram:Enabled` is `true` but `BotToken` or `ChatId` are missing, the
+provider throws an error to surface misconfiguration.
+
+#### Trigger behavior
+
+`TasksController.GetTasks` calls the Telegram notification service after
+fetching tasks. The notification triggers only when there are zero tasks whose
+status is `todo` or `in_progress`. If any active task exists, the service logs
+that the notification was skipped.
 
 ## Project Links
 
@@ -197,7 +233,6 @@ COMMANDS:
 ```
 
 ---
-
 
 #### Building CLI from Source
 
