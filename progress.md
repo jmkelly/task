@@ -21,7 +21,7 @@
 - write-tests
 - configure-help
 - add-interactive-mode
-- implement-export-import
+- implement-import
 - optimize-performance
 - document-readme
 
@@ -29,4 +29,4 @@
 None - All tasks completed!
 
 ## Final Status
-The CLI application for task management is fully implemented with all planned features: basic CRUD, search (FTS, semantic, hybrid), export/import, interactive mode, rich outputs, and optimizations. Tests are written, documentation is complete.
+The CLI application for task management is fully implemented with all planned features: basic CRUD, search (FTS, semantic, hybrid), import, interactive mode, rich outputs, and optimizations. Tests are written, documentation is complete.
