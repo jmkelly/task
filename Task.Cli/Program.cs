@@ -130,7 +130,6 @@ public string? ApiUrl { get; set; }
                     ApiUrl = _config.ApiUrl;
                 }
             }
-            }
         }
 
         public static async System.Threading.Tasks.Task<ITaskService> GetTaskServiceAsync(TaskCommandSettings settings, CancellationToken cancellationToken = default)
