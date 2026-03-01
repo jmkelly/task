@@ -1,13 +1,16 @@
-using Xunit;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.DependencyInjection;
-using System.Net.Http;
-using System.Net.Http.Json;
-using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.IO;
+using System.Net.Http;
+using System.Net.Http.Json;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Task.Core;
+using Task.Core.Providers.Telegram;
+using Xunit;
+using SystemTask = System.Threading.Tasks.Task;
 
 namespace Task.Api.Tests.IntegrationTests
 {
@@ -24,7 +27,7 @@ namespace Task.Api.Tests.IntegrationTests
         }
 
         [Fact]
-        public async System.Threading.Tasks.Task GetTasks_ReturnsEmptyList_WhenNoTasks()
+        public async SystemTask GetTasks_ReturnsEmptyList_WhenNoTasks()
         {
             var response = await _client.GetAsync("/api/tasks");
             response.EnsureSuccessStatusCode();
@@ -34,7 +37,7 @@ namespace Task.Api.Tests.IntegrationTests
         }
 
         [Fact]
-        public async System.Threading.Tasks.Task CreateTask_ReturnsCreatedTask()
+        public async SystemTask CreateTask_ReturnsCreatedTask()
         {
             var newTask = new TaskCreateDto
             {
@@ -57,14 +60,13 @@ namespace Task.Api.Tests.IntegrationTests
         }
 
         [Fact]
-        public async System.Threading.Tasks.Task GetTask_ReturnsTask_WhenExists()
+        public async SystemTask GetTask_ReturnsTask_WhenExists()
         {
             var newTask = new TaskCreateDto { Title = "Get Test", Priority = "medium" };
             var createResponse = await _client.PostAsJsonAsync("/api/tasks", newTask);
             var createdTask = await createResponse.Content.ReadFromJsonAsync<TaskDto>();
             Assert.NotNull(createdTask);
 
-            // Then get it
             var getResponse = await _client.GetAsync($"/api/tasks/{createdTask.Uid}");
             getResponse.EnsureSuccessStatusCode();
             var retrievedTask = await getResponse.Content.ReadFromJsonAsync<TaskDto>();
@@ -75,14 +77,13 @@ namespace Task.Api.Tests.IntegrationTests
         }
 
         [Fact]
-        public async System.Threading.Tasks.Task UpdateTask_UpdatesExistingTask()
+        public async SystemTask UpdateTask_UpdatesExistingTask()
         {
             var newTask = new TaskCreateDto { Title = "Original", Priority = "low" };
             var createResponse = await _client.PostAsJsonAsync("/api/tasks", newTask);
             var createdTask = await createResponse.Content.ReadFromJsonAsync<TaskDto>();
             Assert.NotNull(createdTask);
 
-            // Update it
             var updateDto = new TaskUpdateDto
             {
                 Title = "Updated",
@@ -91,7 +92,6 @@ namespace Task.Api.Tests.IntegrationTests
             var updateResponse = await _client.PutAsJsonAsync($"/api/tasks/{createdTask.Uid}", updateDto);
             updateResponse.EnsureSuccessStatusCode();
 
-            // Verify update
             var getResponse = await _client.GetAsync($"/api/tasks/{createdTask.Uid}");
             var updatedTask = await getResponse.Content.ReadFromJsonAsync<TaskDto>();
             Assert.NotNull(updatedTask);
@@ -100,35 +100,31 @@ namespace Task.Api.Tests.IntegrationTests
         }
 
         [Fact]
-        public async System.Threading.Tasks.Task DeleteTask_RemovesTask()
+        public async SystemTask DeleteTask_RemovesTask()
         {
             var newTask = new TaskCreateDto { Title = "To Delete", Priority = "medium" };
             var createResponse = await _client.PostAsJsonAsync("/api/tasks", newTask);
             var createdTask = await createResponse.Content.ReadFromJsonAsync<TaskDto>();
             Assert.NotNull(createdTask);
 
-            // Delete it
             var deleteResponse = await _client.DeleteAsync($"/api/tasks/{createdTask.Uid}");
             deleteResponse.EnsureSuccessStatusCode();
 
-            // Verify deletion
             var getResponse = await _client.GetAsync($"/api/tasks/{createdTask.Uid}");
             Assert.Equal(System.Net.HttpStatusCode.NotFound, getResponse.StatusCode);
         }
 
         [Fact]
-        public async System.Threading.Tasks.Task CompleteTask_SetsStatusToCompleted()
+        public async SystemTask CompleteTask_SetsStatusToCompleted()
         {
             var newTask = new TaskCreateDto { Title = "To Complete", Priority = "medium" };
             var createResponse = await _client.PostAsJsonAsync("/api/tasks", newTask);
             var createdTask = await createResponse.Content.ReadFromJsonAsync<TaskDto>();
             Assert.NotNull(createdTask);
 
-            // Complete it
             var completeResponse = await _client.PatchAsync($"/api/tasks/{createdTask.Uid}/complete", null);
             completeResponse.EnsureSuccessStatusCode();
 
-            // Verify completion
             var getResponse = await _client.GetAsync($"/api/tasks/{createdTask.Uid}");
             var completedTask = await getResponse.Content.ReadFromJsonAsync<TaskDto>();
             Assert.NotNull(completedTask);
@@ -136,12 +132,11 @@ namespace Task.Api.Tests.IntegrationTests
         }
 
         [Fact]
-        public async System.Threading.Tasks.Task SearchTasks_ReturnsMatchingTasks()
+        public async SystemTask SearchTasks_ReturnsMatchingTasks()
         {
             await _client.PostAsJsonAsync("/api/tasks", new TaskCreateDto { Title = "Buy groceries", Priority = "medium" });
             await _client.PostAsJsonAsync("/api/tasks", new TaskCreateDto { Title = "Clean house", Priority = "medium" });
 
-            // Search
             var searchResponse = await _client.GetAsync("/api/tasks/search?q=groceries");
             searchResponse.EnsureSuccessStatusCode();
             var results = await searchResponse.Content.ReadFromJsonAsync<List<TaskDto>>();
@@ -152,10 +147,28 @@ namespace Task.Api.Tests.IntegrationTests
         }
 
         [Fact]
-        public async System.Threading.Tasks.Task GetTask_ReturnsNotFound_WhenTaskDoesNotExist()
+        public async SystemTask GetTask_ReturnsNotFound_WhenTaskDoesNotExist()
         {
             var response = await _client.GetAsync("/api/tasks/nonexistent");
             Assert.Equal(System.Net.HttpStatusCode.NotFound, response.StatusCode);
+        }
+
+        [Fact]
+        public async SystemTask GetTasks_DoesNotTriggerNotification_WhenFilteredListEmptyButTodoExists()
+        {
+            _factory.TelegramProvider.Messages.Clear();
+
+            await _client.PostAsJsonAsync("/api/tasks", new TaskCreateDto
+            {
+                Title = "Todo Task",
+                Priority = "medium",
+                Status = "todo"
+            });
+
+            var response = await _client.GetAsync("/api/tasks?status=done");
+            response.EnsureSuccessStatusCode();
+
+            Assert.Empty(_factory.TelegramProvider.Messages);
         }
     }
 
@@ -167,9 +180,12 @@ namespace Task.Api.Tests.IntegrationTests
         public TestWebApplicationFactory()
         {
             _testDbPath = Path.Combine(Path.GetTempPath(), $"test_tasks_{Guid.NewGuid()}.db");
+            TelegramProvider = new FakeTelegramProvider();
         }
 
         public string TestDbPath => _testDbPath;
+
+        public FakeTelegramProvider TelegramProvider { get; }
 
         public void ClearDatabase()
         {
@@ -186,6 +202,21 @@ namespace Task.Api.Tests.IntegrationTests
             builder.ConfigureServices(services =>
             {
                 services.AddSingleton<Database>(_database);
+                services.AddSingleton<ITelegramProvider>(TelegramProvider);
+                services.AddSingleton<TelegramNotificationService>(sp =>
+                {
+                    var options = Options.Create(new TelegramProviderOptions
+                    {
+                        Enabled = true,
+                        BotToken = "token",
+                        ChatId = "chat",
+                        DefaultMessage = "No tasks are currently in todo or in_progress."
+                    });
+                    return new TelegramNotificationService(
+                        TelegramProvider,
+                        options,
+                        NullLogger<TelegramNotificationService>.Instance);
+                });
             });
         }
 
@@ -196,6 +227,17 @@ namespace Task.Api.Tests.IntegrationTests
             {
                 File.Delete(_testDbPath);
             }
+        }
+    }
+
+    public sealed class FakeTelegramProvider : ITelegramProvider
+    {
+        public List<string> Messages { get; } = new();
+
+        public SystemTask SendMessageAsync(string message, System.Threading.CancellationToken cancellationToken = default)
+        {
+            Messages.Add(message);
+            return SystemTask.CompletedTask;
         }
     }
 }
