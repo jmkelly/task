@@ -1,4 +1,6 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Text;
 using System.Text.Json;
 using Task.Core;
 
@@ -301,36 +303,6 @@ public class TasksController : ControllerBase
         }
     }
 
-    // GET /api/tasks/export?format=json|csv
-    [HttpGet("export")]
-    public async Task<IActionResult> ExportTasks([FromQuery] string format = "json")
-    {
-        try
-        {
-            var tasks = await _database.GetAllTasksAsync();
-
-            if (format.ToLower() == "csv")
-            {
-                var csv = "Id,Uid,Title,Description,Priority,DueDate,Tags,Status,Archived,ArchivedAt,CreatedAt,UpdatedAt\n";
-                foreach (var task in tasks)
-                {
-                    csv += $"{task.Id},{task.Uid},\"{task.Title.Replace("\"", "\"\"")}\",\"{(task.Description ?? "").Replace("\"", "\"\"")}\",{task.Priority},{task.DueDateString},\"{task.TagsString}\",{task.Status},{(task.Archived ? 1 : 0)},{task.ArchivedAt:yyyy-MM-dd HH:mm:ss},{task.CreatedAt:yyyy-MM-dd HH:mm:ss},{task.UpdatedAt:yyyy-MM-dd HH:mm:ss}\n";
-                }
-                return File(System.Text.Encoding.UTF8.GetBytes(csv), "text/csv", "tasks.csv");
-            }
-            else
-            {
-                var dtos = tasks.Select(MapToDto).ToList();
-                return Ok(dtos);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error exporting tasks");
-            return StatusCode(500, "Internal server error");
-        }
-    }
-
     // POST /api/tasks/import?format=json|csv
     [HttpPost("import")]
     public async Task<IActionResult> ImportTasks([FromBody] object data, [FromQuery] string format = "json")
@@ -341,7 +313,8 @@ public class TasksController : ControllerBase
 
             if (string.Equals(format, "csv", StringComparison.OrdinalIgnoreCase))
             {
-                if (data is not string csvContent)
+                var csvContent = await ReadCsvContentAsync(data);
+                if (string.IsNullOrWhiteSpace(csvContent))
                 {
                     return BadRequest("CSV import requires string content in request body");
                 }
@@ -423,6 +396,41 @@ public class TasksController : ControllerBase
             _logger.LogError(ex, "Error importing tasks");
             return StatusCode(500, "Internal server error");
         }
+    }
+
+    private async Task<string?> ReadCsvContentAsync(object data)
+    {
+        if (data is string csvString)
+        {
+            return csvString;
+        }
+
+        if (data is JsonElement element)
+        {
+            if (element.ValueKind == JsonValueKind.String)
+            {
+                return element.GetString();
+            }
+
+            return null;
+        }
+
+        Request.EnableBuffering();
+
+        if (Request.Body.CanSeek)
+        {
+            Request.Body.Position = 0;
+        }
+
+        using var reader = new StreamReader(Request.Body, Encoding.UTF8, leaveOpen: true);
+        var body = await reader.ReadToEndAsync();
+
+        if (Request.Body.CanSeek)
+        {
+            Request.Body.Position = 0;
+        }
+
+        return string.IsNullOrWhiteSpace(body) ? null : body;
     }
 
     // GET /api/tags
