@@ -10,6 +10,8 @@ CREATE TABLE IF NOT EXISTS tasks (
     due_date TEXT, -- ISO 8601 format (e.g., '2023-12-31')
     tags TEXT, -- Comma-separated tags
     status TEXT CHECK(status IN ('todo', 'in_progress', 'done')) DEFAULT 'todo',
+    archived INTEGER NOT NULL DEFAULT 0,
+    archived_at TEXT,
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now'))
 );
@@ -47,3 +49,4 @@ CREATE VIRTUAL TABLE IF NOT EXISTS vss_tasks USING vss0(
 CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
 CREATE INDEX IF NOT EXISTS idx_tasks_priority ON tasks(priority);
 CREATE INDEX IF NOT EXISTS idx_tasks_due_date ON tasks(due_date);
+CREATE INDEX IF NOT EXISTS idx_tasks_archived ON tasks(archived);

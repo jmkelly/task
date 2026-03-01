@@ -111,7 +111,15 @@ namespace Task.Core
 
         public async ST.Task DeleteTaskAsync(string uid, CancellationToken cancellationToken = default)
         {
-            await _database.DeleteTaskAsync(uid, cancellationToken);
+            // Archive instead of hard delete
+            var task = await _database.GetTaskByUidAsync(uid, cancellationToken);
+            if (task == null) return;
+            if (!task.Archived)
+            {
+                task.Archived = true;
+                task.ArchivedAt = DateTime.UtcNow;
+                await _database.UpdateTaskAsync(task, cancellationToken);
+            }
         }
 
         public async ST.Task CompleteTaskAsync(string uid, CancellationToken cancellationToken = default)
@@ -163,6 +171,20 @@ namespace Task.Core
                 }
             }
             return true;
+        }
+        public async ST.Task ArchiveAllTasksAsync(CancellationToken cancellationToken = default)
+        {
+            var tasks = await _database.GetAllTasksAsync(cancellationToken);
+            var now = DateTime.UtcNow;
+            foreach (var task in tasks)
+            {
+                if (!task.Archived)
+                {
+                    task.Archived = true;
+                    task.ArchivedAt = now;
+                    await _database.UpdateTaskAsync(task, cancellationToken);
+                }
+            }
         }
     }
 }

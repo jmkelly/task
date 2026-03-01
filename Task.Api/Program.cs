@@ -35,12 +35,18 @@ namespace Task.Api
             });
 
             // Configure database service
-            builder.Services.AddSingleton<Database>(sp =>
-            {
-                var configuration = sp.GetRequiredService<IConfiguration>();
-                var dbPath = configuration.GetValue<string>("DatabasePath") ?? "tasks.db";
-                return new Database(dbPath);
-            });
+builder.Services.AddSingleton<Database>(sp =>
+{
+    var configuration = sp.GetRequiredService<IConfiguration>();
+    var dbPath = configuration.GetValue<string>("DatabasePath") ?? "tasks.db";
+    return new Database(dbPath);
+});
+builder.Services.AddSingleton<ITaskService>(sp =>
+{
+    var configuration = sp.GetRequiredService<IConfiguration>();
+    var dbPath = configuration.GetValue<string>("DatabasePath") ?? "tasks.db";
+    return new TaskService(dbPath);
+});
 
             var app = builder.Build();
 

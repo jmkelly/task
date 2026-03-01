@@ -17,6 +17,8 @@ namespace Task.Core
         public string? Assignee { get; set; }
         public List<string> DependsOn { get; set; } = new();
         public required string Status { get; set; } = "todo"; // todo, in_progress, done
+        public bool Archived { get; set; } = false;
+        public DateTime? ArchivedAt { get; set; }
         public required DateTime CreatedAt { get; set; }
         public required DateTime UpdatedAt { get; set; }
 

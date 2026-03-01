@@ -30,5 +30,6 @@ namespace Task.Core
         System.Threading.Tasks.Task<List<string>> GetAllUniqueAssigneesAsync(CancellationToken cancellationToken = default);
         System.Threading.Tasks.Task<List<TaskItem>> GetTasksDependingOnAsync(string uid, CancellationToken cancellationToken = default);
         System.Threading.Tasks.Task<bool> ValidateDependenciesAsync(string uid, List<string> dependsOn, CancellationToken cancellationToken = default);
+        System.Threading.Tasks.Task ArchiveAllTasksAsync(CancellationToken cancellationToken = default);
     }
 }

@@ -156,6 +156,13 @@ public class TasksController : ControllerBase
                 dto.Project,
                 dto.Assignee);
 
+            if (dto.Archived.HasValue || dto.ArchivedAt.HasValue)
+            {
+                task.Archived = dto.Archived ?? false;
+                task.ArchivedAt = dto.ArchivedAt;
+                await _database.UpdateTaskAsync(task);
+            }
+
             return CreatedAtAction(nameof(GetTask), new { uid = task.Uid }, MapToDto(task));
         }
         catch (Exception ex)
@@ -194,6 +201,10 @@ public class TasksController : ControllerBase
                 existingTask.Project = dto.Project;
             if (dto.Assignee != null)
                 existingTask.Assignee = dto.Assignee;
+            if (dto.Archived.HasValue)
+                existingTask.Archived = dto.Archived.Value;
+            if (dto.ArchivedAt.HasValue || dto.Archived.HasValue)
+                existingTask.ArchivedAt = dto.ArchivedAt;
 
             await _database.UpdateTaskAsync(existingTask);
 
@@ -300,10 +311,10 @@ public class TasksController : ControllerBase
 
             if (format.ToLower() == "csv")
             {
-                var csv = "Id,Uid,Title,Description,Priority,DueDate,Tags,Status,CreatedAt,UpdatedAt\n";
+                var csv = "Id,Uid,Title,Description,Priority,DueDate,Tags,Status,Archived,ArchivedAt,CreatedAt,UpdatedAt\n";
                 foreach (var task in tasks)
                 {
-                    csv += $"{task.Id},{task.Uid},\"{task.Title.Replace("\"", "\"\"")}\",\"{(task.Description ?? "").Replace("\"", "\"\"")}\",{task.Priority},{task.DueDateString},\"{task.TagsString}\",{task.Status},{task.CreatedAt:yyyy-MM-dd HH:mm:ss},{task.UpdatedAt:yyyy-MM-dd HH:mm:ss}\n";
+                    csv += $"{task.Id},{task.Uid},\"{task.Title.Replace("\"", "\"\"")}\",\"{(task.Description ?? "").Replace("\"", "\"\"")}\",{task.Priority},{task.DueDateString},\"{task.TagsString}\",{task.Status},{(task.Archived ? 1 : 0)},{task.ArchivedAt:yyyy-MM-dd HH:mm:ss},{task.CreatedAt:yyyy-MM-dd HH:mm:ss},{task.UpdatedAt:yyyy-MM-dd HH:mm:ss}\n";
                 }
                 return File(System.Text.Encoding.UTF8.GetBytes(csv), "text/csv", "tasks.csv");
             }
@@ -339,8 +350,8 @@ public class TasksController : ControllerBase
             else if (string.Equals(format, "json", StringComparison.OrdinalIgnoreCase))
             {
                 // For JSON, we expect an array of TaskImportDto or similar
-                var jsonString = System.Text.Json.JsonSerializer.Serialize(data);
-                var importDtos = System.Text.Json.JsonSerializer.Deserialize<List<TaskImportDto>>(jsonString, new JsonSerializerOptions
+                var jsonString = JsonSerializer.Serialize(data);
+                var importDtos = JsonSerializer.Deserialize<List<TaskImportDto>>(jsonString, new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true
                 });
@@ -366,7 +377,7 @@ public class TasksController : ControllerBase
                     // Validate required fields
                     if (string.IsNullOrWhiteSpace(task.Title))
                     {
-                        errors.Add($"Task with empty title skipped");
+                        errors.Add("Task with empty title skipped");
                         continue;
                     }
 
@@ -380,7 +391,16 @@ public class TasksController : ControllerBase
                         task.Description,
                         task.Priority,
                         task.DueDate,
-                        task.Tags);
+                        task.Tags,
+                        task.Project,
+                        task.Assignee);
+
+                    if (task.Archived || task.ArchivedAt.HasValue)
+                    {
+                        addedTask.Archived = task.Archived;
+                        addedTask.ArchivedAt = task.ArchivedAt;
+                        await _database.UpdateTaskAsync(addedTask);
+                    }
 
                     importedTasks.Add(MapToDto(addedTask));
                 }
@@ -482,6 +502,11 @@ public class TasksController : ControllerBase
                     values[headerMap["tags"]].Split(',').Select(t => t.Trim()).Where(t => !string.IsNullOrEmpty(t)).ToList() :
                     new List<string>(),
                 Status = headerMap.ContainsKey("status") ? values[headerMap["status"]] : "pending",
+                Archived = headerMap.ContainsKey("archived") &&
+                           (values[headerMap["archived"]] == "1" || values[headerMap["archived"]].Equals("true", StringComparison.OrdinalIgnoreCase)),
+                ArchivedAt = headerMap.ContainsKey("archivedat") && DateTime.TryParse(values[headerMap["archivedat"]], out var archivedAt)
+                    ? archivedAt
+                    : null,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
@@ -542,6 +567,8 @@ public class TasksController : ControllerBase
             Project = dto.Project,
             Assignee = dto.Assignee,
             Status = dto.Status ?? "pending",
+            Archived = dto.Archived ?? false,
+            ArchivedAt = dto.ArchivedAt,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -561,6 +588,8 @@ public class TasksController : ControllerBase
             Project = task.Project,
             Assignee = task.Assignee,
             Status = task.Status,
+            Archived = task.Archived,
+            ArchivedAt = task.ArchivedAt,
             CreatedAt = task.CreatedAt,
             UpdatedAt = task.UpdatedAt
         };

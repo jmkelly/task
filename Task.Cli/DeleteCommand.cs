@@ -64,7 +64,7 @@ namespace Task.Cli
             {
                 if (deleted.Count > 0)
                 {
-                    Console.WriteLine($"Task(s) {string.Join(", ", deleted)} deleted.");
+                    Console.WriteLine($"Task(s) {string.Join(", ", deleted)} archived.");
                 }
                 if (failed.Count > 0)
                 {

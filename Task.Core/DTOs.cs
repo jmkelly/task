@@ -17,6 +17,9 @@ public class TaskDto
     public string? Assignee { get; set; }
     public List<string> DependsOn { get; set; } = new();
     public string? Status { get; set; }
+    public bool Archived { get; set; }
+    [JsonConverter(typeof(DateTimeNullableConverter))]
+    public DateTime? ArchivedAt { get; set; }
     public required DateTime CreatedAt { get; set; }
     public required DateTime UpdatedAt { get; set; }
 }
@@ -33,6 +36,9 @@ public class TaskCreateDto
     public string? Assignee { get; set; }
     public List<string>? DependsOn { get; set; }
     public string? Status { get; set; }
+    public bool? Archived { get; set; }
+    [JsonConverter(typeof(DateTimeNullableConverter))]
+    public DateTime? ArchivedAt { get; set; }
 }
 
 public class TaskUpdateDto
@@ -47,6 +53,9 @@ public class TaskUpdateDto
     public string? Assignee { get; set; }
     public List<string>? DependsOn { get; set; }
     public string? Status { get; set; }
+    public bool? Archived { get; set; }
+    [JsonConverter(typeof(DateTimeNullableConverter))]
+    public DateTime? ArchivedAt { get; set; }
 }
 
 public class TaskImportDto
@@ -61,4 +70,7 @@ public class TaskImportDto
     public string? Assignee { get; set; }
     public List<string>? DependsOn { get; set; }
     public string? Status { get; set; }
+    public bool? Archived { get; set; }
+    [JsonConverter(typeof(DateTimeNullableConverter))]
+    public DateTime? ArchivedAt { get; set; }
 }

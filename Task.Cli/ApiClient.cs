@@ -126,7 +126,9 @@ public class ApiClient : ITaskService
             Priority = task.Priority,
             DueDate = task.DueDate,
             Tags = task.Tags,
-            Status = task.Status
+            Status = task.Status,
+            Archived = task.Archived,
+            ArchivedAt = task.ArchivedAt
         };
 
         var url = $"{_baseUrl}/api/tasks/{task.Uid}";
@@ -205,6 +207,12 @@ public class ApiClient : ITaskService
         return response.IsSuccessStatusCode;
     }
 
+    public System.Threading.Tasks.Task ArchiveAllTasksAsync(System.Threading.CancellationToken cancellationToken = default)
+    {
+        // Not implemented for CLI/remote API yet
+        throw new NotImplementedException();
+    }
+
     private static TaskItem MapFromDto(Task.Core.TaskDto dto)
     {
         return new TaskItem
@@ -220,6 +228,8 @@ public class ApiClient : ITaskService
             Assignee = dto.Assignee,
             DependsOn = dto.DependsOn ?? new List<string>(),
             Status = dto.Status ?? "todo",
+            Archived = dto.Archived,
+            ArchivedAt = dto.ArchivedAt,
             CreatedAt = dto.CreatedAt,
             UpdatedAt = dto.UpdatedAt
         };

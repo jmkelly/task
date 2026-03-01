@@ -8,11 +8,11 @@ namespace Task.Api.Pages
 {
     public class IndexModel : PageModel
     {
-        private readonly Database _database;
+        private readonly ITaskService _taskService;
 
-        public IndexModel(Database database)
+        public IndexModel(ITaskService taskService)
         {
-            _database = database;
+            _taskService = taskService;
         }
 
         public List<TaskItem> TaskItems { get; set; } = new();
@@ -34,14 +34,14 @@ namespace Task.Api.Pages
 
         public async System.Threading.Tasks.Task OnGetAsync()
         {
-            var tasks = await _database.GetAllTasksAsync();
+            var tasks = await _taskService.GetAllTasksAsync();
             PopulateOptions(tasks);
             TaskItems = FilterTasks(tasks);
         }
 
         public async System.Threading.Tasks.Task<IActionResult> OnGetRefresh()
         {
-            var tasks = await _database.GetAllTasksAsync();
+            var tasks = await _taskService.GetAllTasksAsync();
             PopulateOptions(tasks);
             TaskItems = FilterTasks(tasks);
             return Partial("_BoardContainer", this);
@@ -49,16 +49,16 @@ namespace Task.Api.Pages
 
         public async System.Threading.Tasks.Task<IActionResult> OnPostUpdateStatus(string uid, string status)
         {
-            var task = await _database.GetTaskByUidAsync(uid);
+            var task = await _taskService.GetTaskByUidAsync(uid);
             if (task == null)
             {
                 return NotFound();
             }
 
             task.Status = status;
-            await _database.UpdateTaskAsync(task);
+            await _taskService.UpdateTaskAsync(task);
 
-            var tasks = await _database.GetAllTasksAsync();
+            var tasks = await _taskService.GetAllTasksAsync();
             PopulateOptions(tasks);
             TaskItems = FilterTasks(tasks);
             return Partial("_BoardContainer", this);
@@ -73,9 +73,9 @@ namespace Task.Api.Pages
 
             tags ??= new List<string>();
 
-            await _database.AddTaskAsync(title, description, priority, dueDate, tags, project, assignee);
+            await _taskService.AddTaskAsync(title, description, priority, dueDate, tags, project, null, assignee);
             
-            var tasks = await _database.GetAllTasksAsync();
+            var tasks = await _taskService.GetAllTasksAsync();
             PopulateOptions(tasks);
             TaskItems = FilterTasks(tasks);
             return Partial("_BoardContainer", this);
@@ -88,7 +88,7 @@ namespace Task.Api.Pages
                 return BadRequest("Title is required");
             }
 
-            var task = await _database.GetTaskByUidAsync(uid);
+            var task = await _taskService.GetTaskByUidAsync(uid);
             if (task == null)
             {
                 return NotFound();
@@ -103,9 +103,9 @@ namespace Task.Api.Pages
             task.Assignee = assignee;
             task.UpdatedAt = DateTime.Now;
 
-            await _database.UpdateTaskAsync(task);
+            await _taskService.UpdateTaskAsync(task);
 
-            var tasks = await _database.GetAllTasksAsync();
+            var tasks = await _taskService.GetAllTasksAsync();
             PopulateOptions(tasks);
             TaskItems = FilterTasks(tasks);
             return Partial("_BoardContainer", this);
@@ -118,7 +118,7 @@ namespace Task.Api.Pages
 
         public async System.Threading.Tasks.Task<IActionResult> OnGetEditModal(string uid)
         {
-            var task = await _database.GetTaskByUidAsync(uid);
+            var task = await _taskService.GetTaskByUidAsync(uid);
             if (task == null)
             {
                 return NotFound();
@@ -128,15 +128,15 @@ namespace Task.Api.Pages
 
         public async System.Threading.Tasks.Task<IActionResult> OnPostDeleteTask(string uid)
         {
-            var task = await _database.GetTaskByUidAsync(uid);
+            var task = await _taskService.GetTaskByUidAsync(uid);
             if (task == null)
             {
                 return NotFound();
             }
 
-            await _database.DeleteTaskAsync(task.Uid);
+            await _taskService.DeleteTaskAsync(task.Uid);
 
-            var tasks = await _database.GetAllTasksAsync();
+            var tasks = await _taskService.GetAllTasksAsync();
             PopulateOptions(tasks);
             TaskItems = FilterTasks(tasks);
             return Partial("_BoardContainer", this);
@@ -144,9 +144,8 @@ namespace Task.Api.Pages
 
         public async System.Threading.Tasks.Task<IActionResult> OnPostClearBoard()
         {
-            await _database.ClearAllTasksAsync();
-
-            var tasks = await _database.GetAllTasksAsync();
+            await _taskService.ArchiveAllTasksAsync();
+            var tasks = await _taskService.GetAllTasksAsync();
             PopulateOptions(tasks);
             TaskItems = FilterTasks(tasks);
             return Partial("_BoardContainer", this);
@@ -161,10 +160,12 @@ namespace Task.Api.Pages
         private List<TaskItem> FilterTasks(List<TaskItem> tasks)
         {
             var query = tasks.AsQueryable();
+    // Hide archived tasks
+    query = query.Where(t => !t.Archived);
 
             if (!string.IsNullOrWhiteSpace(SearchQuery))
             {
-                query = query.Where(t => t.Title.Contains(SearchQuery, StringComparison.OrdinalIgnoreCase) || 
+                query = query.Where(t => t.Title.Contains(SearchQuery, StringComparison.OrdinalIgnoreCase) ||
                                         (t.Description != null && t.Description.Contains(SearchQuery, StringComparison.OrdinalIgnoreCase)));
             }
 

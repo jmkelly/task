@@ -69,7 +69,7 @@ namespace Task.Cli
                                 // Validate required fields
                                 if (string.IsNullOrWhiteSpace(taskItem.Title))
                                 {
-                                    AnsiConsole.MarkupLine($"[red]Skipping task with empty title.[/]");
+                                    AnsiConsole.MarkupLine("[red]Skipping task with empty title.[/]");
                                     continue;
                                 }
 
@@ -169,6 +169,11 @@ namespace Task.Cli
                                 Tags = headerMap.ContainsKey("tags") && !string.IsNullOrEmpty(values[headerMap["tags"]]) ?
                                     values[headerMap["tags"]].Split(',').Select(t => t.Trim()).Where(t => !string.IsNullOrEmpty(t)).ToList() : new List<string>(),
                                 Status = headerMap.ContainsKey("status") ? values[headerMap["status"]] : "pending",
+                                Archived = headerMap.ContainsKey("archived") &&
+                                           (values[headerMap["archived"]] == "1" || values[headerMap["archived"]].Equals("true", StringComparison.OrdinalIgnoreCase)),
+                                ArchivedAt = headerMap.ContainsKey("archivedat") && DateTime.TryParse(values[headerMap["archivedat"]], out var archivedAt)
+                                    ? archivedAt
+                                    : null,
                                 CreatedAt = DateTime.UtcNow,
                                 UpdatedAt = DateTime.UtcNow
                             };
@@ -201,6 +206,11 @@ namespace Task.Cli
                         Tags = headerMap.ContainsKey("tags") && !string.IsNullOrEmpty(values[headerMap["tags"]]) ?
                             values[headerMap["tags"]].Split(',').Select(t => t.Trim()).Where(t => !string.IsNullOrEmpty(t)).ToList() : new List<string>(),
                         Status = headerMap.ContainsKey("status") ? values[headerMap["status"]] : "pending",
+                        Archived = headerMap.ContainsKey("archived") &&
+                                   (values[headerMap["archived"]] == "1" || values[headerMap["archived"]].Equals("true", StringComparison.OrdinalIgnoreCase)),
+                        ArchivedAt = headerMap.ContainsKey("archivedat") && DateTime.TryParse(values[headerMap["archivedat"]], out var archivedAt)
+                            ? archivedAt
+                            : null,
                         CreatedAt = DateTime.UtcNow,
                         UpdatedAt = DateTime.UtcNow
                     };

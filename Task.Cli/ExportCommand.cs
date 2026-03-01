@@ -113,7 +113,7 @@ namespace Task.Cli
         {
             var csv = new System.Text.StringBuilder();
             // Header
-            csv.AppendLine("Uid,Title,Description,Priority,DueDate,Tags,Status,CreatedAt,UpdatedAt");
+            csv.AppendLine("Uid,Title,Description,Priority,DueDate,Tags,Status,Archived,ArchivedAt,CreatedAt,UpdatedAt");
 
             if (tasks.Count > 100) // Only show progress for large exports
             {
@@ -124,7 +124,7 @@ namespace Task.Cli
                         var task = ctx.AddTask("Processing tasks for CSV export", maxValue: tasks.Count);
                         foreach (var taskItem in tasks)
                         {
-                            var line = $"{EscapeCsv(taskItem.Uid)},{EscapeCsv(taskItem.Title)},{EscapeCsv(taskItem.Description ?? "")},{taskItem.Priority},{taskItem.DueDateString},{EscapeCsv(taskItem.TagsString)},{taskItem.Status},{taskItem.CreatedAt:o},{taskItem.UpdatedAt:o}";
+                            var line = $"{EscapeCsv(taskItem.Uid)},{EscapeCsv(taskItem.Title)},{EscapeCsv(taskItem.Description ?? "")},{taskItem.Priority},{taskItem.DueDateString},{EscapeCsv(taskItem.TagsString)},{taskItem.Status},{(taskItem.Archived ? 1 : 0)},{taskItem.ArchivedAt:O},{taskItem.CreatedAt:O},{taskItem.UpdatedAt:O}";
                             csv.AppendLine(line);
                             task.Increment(1);
                         }
@@ -137,7 +137,7 @@ namespace Task.Cli
             {
                 foreach (var task in tasks)
                 {
-                    var line = $"{EscapeCsv(task.Uid)},{EscapeCsv(task.Title)},{EscapeCsv(task.Description ?? "")},{task.Priority},{task.DueDateString},{EscapeCsv(task.TagsString)},{task.Status},{task.CreatedAt:o},{task.UpdatedAt:o}";
+                    var line = $"{EscapeCsv(task.Uid)},{EscapeCsv(task.Title)},{EscapeCsv(task.Description ?? "")},{task.Priority},{task.DueDateString},{EscapeCsv(task.TagsString)},{task.Status},{(task.Archived ? 1 : 0)},{task.ArchivedAt:O},{task.CreatedAt:O},{task.UpdatedAt:O}";
                     csv.AppendLine(line);
                 }
                 return csv.ToString();
