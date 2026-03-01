@@ -16,7 +16,7 @@
 
 [![License](https://img.shields.io/badge/License-See%20LICENSE-blue)](LICENSE)
 
-A cross-platform task management system with separate CLI client, REST API backend, and SQLite storage for advanced task management capabilities.
+A cross-platform task management system with a robust CLI client (API-only), REST API backend, and persistent storage for advanced task management.
 
 ## Demo Video
 
@@ -55,7 +55,7 @@ The project is structured around a clear separation of concerns for usability, a
          |   (Task.Cli)   |                      | (Kanban Razor)  |
          +-------+--------+                      +-------+---------+
                  |                                      |
-   (API mode: HTTP via API, or local SQLite)           |
+   (API mode: HTTP via API—CLI requires remote API)    |
                  |                            [Server-side, accesses]
          +-------v--------+                  +---------+-------------+
          |     API        |<----------------+   Task.Api (Razor)    |
@@ -67,16 +67,16 @@ The project is structured around a clear separation of concerns for usability, a
                           (tasks, tags, FTS, etc)
 ```
 **Legend:**
-- **CLI**: Command-line tool (`Task.Cli`) — can connect to the API with HTTP (API mode) or directly to SQLite DB (local mode).
+- **CLI**: Command-line tool (`Task.Cli`) — connects exclusively to the API with HTTP (API mode).
 - **Web UI**: Kanban board (Razor pages) — accesses data directly using Task.Core logic (no HTTP/REST).
 - **API**: REST backend (`Task.Api`) — serves the CLI in API mode and remote services; also hosts Razor pages.
-- **SQLite DB**: Persistent storage, accessed directly by Task.Api/Razor and optionally by CLI through Task.Api
+- **SQLite DB**: The backend (Task.Api) stores data in SQLite. The CLI communicates with the API and does not access SQLite directly.
 
 The system consists of three main components:
 
 - **CLI Client** (`Task.Cli/`): A command-line interface for managing tasks
 - **REST API Backend** (`Task.Api/`): A web API server providing REST endpoints and Kanban Board Web UI
-- **Storage**: SQLite database with full-text search and vector search capabilities
+- **Storage**: The backend uses an SQLite database with full-text search and vector search capabilities
 
 ## Features
 
@@ -84,10 +84,10 @@ The system consists of three main components:
 - Add, list, edit, delete, and complete tasks
 - Assign tasks to users/assignees
 - Search tasks (full-text and semantic search)
-- Export and import tasks
+- Import tasks
 - JSON output for scripting and integration
 - Plain text output option
-- Custom database path support
+
 - API integration mode (--api-url)
 
 ### API Features
@@ -99,7 +99,7 @@ The system consists of three main components:
 - JSON serialization with custom converters
 
 ### Storage Features
-- SQLite database with schema including FTS5 and vector search
+- The backend database (SQLite) includes schema for FTS5 and vector search
 - Automatic schema migration
 - Optimized indexes for performance
 - Support for tags, priorities, due dates, assignees
@@ -144,7 +144,7 @@ Download the appropriate single executable for your platform from the releases p
       ```
      Ensure `~/bin` is in your PATH by adding to your shell profile (e.g., `~/.bashrc` or `~/.zshrc`):
      ```bash
-     export PATH="$HOME/bin:$PATH"
+     PATH="$HOME/bin:$PATH"
      ```
    - On Windows: Move `Task.exe` to a directory in your PATH, such as `C:\Windows\System32\` or create a custom directory and add it to PATH via System Properties > Environment Variables.
 
@@ -190,8 +190,6 @@ COMMANDS:
     reset <id>        Reset a completed task back to pending status             
     search <query>    Perform full-text or semantic similarity search across    
                       task titles and descriptions                              
-    export            Export all tasks to JSON or CSV format for backup or      
-                      migration                                                 
     import            Import tasks from JSON or CSV files, merging with existing
                       data                                                      
     config            Manage CLI configuration settings                         
@@ -288,15 +286,16 @@ For production deployment, configure the `ASPNETCORE_ENVIRONMENT` and `DatabaseP
 
 ### CLI Usage
 
-The CLI can operate in two modes:
-- **Local Database Mode** (default): Uses a local SQLite database file
-- **API Mode**: Connects to a remote API server using `--api-url`
+The CLI requires a remote Task API server and operates in API mode only. All commands communicate with the backend API via the `--api-url` option.
 
 #### Basic Commands
 
 Add a task:
 ```bash
-task add "Buy groceries"
+task add "Buy groceries" --api-url http://localhost:8080
+# or set the API URL once with:
+task config set api-url http://localhost:8080
+# then use:
 task add "Review code" --assignee john.doe --priority high
 ```
 
@@ -331,19 +330,13 @@ task search "groceries"
 
 - `--json`: Output in JSON format
 - `--plain`: Plain text output
-- `--db <path>`: Specify database file path (default: tasks.db)
-- `--api-url <url>`: Base URL of the Task API (switches to API mode)
+- `--api-url <url>`: Base URL of the Task API (required)
 
 #### Examples
 
 List tasks in JSON:
 ```bash
 task list --json
-```
-
-Use a custom database:
-```bash
-task add --db mytasks.db "Custom database task"
 ```
 
 Connect to API backend:
@@ -385,7 +378,7 @@ curl http://localhost:8080/api/tasks
 
 ## Database
 
-The application uses SQLite for data storage with an advanced schema supporting:
+The backend application uses SQLite for data storage with an advanced schema supporting:
 
 - **Tasks Table**: Core task data with priorities, due dates, tags, and status
 - **FTS5 Virtual Table**: Full-text search across title, description, and tags
@@ -393,11 +386,11 @@ The application uses SQLite for data storage with an advanced schema supporting:
 - **Triggers**: Automatic synchronization between tables
 - **Indexes**: Optimized for common query patterns
 
-The database file is created automatically. In Docker deployments, it's stored in the `./data` directory for persistence.
+The SQLite database file is created automatically on the backend. In Docker deployments, it's stored in the `./data` directory for persistence.
 
 ### Database Schema
 
-See `SCHEMA.sql` for the complete database schema definition.
+See `SCHEMA.sql` (in the backend source) for the complete database schema definition.
 
 ## Demo Video
 

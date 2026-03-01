@@ -24,7 +24,7 @@ namespace Task.Cli
 
 			// DESCRIPTION
 			AnsiConsole.MarkupLine("[yellow]DESCRIPTION[/]");
-			AnsiConsole.WriteLine("Task is a modern command-line interface designed for managing personal and team tasks with advanced features like priorities, due dates, projects, tags, dependencies, and semantic search. It supports both local SQLite database storage and remote API integration for collaborative workflows.");
+			AnsiConsole.WriteLine("Task is a modern command-line interface for managing personal and team tasks with advanced features like priorities, due dates, projects, tags, dependencies, and semantic search. The CLI requires a running Task API server; all operations are performed over HTTP using the API.");
 			AnsiConsole.WriteLine();
 			AnsiConsole.WriteLine("Key features include:");
 			AnsiConsole.WriteLine("- Interactive and non-interactive task creation");
@@ -34,7 +34,7 @@ namespace Task.Cli
 			AnsiConsole.WriteLine("- Dependency tracking");
 			AnsiConsole.WriteLine("- JSON output for scripting and LLM integration");
 			AnsiConsole.WriteLine("- Semantic search using vector embeddings");
-			AnsiConsole.WriteLine("- Export/import functionality (JSON, CSV)");
+			AnsiConsole.WriteLine("- Import functionality (JSON, CSV)");
 			AnsiConsole.WriteLine("- Configuration management");
 			AnsiConsole.WriteLine("- Bulk operations support");
 			AnsiConsole.WriteLine();
@@ -49,8 +49,7 @@ namespace Task.Cli
 			AnsiConsole.WriteLine("-v, --version       Display version information and exit");
 			AnsiConsole.WriteLine("--json              Output results in JSON format for scripting and LLM integration");
 			AnsiConsole.WriteLine("--plain             Output in plain text format, disabling rich formatting and colors");
-			AnsiConsole.WriteLine("--db <PATH>         Path to the SQLite database file (default: tasks.db in current directory)");
-			AnsiConsole.WriteLine("--api-url <URL>     Base URL of the Task API server (overrides local database usage)");
+AnsiConsole.WriteLine("--api-url <URL>     Base URL of the Task API server (required)");
 			AnsiConsole.WriteLine();
 
 			// COMMANDS
@@ -74,7 +73,6 @@ namespace Task.Cli
 
 			// Data Management
 			AnsiConsole.MarkupLine("[yellow]Data Management[/]");
-			AnsiConsole.WriteLine("export              Export all tasks to JSON or CSV format for backup or migration");
 			AnsiConsole.WriteLine("import <FILE>       Import tasks from JSON or CSV files, merging with existing data");
 			AnsiConsole.WriteLine();
 
@@ -161,12 +159,9 @@ namespace Task.Cli
 			AnsiConsole.WriteLine("```");
 			AnsiConsole.WriteLine();
 
-			// Data Export/Import
-			AnsiConsole.MarkupLine("[yellow]Data Export/Import[/]");
+			// Data Import
+			AnsiConsole.MarkupLine("[yellow]Data Import[/]");
 			AnsiConsole.WriteLine("```bash");
-			AnsiConsole.WriteLine("# Export to JSON");
-			AnsiConsole.WriteLine("task export --format json --output tasks_backup.json");
-			AnsiConsole.WriteLine();
 			AnsiConsole.WriteLine("# Import from CSV");
 			AnsiConsole.WriteLine("task import tasks_from_trello.csv");
 			AnsiConsole.WriteLine("```");
@@ -192,16 +187,14 @@ namespace Task.Cli
 			AnsiConsole.WriteLine();
 			AnsiConsole.WriteLine("- `default_output`: Default output format (plain/json)");
 			AnsiConsole.WriteLine("- `api_url`: Default API server URL");
-			AnsiConsole.WriteLine("- `database_path`: Default database file location");
-			AnsiConsole.WriteLine("- `auto_sync`: Enable automatic synchronization with remote server");
+AnsiConsole.WriteLine("- `auto_sync`: Enable automatic synchronization with remote server");
 			AnsiConsole.WriteLine();
 			AnsiConsole.WriteLine("Use `task config --help` for detailed configuration options.");
 			AnsiConsole.WriteLine();
 
 			// ENVIRONMENT VARIABLES
 			AnsiConsole.MarkupLine("[yellow]ENVIRONMENT VARIABLES[/]");
-			AnsiConsole.WriteLine("TASK_DB_PATH        Override default database path");
-			AnsiConsole.WriteLine("TASK_API_URL        Override default API URL");
+AnsiConsole.WriteLine("TASK_API_URL        Override default API URL");
 			AnsiConsole.WriteLine("NO_COLOR            Disable colored output (set to any non-empty value)");
 			AnsiConsole.WriteLine("TERM=dumb           Force plain text output");
 			AnsiConsole.WriteLine();
@@ -209,8 +202,7 @@ namespace Task.Cli
 			// FILES
 			AnsiConsole.MarkupLine("[yellow]FILES[/]");
 			AnsiConsole.WriteLine("~/.config/task/config.json    User configuration file");
-			AnsiConsole.WriteLine("tasks.db                      Local SQLite database (current directory by default)");
-			AnsiConsole.WriteLine();
+AnsiConsole.WriteLine();
 
 			// EXIT STATUS
 			AnsiConsole.MarkupLine("[yellow]EXIT STATUS[/]");
@@ -229,8 +221,7 @@ namespace Task.Cli
 			AnsiConsole.MarkupLine("[yellow]COMPATIBILITY[/]");
 			AnsiConsole.WriteLine("- Single file executable");
 			AnsiConsole.WriteLine("- Compatible with Linux, macOS, and Windows");
-			AnsiConsole.WriteLine("- SQLite database format version 3");
-			AnsiConsole.WriteLine();
+AnsiConsole.WriteLine();
 
 			// SEE ALSO
 			AnsiConsole.MarkupLine("[yellow]SEE ALSO[/]");

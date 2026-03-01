@@ -16,7 +16,6 @@ namespace Task.Cli
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(CompleteCommand))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ResetCommand))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(SearchCommand))]
-        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ExportCommand))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ImportCommand))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ConfigSetCommand))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ConfigGetCommand))]
@@ -72,11 +71,6 @@ namespace Task.Cli
                     .WithExample(new[] { "search", "groceries" })
                     .WithExample(new[] { "search", "urgent", "--type", "hybrid" });
 
-                config.AddCommand<ExportCommand>("export")
-                    .WithDescription("Export all tasks to JSON or CSV format for backup or migration")
-                    .WithExample(new[] { "export" })
-                    .WithExample(new[] { "export", "--format", "json" });
-
                 config.AddCommand<ImportCommand>("import")
                     .WithDescription("Import tasks from JSON or CSV files, merging with existing data")
                     .WithExample(new[] { "import", "tasks.json" });
@@ -114,13 +108,10 @@ namespace Task.Cli
             [Description("Output in plain text format, disabling rich formatting")]
             public bool Plain { get; set; }
 
-            [CommandOption("--db")]
-            [Description("Path to the database file (default: tasks.db)")]
-            public string DatabasePath { get; set; } = "tasks.db";
 
             [CommandOption("--api-url")]
-            [Description("Base URL of the Task API (if not specified, uses local database)")]
-            public string? ApiUrl { get; set; }
+[Description("Base URL of the Task API (required)")]
+public string? ApiUrl { get; set; }
 
             public TaskCommandSettings()
             {
@@ -139,23 +130,19 @@ namespace Task.Cli
                     ApiUrl = _config.ApiUrl;
                 }
             }
+            }
         }
 
         public static async System.Threading.Tasks.Task<ITaskService> GetTaskServiceAsync(TaskCommandSettings settings, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(settings.ApiUrl))
             {
-                var taskService = new Task.Core.TaskService(settings.DatabasePath);
-                await taskService.InitializeAsync(cancellationToken);
-                return taskService;
+                throw new InvalidOperationException("API URL must be specified. Please set it in your config (task config set api-url <URL>) or provide --api-url <URL> on the command line.");
             }
-            else
-            {
-                await Config.ValidateUrlAsync(settings.ApiUrl);
-                var apiClient = new ApiClient(settings.ApiUrl);
-                await apiClient.InitializeAsync(cancellationToken);
-                return apiClient;
-            }
+            await Config.ValidateUrlAsync(settings.ApiUrl);
+            var apiClient = new ApiClient(settings.ApiUrl);
+            await apiClient.InitializeAsync(cancellationToken);
+            return apiClient;
         }
     }
 }
