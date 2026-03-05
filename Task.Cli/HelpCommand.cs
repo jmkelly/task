@@ -49,7 +49,7 @@ namespace Task.Cli
 			AnsiConsole.WriteLine("-v, --version       Display version information and exit");
 			AnsiConsole.WriteLine("--json              Output results in JSON format for scripting and LLM integration");
 			AnsiConsole.WriteLine("--plain             Output in plain text format, disabling rich formatting and colors");
-AnsiConsole.WriteLine("--api-url <URL>     Base URL of the Task API server (required)");
+			AnsiConsole.WriteLine("--api-url <URL>     Base URL of the Task API server (required)");
 			AnsiConsole.WriteLine();
 
 			// COMMANDS
@@ -64,6 +64,22 @@ AnsiConsole.WriteLine("--api-url <URL>     Base URL of the Task API server (requ
 			AnsiConsole.WriteLine("delete <UID...>      Permanently remove one or more tasks (supports bulk deletion with confirmation; UID is a 6-letter code, e.g., a2b3k9)");
 			AnsiConsole.WriteLine("complete <UID...>    Mark tasks as completed (supports bulk completion; UID is a 6-letter code, e.g., a2b3k9)");
 			AnsiConsole.WriteLine("reset <UID>         Reset a completed task back to pending status (UID is a 6-letter code)");
+			AnsiConsole.WriteLine();
+
+			// Server
+			AnsiConsole.MarkupLine("[yellow]Server[/]");
+			AnsiConsole.WriteLine("start               Start the Task API server in the background");
+			AnsiConsole.WriteLine("status              Show Task API server status");
+			AnsiConsole.WriteLine("stop                Stop the Task API server");
+			AnsiConsole.WriteLine("server run          Run the Task API server in the foreground");
+AnsiConsole.WriteLine("  Options:");
+AnsiConsole.WriteLine("    --urls <URLS>           Override server URLs (e.g., http://localhost:8080). Disables port auto-selection.");
+AnsiConsole.WriteLine("    --database-path <PATH>  Database path for the API server (default: tasks.db).");
+AnsiConsole.WriteLine("    --ready-file <PATH>     Write readiness details to this file once the server is ready.");
+AnsiConsole.WriteLine();
+AnsiConsole.WriteLine("server start        Start the Task API server in the background");
+AnsiConsole.WriteLine("server status       Show Task API server status");
+AnsiConsole.WriteLine("server stop         Stop the Task API server");
 			AnsiConsole.WriteLine();
 
 			// Search and Discovery
@@ -159,6 +175,28 @@ AnsiConsole.WriteLine("--api-url <URL>     Base URL of the Task API server (requ
 			AnsiConsole.WriteLine("```");
 			AnsiConsole.WriteLine();
 
+			// Server Mode
+			AnsiConsole.MarkupLine("[yellow]Server Mode[/]");
+AnsiConsole.WriteLine("Note: 'server run' starts the API server in the foreground (blocking in the current shell), whereas 'server start' runs it detached in the background.");
+AnsiConsole.WriteLine();
+			AnsiConsole.WriteLine("```bash");
+AnsiConsole.WriteLine("# Start the API server in the background");
+AnsiConsole.WriteLine("task server start");
+AnsiConsole.WriteLine();
+AnsiConsole.WriteLine("# Check server status");
+AnsiConsole.WriteLine("task server status");
+AnsiConsole.WriteLine();
+AnsiConsole.WriteLine("# Stop the API server");
+AnsiConsole.WriteLine("task server stop");
+AnsiConsole.WriteLine();
+AnsiConsole.WriteLine("# Run API server in the foreground with defaults");
+AnsiConsole.WriteLine("task server run");
+AnsiConsole.WriteLine();
+AnsiConsole.WriteLine("# Run with custom URL and DB path, write readiness details to a file");
+AnsiConsole.WriteLine("task server run --urls http://localhost:9090 --database-path tasks_team.db --ready-file ./api.ready.json");
+			AnsiConsole.WriteLine("```");
+			AnsiConsole.WriteLine();
+
 			// Data Import
 			AnsiConsole.MarkupLine("[yellow]Data Import[/]");
 			AnsiConsole.WriteLine("```bash");
@@ -187,14 +225,14 @@ AnsiConsole.WriteLine("--api-url <URL>     Base URL of the Task API server (requ
 			AnsiConsole.WriteLine();
 			AnsiConsole.WriteLine("- `default_output`: Default output format (plain/json)");
 			AnsiConsole.WriteLine("- `api_url`: Default API server URL");
-AnsiConsole.WriteLine("- `auto_sync`: Enable automatic synchronization with remote server");
+			AnsiConsole.WriteLine("- `auto_sync`: Enable automatic synchronization with remote server");
 			AnsiConsole.WriteLine();
 			AnsiConsole.WriteLine("Use `task config --help` for detailed configuration options.");
 			AnsiConsole.WriteLine();
 
 			// ENVIRONMENT VARIABLES
 			AnsiConsole.MarkupLine("[yellow]ENVIRONMENT VARIABLES[/]");
-AnsiConsole.WriteLine("TASK_API_URL        Override default API URL");
+			AnsiConsole.WriteLine("TASK_API_URL        Override default API URL");
 			AnsiConsole.WriteLine("NO_COLOR            Disable colored output (set to any non-empty value)");
 			AnsiConsole.WriteLine("TERM=dumb           Force plain text output");
 			AnsiConsole.WriteLine();
@@ -202,7 +240,7 @@ AnsiConsole.WriteLine("TASK_API_URL        Override default API URL");
 			// FILES
 			AnsiConsole.MarkupLine("[yellow]FILES[/]");
 			AnsiConsole.WriteLine("~/.config/task/config.json    User configuration file");
-AnsiConsole.WriteLine();
+			AnsiConsole.WriteLine();
 
 			// EXIT STATUS
 			AnsiConsole.MarkupLine("[yellow]EXIT STATUS[/]");
@@ -221,7 +259,7 @@ AnsiConsole.WriteLine();
 			AnsiConsole.MarkupLine("[yellow]COMPATIBILITY[/]");
 			AnsiConsole.WriteLine("- Single file executable");
 			AnsiConsole.WriteLine("- Compatible with Linux, macOS, and Windows");
-AnsiConsole.WriteLine();
+			AnsiConsole.WriteLine();
 
 			// SEE ALSO
 			AnsiConsole.MarkupLine("[yellow]SEE ALSO[/]");

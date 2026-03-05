@@ -1,3 +1,5 @@
+using System;
+using System.IO;
 using System.Net.Http;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
@@ -7,8 +9,7 @@ namespace Task.Cli
 {
     public class Config
     {
-        private static readonly string ConfigDir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".task");
+        private static readonly string ConfigDir = GetConfigDirectory();
         private static readonly string ConfigFile = Path.Combine(ConfigDir, "config.json");
 
         public string? ApiUrl { get; set; }
@@ -26,13 +27,11 @@ namespace Task.Cli
                 var json = File.ReadAllText(ConfigFile);
                 var config = JsonSerializer.Deserialize(json, TaskJsonContext.Default.Config) ?? new Config();
 
-                // Set defaults for missing values
                 if (string.IsNullOrEmpty(config.DefaultOutput))
                 {
                     config.DefaultOutput = "plain";
                 }
 
-                // Validate API URL format if set
                 if (!string.IsNullOrEmpty(config.ApiUrl) && !IsValidUrlFormat(config.ApiUrl))
                 {
                     throw new ArgumentException("Invalid API URL format in config. Must be a valid HTTP or HTTPS URL.");
@@ -42,7 +41,6 @@ namespace Task.Cli
             }
             catch (Exception)
             {
-                // If file is corrupted, return defaults
                 return new Config { DefaultOutput = "plain" };
             }
         }
@@ -93,7 +91,6 @@ namespace Task.Cli
             try
             {
                 using var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Head, url));
-                // We just check if the request succeeds, no need to check status code as HEAD might not be supported
             }
             catch (HttpRequestException ex)
             {
@@ -107,7 +104,25 @@ namespace Task.Cli
 
         private static bool IsValidUrlFormat(string url)
         {
-            return Uri.TryCreate(url, UriKind.Absolute, out var uri) && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
+            return Uri.TryCreate(url, UriKind.Absolute, out var uri)
+                && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
+        }
+
+        private static string GetConfigDirectory()
+        {
+            var configHome = Environment.GetEnvironmentVariable("XDG_CONFIG_HOME");
+            if (string.IsNullOrWhiteSpace(configHome))
+            {
+                var userHome = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                if (string.IsNullOrWhiteSpace(userHome))
+                {
+                    throw new InvalidOperationException("Unable to resolve user home directory for config storage.");
+                }
+
+                configHome = Path.Combine(userHome, ".config");
+            }
+
+            return Path.Combine(configHome, "task");
         }
 
         public string? GetValue(string key)
@@ -128,7 +143,7 @@ namespace Task.Cli
                     ApiUrl = null;
                     break;
                 case "defaultoutput":
-                    DefaultOutput = "plain"; // Reset to default
+                    DefaultOutput = "plain";
                     break;
             }
         }

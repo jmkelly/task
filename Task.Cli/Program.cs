@@ -1,6 +1,5 @@
 using Spectre.Console.Cli;
 using System;
-using System.IO;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using Task.Core;
@@ -21,6 +20,10 @@ namespace Task.Cli
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ConfigGetCommand))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ConfigUnsetCommand))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ConfigListCommand))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ServerStartCommand))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ServerStatusCommand))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ServerStopCommand))]
+        
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(HelpCommand))]
         public static int Main(string[] args)
         {
@@ -29,7 +32,8 @@ namespace Task.Cli
             app.Configure(config =>
             {
                 config.SetApplicationName("task");
-                config.SetApplicationVersion("1.0.0");
+                var version = typeof(Program).Assembly.GetName().Version?.ToString() ?? "unknown";
+config.SetApplicationVersion(version);
 
                 // Commands
                 config.AddCommand<AddCommand>("add")
@@ -75,6 +79,18 @@ namespace Task.Cli
                     .WithDescription("Import tasks from JSON or CSV files, merging with existing data")
                     .WithExample(new[] { "import", "tasks.json" });
 
+                config.AddCommand<ServerStartCommand>("start")
+                    .WithDescription("Start the Task API server in the background")
+                    .WithExample(new[] { "start" });
+
+                config.AddCommand<ServerStatusCommand>("status")
+                    .WithDescription("Show Task API server status")
+                    .WithExample(new[] { "status" });
+
+                config.AddCommand<ServerStopCommand>("stop")
+                    .WithDescription("Stop the Task API server")
+                    .WithExample(new[] { "stop" });
+
                 config.AddBranch("config", branch =>
                 {
                     branch.SetDescription("Manage CLI configuration settings");
@@ -86,6 +102,25 @@ namespace Task.Cli
                         .WithDescription("Remove a configuration setting");
                     branch.AddCommand<ConfigListCommand>("list")
                         .WithDescription("Display all current configuration settings");
+                });
+
+
+
+                config.AddBranch("server", branch =>
+                {
+                    branch.SetDescription("Manage the Task API server");
+                    branch.AddCommand<ServerRunCommand>("run")
+                        .WithDescription("Run the Task API server in the foreground.")
+                        .WithExample(new[] { "server", "run" })
+                        .WithExample(new[] { "server", "run", "--urls", "http://localhost:8080" })
+                        .WithExample(new[] { "server", "run", "--database-path", "tasks.db" })
+                        .WithExample(new[] { "server", "run", "--ready-file", "/tmp/task-ready.json" });
+                    branch.AddCommand<ServerStartCommand>("start")
+                        .WithDescription("Start the Task API server in the background.");
+                    branch.AddCommand<ServerStatusCommand>("status")
+                        .WithDescription("Show Task API server status.");
+                    branch.AddCommand<ServerStopCommand>("stop")
+                        .WithDescription("Stop the Task API server.");
                 });
 
                 config.AddCommand<HelpCommand>("help")
@@ -108,10 +143,9 @@ namespace Task.Cli
             [Description("Output in plain text format, disabling rich formatting")]
             public bool Plain { get; set; }
 
-
             [CommandOption("--api-url")]
-[Description("Base URL of the Task API (required)")]
-public string? ApiUrl { get; set; }
+            [Description("Base URL of the Task API (required)")]
+            public string? ApiUrl { get; set; }
 
             public TaskCommandSettings()
             {
