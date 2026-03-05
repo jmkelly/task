@@ -7,6 +7,7 @@ namespace Task.Cli;
 [JsonSerializable(typeof(List<TaskItem>))]
 [JsonSerializable(typeof(Dictionary<string, object>))]
 [JsonSerializable(typeof(Config))]
+[JsonSerializable(typeof(Config.TelegramConfig))]
 [JsonSerializable(typeof(ServerState))]
 [JsonSourceGenerationOptions(WriteIndented = true)]
 public partial class TaskJsonContext : JsonSerializerContext

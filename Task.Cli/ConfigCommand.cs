@@ -9,7 +9,7 @@ namespace Task.Cli
         public class Settings : CommandSettings
         {
             [CommandArgument(0, "<key>")]
-            [Description("The configuration key to set (api-url or defaultOutput)")]
+             [Description("The configuration key to set (api-url, defaultOutput, telegram.botToken, telegram.chatId)")]
             public string Key { get; set; } = null!;
 
             [CommandArgument(1, "<value>")]
@@ -45,7 +45,7 @@ namespace Task.Cli
         public class Settings : CommandSettings
         {
             [CommandArgument(0, "<key>")]
-            [Description("The configuration key to get (api-url or defaultOutput)")]
+             [Description("The configuration key to get (api-url, defaultOutput, telegram.botToken, telegram.chatId)")]
             public string Key { get; set; } = null!;
         }
 
@@ -68,7 +68,7 @@ namespace Task.Cli
         public class Settings : CommandSettings
         {
             [CommandArgument(0, "<key>")]
-            [Description("The configuration key to unset (api-url or defaultOutput)")]
+             [Description("The configuration key to unset (api-url, defaultOutput, telegram.botToken, telegram.chatId)")]
             public string Key { get; set; } = null!;
         }
 
@@ -109,6 +109,11 @@ namespace Task.Cli
                 Console.WriteLine("api-url: (not set)");
             }
             Console.WriteLine($"defaultOutput: {config.DefaultOutput}");
+            if (config.Telegram != null)
+            {
+                Console.WriteLine($"telegram.botToken: {config.Telegram.BotToken ?? "(not set)"}");
+                Console.WriteLine($"telegram.chatId: {config.Telegram.ChatId ?? "(not set)"}");
+            }
             return 0;
         }
     }

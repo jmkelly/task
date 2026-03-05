@@ -15,6 +15,14 @@ namespace Task.Cli
         public string? ApiUrl { get; set; }
         public string? DefaultOutput { get; set; }
 
+        public TelegramConfig? Telegram { get; set; }
+
+        public class TelegramConfig
+        {
+            public string? BotToken { get; set; }
+            public string? ChatId { get; set; }
+        }
+
         public static Config Load()
         {
             try
@@ -74,6 +82,14 @@ namespace Task.Cli
                     }
                     DefaultOutput = value;
                     break;
+                case "telegram.bottoken":
+                    if (Telegram == null) Telegram = new TelegramConfig();
+                    Telegram.BotToken = value;
+                    break;
+                case "telegram.chatid":
+                    if (Telegram == null) Telegram = new TelegramConfig();
+                    Telegram.ChatId = value;
+                    break;
                 default:
                     throw new ArgumentException($"Unknown config key: {key}");
             }
@@ -127,12 +143,19 @@ namespace Task.Cli
 
         public string? GetValue(string key)
         {
-            return key.ToLowerInvariant() switch
+            switch (key.ToLowerInvariant())
             {
-                "api-url" => ApiUrl,
-                "defaultoutput" => DefaultOutput,
-                _ => null
-            };
+                case "api-url":
+                    return ApiUrl;
+                case "defaultoutput":
+                    return DefaultOutput;
+                case "telegram.bottoken":
+                    return Telegram?.BotToken;
+                case "telegram.chatid":
+                    return Telegram?.ChatId;
+                default:
+                    return null;
+            }
         }
 
         public void UnsetValue(string key)
@@ -144,6 +167,12 @@ namespace Task.Cli
                     break;
                 case "defaultoutput":
                     DefaultOutput = "plain";
+                    break;
+                case "telegram.bottoken":
+                    if (Telegram != null) Telegram.BotToken = null;
+                    break;
+                case "telegram.chatid":
+                    if (Telegram != null) Telegram.ChatId = null;
                     break;
             }
         }
