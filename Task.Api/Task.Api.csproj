@@ -4,6 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <PublishSelfContained>true</PublishSelfContained>
     <VectorSoLocal>$(MSBuildProjectDirectory)/vector0.so</VectorSoLocal>
     <VectorSoCli>$(MSBuildProjectDirectory)/../Task.Cli/vector0.so</VectorSoCli>
     <VssSoLocal>$(MSBuildProjectDirectory)/vss0.so</VssSoLocal>
