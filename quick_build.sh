@@ -11,6 +11,16 @@ OUTPUT_DIR="binaries"
 rm -rf "$OUTPUT_DIR"
 mkdir -p "$OUTPUT_DIR"
 
+# Increment build number in .csproj file
+CSProj="Task.Cli/Task.Cli.csproj"
+CURR_VERSION=$(grep '<Version>' "$CSProj" | sed -E 's/.*<Version>([0-9]+\.[0-9]+\.[0-9]+\.([0-9]+))<\/Version>.*/\1/')
+BUILD_NUM=$(echo "$CURR_VERSION" | awk -F. '{print $4}')
+if [ -z "$BUILD_NUM" ]; then BUILD_NUM=0; fi
+NEXT_BUILD_NUM=$((BUILD_NUM + 1))
+NEW_VERSION=$(echo "$CURR_VERSION" | awk -F. -v nb="$NEXT_BUILD_NUM" '{print $1"."$2"."$3"."nb}')
+sed -i -E "s/<Version>[0-9]+\.[0-9]+\.[0-9]+\.([0-9]+)<\/Version>/<Version>${NEW_VERSION}<\/Version>/" "$CSProj"
+echo "Incremented build number: $CURR_VERSION → $NEW_VERSION"
+
 echo "Building Task CLI for multiple platforms..."
 
 # Linux x64
