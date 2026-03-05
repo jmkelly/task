@@ -25,15 +25,34 @@ namespace Task.Cli
                 throw new InvalidOperationException("Unable to resolve current executable path.");
             }
 
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = binaryPath,
-                Arguments = "serve",
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true
-            };
+var startInfo = new ProcessStartInfo
+{
+    FileName = binaryPath,
+    Arguments = "server run",
+    UseShellExecute = false,
+    CreateNoWindow = true,
+    RedirectStandardOutput = true,
+    RedirectStandardError = true
+};
+
+// Pass Telegram config from CLI config to API server as env vars
+try
+{
+    var config = Config.Load();
+    if (config?.Telegram != null)
+    {
+        if (!string.IsNullOrWhiteSpace(config.Telegram.BotToken))
+        {
+            startInfo.Environment["Telegram__BotToken"] = config.Telegram.BotToken;
+        }
+        if (!string.IsNullOrWhiteSpace(config.Telegram.ChatId))
+        {
+            startInfo.Environment["Telegram__ChatId"] = config.Telegram.ChatId;
+        }
+    }
+}
+catch { /* Ignore config errors */ }
+
 
             var process = new Process
             {

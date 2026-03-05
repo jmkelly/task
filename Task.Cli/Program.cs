@@ -125,6 +125,11 @@ config.SetApplicationVersion(version);
 
                 config.AddCommand<HelpCommand>("help")
                     .WithDescription("Show detailed help information");
+                config.AddBranch("telegram", telegramBranch => {
+                    telegramBranch.SetDescription("Telegram integration and utilities");
+                    telegramBranch.AddCommand<TelegramDiscoverChatIdCommand>("discover-chat-id")
+                        .WithDescription("Discover recent chatIds received by your Telegram bot and interactively set telegram.chatId in config");
+                });
             });
 
             return app.Run(args);
