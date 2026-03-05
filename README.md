@@ -331,6 +331,25 @@ For production deployment, configure the `ASPNETCORE_ENVIRONMENT` and `DatabaseP
 
 The CLI requires a remote Task API server and operates in API mode only. All commands communicate with the backend API via the `--api-url` option. The CLI configuration is stored at the canonical config path `~/.config/task/config.json`.
 
+#### Telegram Provider Configuration (CLI → API)
+
+You can configure Telegram notification settings for the API server within your CLI config file. These settings are automatically passed to the API when you start the server from the CLI (`task server run`, `task server start`).
+
+Example `~/.config/task/config.json`:
+```json
+{
+  "apiUrl": "http://localhost:8080",
+  "defaultOutput": "plain",
+  "telegram": {
+    "botToken": "<your-telegram-bot-token>",
+    "chatId": "<your-telegram-chat-id>"
+  }
+}
+```
+
+When the CLI starts the API server, it sets these as environment variables (`Telegram__BotToken`, `Telegram__ChatId`). The API will pick them up automatically.
+
+
 #### Background Server Management
 
 The CLI can manage its own background API server directly.
@@ -363,6 +382,16 @@ Add a task:
 task add "Buy groceries" --api-url http://localhost:8080
 # or set the API URL once with:
 task config set api-url http://localhost:8080
+# Set Telegram notification config (CLI convenience):
+task config set telegram.botToken <your-telegram-bot-token>
+# Automatically discover and set your chatId:
+task telegram discover-chat-id
+# (Alternatively set manually if you know your chatId)
+task config set telegram.chatId <your-telegram-chat-id>
+# Get a value:
+task config get telegram.botToken
+# Unset Telegram chat ID:
+task config unset telegram.chatId
 # then use:
 task add "Review code" --assignee john.doe --priority high
 ```
