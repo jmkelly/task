@@ -166,7 +166,8 @@ namespace Task.Api.Pages
             if (!string.IsNullOrWhiteSpace(SearchQuery))
             {
                 query = query.Where(t => t.Title.Contains(SearchQuery, StringComparison.OrdinalIgnoreCase) ||
-                                        (t.Description != null && t.Description.Contains(SearchQuery, StringComparison.OrdinalIgnoreCase)));
+                                        (t.Description != null && t.Description.Contains(SearchQuery, StringComparison.OrdinalIgnoreCase)) ||
+                                        (t.Tags != null && t.Tags.Any(tag => tag.Contains(SearchQuery, StringComparison.OrdinalIgnoreCase))));
             }
 
             if (!string.IsNullOrWhiteSpace(FilterStatus))
