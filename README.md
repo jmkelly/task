@@ -208,28 +208,36 @@ EXAMPLES:
     task add --title Team meeting --project work --status in_progress
     task add Buy groceries --priority high --assignee john.doe --tags errands 
     --due-date 2026-03-01
+    task start
+    task status
+    task stop
+task server run --urls http://localhost:8080
 
 OPTIONS:
     -h, --help       Prints help information   
     -v, --version    Prints version information
 
 COMMANDS:
-    add               Create a new task with optional properties like priority, 
-                      due date, tags, and project assignment                    
+    add               Create a new task with optional properties like priority,
+                      due date, tags, and project assignment
     list              Display tasks with advanced filtering by status, priority,
-                      assignee, project, tags, and due date                     
-    edit <ids>        Modify existing task properties including title,          
-                      description, priority, due date, and assignee             
-    delete            Permanently remove one or more tasks (supports bulk       
-                      deletion with confirmation)                               
-    complete          Mark tasks as completed (supports bulk completion)        
-    reset <id>        Reset a completed task back to pending status             
-    search <query>    Perform full-text or semantic similarity search across    
-                      task titles and descriptions                              
+                      assignee, project, tags, and due date
+    edit <ids>        Modify existing task properties including title,
+                      description, priority, due date, and assignee
+    delete            Permanently remove one or more tasks (supports bulk
+                      deletion with confirmation)
+    complete          Mark tasks as completed (supports bulk completion)
+    reset <id>        Reset a completed task back to pending status
+    search <query>    Perform full-text or semantic similarity search across
+                      task titles and descriptions
     import            Import tasks from JSON or CSV files, merging with existing
-                      data                                                      
-    config            Manage CLI configuration settings                         
-    help              Show detailed help information                            
+                      data
+    config            Manage CLI configuration settings
+    server run        Run the API server in the foreground
+    server start      Start the background API server daemon
+    server status     Check the status of the background API server
+    server stop       Stop the background API server
+    help              Show detailed help information
 ```
 
 ---
@@ -321,7 +329,32 @@ For production deployment, configure the `ASPNETCORE_ENVIRONMENT` and `DatabaseP
 
 ### CLI Usage
 
-The CLI requires a remote Task API server and operates in API mode only. All commands communicate with the backend API via the `--api-url` option.
+The CLI requires a remote Task API server and operates in API mode only. All commands communicate with the backend API via the `--api-url` option. The CLI configuration is stored at the canonical config path `~/.config/task/config.json`.
+
+#### Background Server Management
+
+The CLI can manage its own background API server directly.
+
+Start the background server:
+```
+task server start
+```
+When the server starts successfully, it outputs `Task.Ready` to indicate readiness. This is particularly useful for agents and automations that need to wait for the server.
+
+Check server status:
+```
+task server status
+```
+
+Stop the background server:
+```
+task server stop
+```
+
+Alternatively, run the server in the foreground:
+```
+task server run --urls http://localhost:8080
+```
 
 #### Basic Commands
 

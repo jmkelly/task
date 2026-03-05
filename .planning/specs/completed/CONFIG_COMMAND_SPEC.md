@@ -5,10 +5,10 @@ Add a config command to the CLI tool to persist commonly used settings, starting
 
 ## Configuration Scope
 - `api-url`: Base URL for the Task API (with reachability validation)
-- `defaultOutput`: Default output format - either `"json"` or `"plain"` (defaults to `"plain"`)
+- `defaultOutput`: Default output format - either "json" or "plain" (defaults to "plain")
 
 ## Configuration File
-- **Location**: `~/.task/config.json`
+- **Location**: `~/.config/task/config.json`
 - **Format**:
 ```json
 {
@@ -27,11 +27,11 @@ Add a config command to the CLI tool to persist commonly used settings, starting
 
 ### Supported Keys
 - `api-url`: Maps to `apiUrl` in JSON
-- `defaultOutput`: Maps to `defaultOutput` in JSON (accepts `"json"` or `"plain"`)
+- `defaultOutput`: Maps to `defaultOutput` in JSON (accepts "json" or "plain")
 
 ### Validation Rules
 - **api-url**: Must be valid HTTP/HTTPS URL format + reachable via HEAD request (5 second timeout)
-- **defaultOutput**: Must be exactly `"json"` or `"plain"`
+- **defaultOutput**: Must be exactly "json" or "plain"
 - **Error Handling**: Fail with descriptive error messages for invalid values or unreachable URLs
 
 ## Code Changes Required
@@ -50,7 +50,7 @@ Add a config command to the CLI tool to persist commonly used settings, starting
 ## Implementation Details
 
 ### Config.cs
-- Creates `~/.task/` directory if needed
+- Creates `~/.config/task/` directory if needed
 - Lazy-loads config file on first access
 - Saves config atomically to prevent corruption
 - Handles missing/corrupted files by falling back to defaults
@@ -59,8 +59,8 @@ Add a config command to the CLI tool to persist commonly used settings, starting
 ### TaskCommandSettings Updates
 - Load config on initialization
 - Map `defaultOutput` to appropriate boolean flags:
-  - `"json"` → `Json = true`
-  - `"plain"` → `Plain = true`
+  - "json" → `Json = true`
+  - "plain" → `Plain = true`
 - CLI options (`--json`, `--plain`) override config settings
 - If config specifies conflicting output modes, CLI flags take precedence
 
@@ -90,5 +90,4 @@ This framework can easily accommodate additional config options such as:
 - Default priority for new tasks
 - Common tags
 - List command filters
-- Custom timeouts</content>
-<parameter name="filePath">/home/james/Documents/code/Task/.planning/specs/CONFIG_COMMAND_SPEC.md
+- Custom timeouts
