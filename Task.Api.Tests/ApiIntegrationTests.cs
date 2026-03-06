@@ -1,18 +1,12 @@
-using Xunit;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
-using System.Collections.Generic;
-using System.IO;
-using System.Net.Http;
-using System.Net.Http.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -71,6 +65,48 @@ namespace Task.Api.Tests.IntegrationTests
 		}
 
 		[Fact]
+		public async SystemTask CreateTask_WithBlockedStatus_PersistsBlockReason()
+		{
+			var newTask = new TaskCreateDto
+			{
+				Title = "Blocked Task",
+				Description = "Needs review",
+				Priority = "medium",
+				Status = "blocked",
+				BlockReason = "Waiting on approval"
+			};
+
+			var response = await _client.PostAsJsonAsync("/api/tasks", newTask);
+			response.EnsureSuccessStatusCode();
+			var created = await response.Content.ReadFromJsonAsync<TaskDto>();
+			Assert.NotNull(created);
+			Assert.Equal("blocked", created.Status);
+			Assert.Equal("Waiting on approval", created.BlockReason);
+
+			var getResponse = await _client.GetAsync($"/api/tasks/{created.Uid}");
+			getResponse.EnsureSuccessStatusCode();
+			var fetched = await getResponse.Content.ReadFromJsonAsync<TaskDto>();
+			Assert.NotNull(fetched);
+			Assert.Equal("blocked", fetched.Status);
+			Assert.Equal("Waiting on approval", fetched.BlockReason);
+		}
+
+		[Fact]
+		public async SystemTask CreateTask_WithBlockReasonWithoutBlockedStatus_ReturnsBadRequest()
+		{
+			var newTask = new TaskCreateDto
+			{
+				Title = "Invalid Block",
+				Priority = "medium",
+				Status = "todo",
+				BlockReason = "Should not be allowed"
+			};
+
+			var response = await _client.PostAsJsonAsync("/api/tasks", newTask);
+			Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+		}
+
+		[Fact]
 		public async SystemTask GetTask_ReturnsTask_WhenExists()
 		{
 			var newTask = new TaskCreateDto { Title = "Get Test", Priority = "medium" };
@@ -102,12 +138,110 @@ namespace Task.Api.Tests.IntegrationTests
 			};
 			var updateResponse = await _client.PutAsJsonAsync($"/api/tasks/{createdTask.Uid}", updateDto);
 			updateResponse.EnsureSuccessStatusCode();
-
+			
 			var getResponse = await _client.GetAsync($"/api/tasks/{createdTask.Uid}");
 			var updatedTask = await getResponse.Content.ReadFromJsonAsync<TaskDto>();
 			Assert.NotNull(updatedTask);
 			Assert.Equal("Updated", updatedTask.Title);
 			Assert.Equal("high", updatedTask.Priority);
+		}
+
+		[Fact]
+		public async SystemTask UpdateTask_WithBlockReasonWhenNotBlocked_ReturnsBadRequest()
+		{
+			var newTask = new TaskCreateDto { Title = "Needs block", Priority = "medium" };
+			var createResponse = await _client.PostAsJsonAsync("/api/tasks", newTask);
+			var createdTask = await createResponse.Content.ReadFromJsonAsync<TaskDto>();
+			Assert.NotNull(createdTask);
+
+			var updateDto = new TaskUpdateDto
+			{
+				BlockReason = "Missing dependency"
+			};
+			var updateResponse = await _client.PutAsJsonAsync($"/api/tasks/{createdTask.Uid}", updateDto);
+			Assert.Equal(HttpStatusCode.BadRequest, updateResponse.StatusCode);
+		}
+
+		[Fact]
+		public async SystemTask UpdateTask_ToBlockedWithReason_PersistsBlockReason()
+		{
+			var newTask = new TaskCreateDto { Title = "Will block", Priority = "medium" };
+			var createResponse = await _client.PostAsJsonAsync("/api/tasks", newTask);
+			var createdTask = await createResponse.Content.ReadFromJsonAsync<TaskDto>();
+			Assert.NotNull(createdTask);
+
+			var updateDto = new TaskUpdateDto
+			{
+				Status = "blocked",
+				BlockReason = "Waiting on input"
+			};
+			var updateResponse = await _client.PutAsJsonAsync($"/api/tasks/{createdTask.Uid}", updateDto);
+			updateResponse.EnsureSuccessStatusCode();
+
+			var getResponse = await _client.GetAsync($"/api/tasks/{createdTask.Uid}");
+			var updatedTask = await getResponse.Content.ReadFromJsonAsync<TaskDto>();
+			Assert.NotNull(updatedTask);
+			Assert.Equal("blocked", updatedTask.Status);
+			Assert.Equal("Waiting on input", updatedTask.BlockReason);
+		}
+
+		[Fact]
+		public async SystemTask UpdateTask_ClearsBlockReason_WhenStatusChangesAwayFromBlocked()
+		{
+			var newTask = new TaskCreateDto
+			{
+				Title = "Clear block",
+				Priority = "medium",
+				Status = "blocked",
+				BlockReason = "Waiting on approval"
+			};
+
+			var createResponse = await _client.PostAsJsonAsync("/api/tasks", newTask);
+			var createdTask = await createResponse.Content.ReadFromJsonAsync<TaskDto>();
+			Assert.NotNull(createdTask);
+
+			var updateDto = new TaskUpdateDto
+			{
+				Status = "todo"
+			};
+			var updateResponse = await _client.PutAsJsonAsync($"/api/tasks/{createdTask.Uid}", updateDto);
+			updateResponse.EnsureSuccessStatusCode();
+
+			var getResponse = await _client.GetAsync($"/api/tasks/{createdTask.Uid}");
+			var updatedTask = await getResponse.Content.ReadFromJsonAsync<TaskDto>();
+			Assert.NotNull(updatedTask);
+			Assert.Equal("todo", updatedTask.Status);
+			Assert.Null(updatedTask.BlockReason);
+		}
+
+		[Fact]
+		public async SystemTask UpdateTask_AllowsClearingBlockReasonWhileBlocked()
+		{
+			var newTask = new TaskCreateDto
+			{
+				Title = "Drop reason",
+				Priority = "medium",
+				Status = "blocked",
+				BlockReason = "External dependency"
+			};
+
+			var createResponse = await _client.PostAsJsonAsync("/api/tasks", newTask);
+			var createdTask = await createResponse.Content.ReadFromJsonAsync<TaskDto>();
+			Assert.NotNull(createdTask);
+
+			var updateDto = new TaskUpdateDto
+			{
+				Status = "blocked",
+				BlockReason = ""
+			};
+			var updateResponse = await _client.PutAsJsonAsync($"/api/tasks/{createdTask.Uid}", updateDto);
+			updateResponse.EnsureSuccessStatusCode();
+
+			var getResponse = await _client.GetAsync($"/api/tasks/{createdTask.Uid}");
+			var updatedTask = await getResponse.Content.ReadFromJsonAsync<TaskDto>();
+			Assert.NotNull(updatedTask);
+			Assert.Equal("blocked", updatedTask.Status);
+			Assert.Null(updatedTask.BlockReason);
 		}
 
 		[Fact]
@@ -194,6 +328,7 @@ namespace Task.Api.Tests.IntegrationTests
 			response.EnsureSuccessStatusCode();
 			var results = await response.Content.ReadFromJsonAsync<List<TaskDto>>();
 			Assert.NotNull(results);
+
 			Assert.Single(results);
 			Assert.Equal("Match", results[0].Title);
 		}
@@ -226,6 +361,7 @@ namespace Task.Api.Tests.IntegrationTests
 			listResponse.EnsureSuccessStatusCode();
 			var tasks = await listResponse.Content.ReadFromJsonAsync<List<TaskDto>>();
 			Assert.NotNull(tasks);
+
 			Assert.Single(tasks);
 			Assert.Equal(keep.Uid, tasks[0].Uid);
 		}
@@ -250,6 +386,28 @@ namespace Task.Api.Tests.IntegrationTests
 			Assert.Single(result.Tasks);
 			Assert.Equal("medium", result.Tasks[0].Priority);
 			Assert.Equal(defaultStatus, result.Tasks[0].Status);
+		}
+
+		[Fact]
+		public async System.Threading.Tasks.Task ImportTasks_AllowsClearingBlockReasonForNonBlocked()
+		{
+			var payload = new List<TaskImportDto>
+			{
+				new TaskImportDto
+				{
+					Title = "Non blocked",
+					Status = "todo",
+					BlockReason = "Should be dropped"
+				}
+			};
+
+			var response = await _client.PostAsJsonAsync("/api/tasks/import?format=json", payload);
+			response.EnsureSuccessStatusCode();
+			var result = await response.Content.ReadFromJsonAsync<ImportResponse>();
+			Assert.NotNull(result);
+			Assert.Single(result.Tasks);
+			Assert.Equal("todo", result.Tasks[0].Status);
+			Assert.Null(result.Tasks[0].BlockReason);
 		}
 
 		[Fact]
@@ -310,6 +468,7 @@ namespace Task.Api.Tests.IntegrationTests
 			response.EnsureSuccessStatusCode();
 			var assignees = await response.Content.ReadFromJsonAsync<List<string>>();
 			Assert.NotNull(assignees);
+
 			Assert.Equal(new[] { "amy", "zoe" }, assignees);
 		}
 
@@ -383,9 +542,22 @@ namespace Task.Api.Tests.IntegrationTests
 		{
 			builder.UseEnvironment("Testing");
 			_database = new Database(_testDbPath);
+			_database.Initialize();
 			builder.ConfigureServices(services =>
 			{
-				services.AddSingleton<Database>(_database);
+				var taskServiceDescriptor = services.SingleOrDefault(descriptor => descriptor.ServiceType == typeof(ITaskService));
+				if (taskServiceDescriptor != null)
+				{
+					services.Remove(taskServiceDescriptor);
+				}
+
+				services.AddSingleton(_database);
+				services.AddSingleton<ITaskService>(sp =>
+				{
+					var taskService = new TaskService(_testDbPath);
+					taskService.InitializeAsync().GetAwaiter().GetResult();
+					return taskService;
+				});
 				services.AddSingleton<ITelegramProvider>(TelegramProvider);
 				services.AddSingleton<TelegramNotificationService>(sp =>
 				{

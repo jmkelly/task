@@ -45,6 +45,21 @@
                 <input type="text" id="assignee" name="assignee" value="@Model.Assignee" placeholder="Assignee name">
             </div>
 
+            <div class="form-group">
+                <label for="status">Status</label>
+                <select id="status" name="status" onchange="toggleEditBlockReason(this)">
+                    <option value="todo" selected="@(Model.Status == "todo")">Todo</option>
+                    <option value="in_progress" selected="@(Model.Status == "in_progress")">In Progress</option>
+                    <option value="blocked" selected="@(Model.Status == "blocked")">Blocked</option>
+                    <option value="done" selected="@(Model.Status == "done")">Done</option>
+                </select>
+            </div>
+
+            <div class="form-group" id="edit-block-reason-group" style="display: @(Model.Status == "blocked" ? "block" : "none")">
+                <label for="blockReason">Reason for block (optional)</label>
+                <textarea id="blockReason" name="blockReason" rows="2" placeholder="e.g., Waiting on external API access...">@Model.BlockReason</textarea>
+            </div>
+
             <div class="form-actions">
                 <button type="submit" class="btn-primary">Update Task</button>
                 <button type="button" class="btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
@@ -52,3 +67,14 @@
         </form>
     </div>
 </div>
+
+<script>
+    function toggleEditBlockReason(selectElement) {
+        const group = document.getElementById('edit-block-reason-group');
+        if (!group) {
+            return;
+        }
+        const isBlocked = selectElement && selectElement.value === 'blocked';
+        group.style.display = isBlocked ? 'block' : 'none';
+    }
+</script>

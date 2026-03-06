@@ -26,6 +26,7 @@
                         <option value="">All Statuses</option>
                         <option value="todo" selected="@(Model.FilterStatus == "todo")">Todo</option>
                         <option value="in_progress" selected="@(Model.FilterStatus == "in_progress")">In Progress</option>
+                        <option value="blocked" selected="@(Model.FilterStatus == "blocked")">Blocked</option>
                         <option value="done" selected="@(Model.FilterStatus == "done")">Done</option>
                     </select>
 
@@ -59,7 +60,6 @@
                         }
                     </select>
 
-                    <!-- Loading indicator for HTMX requests -->
                     <div class="htmx-indicator filter-loading">
                         <div class="spinner"></div>
                     </div>

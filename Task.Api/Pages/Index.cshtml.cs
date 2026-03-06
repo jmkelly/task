@@ -47,7 +47,7 @@ namespace Task.Api.Pages
             return Partial("_BoardContainer", this);
         }
 
-        public async System.Threading.Tasks.Task<IActionResult> OnPostUpdateStatus(string uid, string status)
+        public async System.Threading.Tasks.Task<IActionResult> OnPostUpdateStatus(string uid, string status, string? blockReason)
         {
             var task = await _taskService.GetTaskByUidAsync(uid);
             if (task == null)
@@ -56,6 +56,19 @@ namespace Task.Api.Pages
             }
 
             task.Status = status;
+            if (string.IsNullOrWhiteSpace(status))
+            {
+                return BadRequest("Status is required");
+            }
+
+            if (!string.Equals(status, "blocked", StringComparison.OrdinalIgnoreCase))
+            {
+                task.BlockReason = null;
+            }
+            else if (blockReason != null)
+            {
+                task.BlockReason = string.IsNullOrEmpty(blockReason) ? null : blockReason;
+            }
             await _taskService.UpdateTaskAsync(task);
 
             var tasks = await _taskService.GetAllTasksAsync();
@@ -64,7 +77,7 @@ namespace Task.Api.Pages
             return Partial("_BoardContainer", this);
         }
 
-        public async System.Threading.Tasks.Task<IActionResult> OnPostCreateTask(string title, string? description, string priority, DateTime? dueDate, List<string>? tags, string? project, string? assignee)
+        public async System.Threading.Tasks.Task<IActionResult> OnPostCreateTask(string title, string? description, string priority, DateTime? dueDate, List<string>? tags, string? project, string? assignee, string? status, string? blockReason)
         {
             if (string.IsNullOrWhiteSpace(title))
             {
@@ -73,15 +86,20 @@ namespace Task.Api.Pages
 
             tags ??= new List<string>();
 
-            await _taskService.AddTaskAsync(title, description, priority, dueDate, tags, project, null, assignee);
-            
+            if (!string.IsNullOrEmpty(blockReason) && !string.Equals(status, "blocked", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest("Block reason is only allowed when status is blocked.");
+            }
+
+            await _taskService.AddTaskAsync(title, description, priority, dueDate, tags, project, null, assignee, status ?? "todo", blockReason);
+
             var tasks = await _taskService.GetAllTasksAsync();
             PopulateOptions(tasks);
             TaskItems = FilterTasks(tasks);
             return Partial("_BoardContainer", this);
         }
 
-        public async System.Threading.Tasks.Task<IActionResult> OnPostEditTask(string uid, string title, string? description, string priority, DateTime? dueDate, List<string>? tags, string? project, string? assignee)
+        public async System.Threading.Tasks.Task<IActionResult> OnPostEditTask(string uid, string title, string? description, string priority, DateTime? dueDate, List<string>? tags, string? project, string? assignee, string? status, string? blockReason)
         {
             if (string.IsNullOrWhiteSpace(title))
             {
@@ -101,7 +119,23 @@ namespace Task.Api.Pages
             task.Tags = tags ?? new List<string>();
             task.Project = project;
             task.Assignee = assignee;
-            task.UpdatedAt = DateTime.Now;
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                task.Status = status;
+                if (!string.Equals(status, "blocked", StringComparison.OrdinalIgnoreCase))
+                {
+                    task.BlockReason = null;
+                }
+            }
+            if (blockReason != null)
+            {
+                if (!string.Equals(task.Status, "blocked", StringComparison.OrdinalIgnoreCase))
+                {
+                    return BadRequest("Block reason is only allowed when status is blocked.");
+                }
+                task.BlockReason = string.IsNullOrEmpty(blockReason) ? null : blockReason;
+            }
+            task.UpdatedAt = DateTime.UtcNow;
 
             await _taskService.UpdateTaskAsync(task);
 
@@ -160,8 +194,7 @@ namespace Task.Api.Pages
         private List<TaskItem> FilterTasks(List<TaskItem> tasks)
         {
             var query = tasks.AsQueryable();
-    // Hide archived tasks
-    query = query.Where(t => !t.Archived);
+            query = query.Where(t => !t.Archived);
 
             if (!string.IsNullOrWhiteSpace(SearchQuery))
             {

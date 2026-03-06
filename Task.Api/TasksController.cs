@@ -152,6 +152,11 @@ public class TasksController : ControllerBase
 				return BadRequest(ModelState);
 			}
 
+			if (!string.IsNullOrEmpty(dto.BlockReason) && !string.Equals(dto.Status, "blocked", StringComparison.OrdinalIgnoreCase))
+			{
+				return BadRequest("Block reason is only allowed when status is blocked.");
+			}
+
 			var task = await _database.AddTaskAsync(
 				dto.Title,
 				dto.Description,
@@ -159,7 +164,9 @@ public class TasksController : ControllerBase
 				dto.DueDate,
 				dto.Tags,
 				dto.Project,
-				dto.Assignee);
+				dto.Assignee,
+				dto.Status ?? "todo",
+				dto.BlockReason);
 
 			if (dto.Archived.HasValue || dto.ArchivedAt.HasValue)
 			{
@@ -198,8 +205,29 @@ public class TasksController : ControllerBase
 				existingTask.DueDate = dto.DueDate;
 			if (dto.Tags != null)
 				existingTask.Tags = dto.Tags;
-			if (!string.IsNullOrEmpty(dto.Status))
-				existingTask.Status = dto.Status;
+
+			var statusProvided = !string.IsNullOrEmpty(dto.Status);
+			var nextStatus = statusProvided ? dto.Status! : existingTask.Status;
+
+			if (statusProvided && !string.Equals(nextStatus, "blocked", StringComparison.OrdinalIgnoreCase))
+			{
+				existingTask.BlockReason = null;
+			}
+
+			if (dto.BlockReason != null)
+			{
+				if (!string.Equals(nextStatus, "blocked", StringComparison.OrdinalIgnoreCase))
+				{
+					return BadRequest("Block reason is only allowed when status is blocked.");
+				}
+				existingTask.BlockReason = string.IsNullOrWhiteSpace(dto.BlockReason) ? null : dto.BlockReason;
+			}
+
+			if (statusProvided)
+			{
+				existingTask.Status = nextStatus;
+			}
+
 			if (!string.IsNullOrEmpty(dto.Project))
 				existingTask.Project = dto.Project;
 			if (dto.Assignee != null)
@@ -309,10 +337,10 @@ public class TasksController : ControllerBase
 
 			if (format.ToLower() == "csv")
 			{
-				var csv = "Id,Uid,Title,Description,Priority,DueDate,Tags,Status,Archived,ArchivedAt,CreatedAt,UpdatedAt\n";
+				var csv = "Id,Uid,Title,Description,Priority,DueDate,Tags,Status,BlockReason,Archived,ArchivedAt,CreatedAt,UpdatedAt\n";
 				foreach (var task in tasks)
 				{
-					csv += $"{task.Id},{task.Uid},\"{task.Title.Replace("\"", "\"\"")}\",\"{(task.Description ?? "").Replace("\"", "\"\"")}\",{task.Priority},{task.DueDateString},\"{task.TagsString}\",{task.Status},{(task.Archived ? 1 : 0)},{task.ArchivedAt:yyyy-MM-dd HH:mm:ss},{task.CreatedAt:yyyy-MM-dd HH:mm:ss},{task.UpdatedAt:yyyy-MM-dd HH:mm:ss}\n";
+					csv += $"{task.Id},{task.Uid},\"{task.Title.Replace("\"", "\"\"") }\",\"{(task.Description ?? "").Replace("\"", "\"\"") }\",{task.Priority},{task.DueDateString},\"{task.TagsString}\",{task.Status},\"{(task.BlockReason ?? "").Replace("\"", "\"\"") }\",{(task.Archived ? 1 : 0)},{task.ArchivedAt:yyyy-MM-dd HH:mm:ss},{task.CreatedAt:yyyy-MM-dd HH:mm:ss},{task.UpdatedAt:yyyy-MM-dd HH:mm:ss}\n";
 				}
 				return File(System.Text.Encoding.UTF8.GetBytes(csv), "text/csv", "tasks.csv");
 			}
@@ -376,7 +404,11 @@ public class TasksController : ControllerBase
 					}
 
 					task.Priority = string.IsNullOrEmpty(task.Priority) ? "medium" : task.Priority;
-					task.Status = string.IsNullOrEmpty(task.Status) ? "pending" : task.Status;
+					task.Status = string.IsNullOrEmpty(task.Status) ? "todo" : task.Status;
+					if (!string.Equals(task.Status, "blocked", StringComparison.OrdinalIgnoreCase))
+					{
+						task.BlockReason = null;
+					}
 
 					var addedTask = await _database.AddTaskAsync(
 						task.Title,
@@ -385,7 +417,9 @@ public class TasksController : ControllerBase
 						task.DueDate,
 						task.Tags,
 						task.Project,
-						task.Assignee);
+						task.Assignee,
+						task.Status ?? "todo",
+						task.BlockReason);
 
 					if (task.Archived || task.ArchivedAt.HasValue)
 					{
@@ -521,13 +555,14 @@ public class TasksController : ControllerBase
 				Description = headerMap.ContainsKey("description") ? values[headerMap["description"]] : null,
 				Priority = headerMap.ContainsKey("priority") ? values[headerMap["priority"]] : "medium",
 				DueDate = headerMap.ContainsKey("duedate") && !string.IsNullOrEmpty(values[headerMap["duedate"]]) &&
-						 DateTime.TryParse(values[headerMap["duedate"]], out var dd) ? dd : null,
+				         DateTime.TryParse(values[headerMap["duedate"]], out var dd) ? dd : null,
 				Tags = headerMap.ContainsKey("tags") && !string.IsNullOrEmpty(values[headerMap["tags"]]) ?
 					values[headerMap["tags"]].Split(',').Select(t => t.Trim()).Where(t => !string.IsNullOrEmpty(t)).ToList() :
 					new List<string>(),
 				Status = headerMap.ContainsKey("status") ? values[headerMap["status"]] : "pending",
+				BlockReason = headerMap.ContainsKey("blockreason") ? values[headerMap["blockreason"]] : null,
 				Archived = headerMap.ContainsKey("archived") &&
-						   (values[headerMap["archived"]] == "1" || values[headerMap["archived"]].Equals("true", StringComparison.OrdinalIgnoreCase)),
+				           (values[headerMap["archived"]] == "1" || values[headerMap["archived"]].Equals("true", StringComparison.OrdinalIgnoreCase)),
 				ArchivedAt = headerMap.ContainsKey("archivedat") && DateTime.TryParse(values[headerMap["archivedat"]], out var archivedAt)
 					? archivedAt
 					: null,
@@ -590,7 +625,9 @@ public class TasksController : ControllerBase
 			Tags = dto.Tags ?? new List<string>(),
 			Project = dto.Project,
 			Assignee = dto.Assignee,
-			Status = dto.Status ?? "pending",
+			DependsOn = dto.DependsOn ?? new List<string>(),
+			Status = dto.Status ?? "todo",
+			BlockReason = dto.BlockReason,
 			Archived = dto.Archived ?? false,
 			ArchivedAt = dto.ArchivedAt,
 			CreatedAt = DateTime.UtcNow,
@@ -611,7 +648,9 @@ public class TasksController : ControllerBase
 			Tags = task.Tags,
 			Project = task.Project,
 			Assignee = task.Assignee,
+			DependsOn = task.DependsOn,
 			Status = task.Status,
+			BlockReason = task.BlockReason,
 			Archived = task.Archived,
 			ArchivedAt = task.ArchivedAt,
 			CreatedAt = task.CreatedAt,

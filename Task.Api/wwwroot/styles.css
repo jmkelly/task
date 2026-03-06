@@ -368,6 +368,21 @@ footer {
   color: var(--color-ink-subtle);
 }
 
+.task-block-reason {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
+  align-items: start;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--color-ink-muted);
+  background: rgba(239, 68, 68, 0.08);
+  border-radius: 8px;
+  border: 1px solid rgba(239, 68, 68, 0.18);
+  padding: 0.4rem 0.55rem;
+  margin-top: 0.45rem;
+}
+
 .task-actions {
   display: flex;
   flex-wrap: wrap;

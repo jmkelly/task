@@ -47,6 +47,37 @@
             event.dataTransfer.setData('text/plain', event.target.dataset.uid);
         }
 
+        function buildStatusUpdatePayload(uid, status, blockReason) {
+            const formData = new FormData(document.getElementById('filter-form'));
+            formData.append('uid', uid);
+            formData.append('status', status);
+            if (typeof blockReason === 'string') {
+                formData.append('blockReason', blockReason);
+            }
+            return Object.fromEntries(formData);
+        }
+
+        function updateTaskStatus(uid, status, blockReason) {
+            if (!uid || !status) {
+                return;
+            }
+
+            const payload = buildStatusUpdatePayload(uid, status, blockReason);
+            htmx.ajax('POST', '/Index?handler=UpdateStatus', {
+                values: payload,
+                target: '#board-container',
+                swap: 'outerHTML'
+            });
+        }
+
+        function requestBlockReason() {
+            const reason = window.prompt('Reason for block (optional):');
+            if (reason === null) {
+                return null;
+            }
+            return reason.trim();
+        }
+
         function handleDrop(event) {
             event.preventDefault();
             const uid = event.dataTransfer.getData('text/plain');
@@ -56,17 +87,16 @@
                 // Remove dragging class
                 draggedElement.classList.remove('dragging');
 
-                // We must include the filter form values when updating status
-                const formData = new FormData(document.getElementById('filter-form'));
-                formData.append('uid', uid);
-                formData.append('status', status);
+                if (status === 'blocked') {
+                    const reason = requestBlockReason();
+                    if (reason === null) {
+                        return;
+                    }
+                    updateTaskStatus(uid, status, reason);
+                    return;
+                }
 
-                // Send HTMX request
-                htmx.ajax('POST', '/Index?handler=UpdateStatus', {
-                    values: Object.fromEntries(formData),
-                    target: '#board-container',
-                    swap: 'outerHTML'
-                });
+                updateTaskStatus(uid, status, '');
             }
         }
 
@@ -128,7 +158,7 @@
                 }
             });
 
-            document.addEventListener('drop', function(e) {
+            document.addEventListener('drop', function() {
                 // Remove all drag-over classes
                 document.querySelectorAll('.kanban-column').forEach(col => {
                     col.classList.remove('drag-over');
@@ -136,7 +166,7 @@
             });
 
             // Clean up on drag end
-            document.addEventListener('dragend', function(e) {
+            document.addEventListener('dragend', function() {
                 document.querySelectorAll('.dragging').forEach(el => {
                     el.classList.remove('dragging');
                 });
