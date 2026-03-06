@@ -55,7 +55,7 @@
                 </select>
             </div>
 
-            <div class="form-group" id="edit-block-reason-group">
+            <div class="form-group" id="edit-block-reason-group" style="@(Model.Status == "blocked" ? null : "display: none;")">
                 <label for="blockReason">Reason for block (optional)</label>
                 <textarea id="blockReason" name="blockReason" rows="3" placeholder="e.g., Waiting on external API access...">@Model.BlockReason</textarea>
             </div>
