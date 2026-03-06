@@ -13,6 +13,7 @@ namespace Task.Api
 	{
 		public static async System.Threading.Tasks.Task RunAsync(string[] args, CancellationToken cancellationToken = default)
 		{
+			DisableConfigReloadOnChangeIfUnset();
 			var builder = WebApplication.CreateBuilder(args);
 			ConfigureServices(builder);
 			ConfigureServerUrls(builder);
@@ -62,6 +63,7 @@ namespace Task.Api
 				var dbPath = configuration.GetValue<string>("DatabasePath") ?? "tasks.db";
 				return new TaskService(dbPath);
 			});
+			builder.Services.AddSingleton<IUid, Uid>();
 
 			builder.Services.Configure<TelegramProviderOptions>(
 				builder.Configuration.GetSection("Telegram"));
@@ -131,6 +133,19 @@ namespace Task.Api
 			var uri = new Uri(address);
 			var reason = uri.Port == 8080 ? "preferred" : "auto-assigned";
 			Console.WriteLine($"Server.Started port={uri.Port} url={address} reason={reason}");
+		}
+
+		private static void DisableConfigReloadOnChangeIfUnset()
+		{
+			if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("DOTNET_hostBuilder__reloadConfigOnChange")))
+			{
+				Environment.SetEnvironmentVariable("DOTNET_hostBuilder__reloadConfigOnChange", "false");
+			}
+
+			if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("ASPNETCORE_hostBuilder__reloadConfigOnChange")))
+			{
+				Environment.SetEnvironmentVariable("ASPNETCORE_hostBuilder__reloadConfigOnChange", "false");
+			}
 		}
 
 		private static bool IsPortAvailable(IPAddress address, int port)

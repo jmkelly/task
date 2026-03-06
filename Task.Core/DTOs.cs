@@ -26,6 +26,7 @@ public class TaskDto
 
 public class TaskCreateDto
 {
+    public string? Uid { get; set; }
     public required string Title { get; set; }
     public string? Description { get; set; }
     public required string Priority { get; set; }

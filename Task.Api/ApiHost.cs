@@ -123,6 +123,7 @@ namespace Task.Api
 
         private static WebApplication BuildApp(string[] args, ApiHostOptions options, string? urlOverride)
         {
+            DisableConfigReloadOnChangeIfUnset();
             var builder = WebApplication.CreateBuilder(args);
 
             if (!string.IsNullOrWhiteSpace(options.ApplicationName))
@@ -205,6 +206,7 @@ namespace Task.Api
                 var dbPath = configuration.GetValue<string>("DatabasePath") ?? "tasks.db";
                 return new TaskService(dbPath);
             });
+            builder.Services.AddSingleton<IUid, Uid>();
 
             builder.Services.Configure<TelegramProviderOptions>(
                 builder.Configuration.GetSection("Telegram"));
@@ -237,6 +239,19 @@ namespace Task.Api
             {
                 app.MapOpenApi();
                 app.MapScalarApiReference();
+            }
+        }
+
+        private static void DisableConfigReloadOnChangeIfUnset()
+        {
+            if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("DOTNET_hostBuilder__reloadConfigOnChange")))
+            {
+                Environment.SetEnvironmentVariable("DOTNET_hostBuilder__reloadConfigOnChange", "false");
+            }
+
+            if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("ASPNETCORE_hostBuilder__reloadConfigOnChange")))
+            {
+                Environment.SetEnvironmentVariable("ASPNETCORE_hostBuilder__reloadConfigOnChange", "false");
             }
         }
 

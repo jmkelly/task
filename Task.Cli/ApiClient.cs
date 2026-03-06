@@ -80,6 +80,7 @@ public class ApiClient : ITaskService
     }
 
     public async System.Threading.Tasks.Task<TaskItem> AddTaskAsync(
+        string uid,
         string title,
         string? description,
         string priority,
@@ -103,6 +104,7 @@ public class ApiClient : ITaskService
 
         var createDto = new TaskCreateDto
         {
+            Uid = uid,
             Title = title,
             Description = description,
             Priority = priority,

@@ -9,10 +9,12 @@ namespace Task.Api.Pages
     public class IndexModel : PageModel
     {
         private readonly ITaskService _taskService;
+        private readonly IUid uidGenerator;
 
-        public IndexModel(ITaskService taskService)
+        public IndexModel(ITaskService taskService, IUid uidGenerator)
         {
             _taskService = taskService;
+            this.uidGenerator = uidGenerator;
         }
 
         public List<TaskItem> TaskItems { get; set; } = new();
@@ -77,7 +79,7 @@ namespace Task.Api.Pages
             return Partial("_BoardContainer", this);
         }
 
-        public async System.Threading.Tasks.Task<IActionResult> OnPostCreateTask(string title, string? description, string priority, DateTime? dueDate, List<string>? tags, string? project, string? assignee, string? status, string? blockReason)
+        public async System.Threading.Tasks.Task<IActionResult> OnPostCreateTask(string uid,string title, string? description, string priority, DateTime? dueDate, List<string>? tags, string? project, string? assignee, string? status, string? blockReason)
         {
             if (string.IsNullOrWhiteSpace(title))
             {
@@ -91,7 +93,12 @@ namespace Task.Api.Pages
                 return BadRequest("Block reason is only allowed when status is blocked.");
             }
 
-            await _taskService.AddTaskAsync(title, description, priority, dueDate, tags, project, null, assignee, status ?? "todo", blockReason);
+            if (uid is null || uid.Trim() == "")
+            {
+                uid = uidGenerator.GenerateUid();
+            }
+
+            await _taskService.AddTaskAsync(uid, title, description, priority, dueDate, tags, project, null, assignee, status ?? "todo", blockReason);
 
             var tasks = await _taskService.GetAllTasksAsync();
             PopulateOptions(tasks);

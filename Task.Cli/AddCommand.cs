@@ -2,242 +2,251 @@ using Spectre.Console;
 using Spectre.Console.Cli;
 using System.ComponentModel;
 using System.Threading;
+using Task.Core;
 
 namespace Task.Cli
 {
-    [Description("Add a new task to the task list. Use --json for LLM-friendly structured output.")]
-    public class AddCommand : AsyncCommand<AddCommand.Settings>
-    {
-        public class Settings : Program.TaskCommandSettings
-        {
-            [CommandArgument(0, "[title]")]
-            [Description("The task title. Use quotes for multi-word titles (e.g., 'Buy groceries'). " +
-                         "Cannot be used together with --title.")]
-            public string? Title { get; set; }
+	[Description("Add a new task to the task list. Use --json for LLM-friendly structured output.")]
+	public class AddCommand : AsyncCommand<AddCommand.Settings>
+	{
+		private readonly IUid _uidGenerator;
 
-            [CommandOption("-t|--title")]
-            [Description("The task title as an option (alternative to positional argument). " +
-                         "Use when title starts with a dash or for consistency with other commands.")]
-            public string? TitleOption { get; set; }
+		public AddCommand(IUid uidGenerator)
+		{
+			_uidGenerator = uidGenerator;
+		}
 
-            [CommandOption("-d|--description")]
-            [Description("A detailed description of the task. " +
-                         "Example: -d 'Buy milk, bread, and eggs from the store'")]
-            public string? Description { get; set; }
+		public class Settings : Program.TaskCommandSettings
+		{
+			[CommandArgument(0, "[title]")]
+			[Description("The task title. Use quotes for multi-word titles (e.g., 'Buy groceries'). " +
+						 "Cannot be used together with --title.")]
+			public string? Title { get; set; }
 
-            [CommandOption("-p|--priority")]
-            [Description("Priority level for the task. Valid values: low, medium, high. " +
-                         "Default: medium. Example: --priority high")]
-            public string Priority { get; set; } = "medium";
+			[CommandOption("-t|--title")]
+			[Description("The task title as an option (alternative to positional argument). " +
+						 "Use when title starts with a dash or for consistency with other commands.")]
+			public string? TitleOption { get; set; }
 
-            [CommandOption("--due-date")]
-            [Description("Due date for the task in YYYY-MM-DD format. " +
-                         "Example: --due-date 2024-04-01")]
-            public string? DueDate { get; set; }
+			[CommandOption("-d|--description")]
+			[Description("A detailed description of the task. " +
+						 "Example: -d 'Buy milk, bread, and eggs from the store'")]
+			public string? Description { get; set; }
 
-            [CommandOption("--tags")]
-            [Description("Comma-separated list of tags for organization. " +
-                         "Example: --tags shopping,urgent,weekly")]
-            public string? Tags { get; set; }
+			[CommandOption("-p|--priority")]
+			[Description("Priority level for the task. Valid values: low, medium, high. " +
+						 "Default: medium. Example: --priority high")]
+			public string Priority { get; set; } = "medium";
 
-            [CommandOption("--project")]
-            [Description("Project name to group related tasks. " +
-                         "Example: --project work or --project home")]
-            public string? Project { get; set; }
+			[CommandOption("--due-date")]
+			[Description("Due date for the task in YYYY-MM-DD format. " +
+						 "Example: --due-date 2024-04-01")]
+			public string? DueDate { get; set; }
 
-            [CommandOption("--depends-on")]
-            [Description("Comma-separated list of task UIDs that this task depends on. " +
-                          "Example: --depends-on a1b2c3,d4e5f6")]
-            public string? DependsOn { get; set; }
+			[CommandOption("--tags")]
+			[Description("Comma-separated list of tags for organization. " +
+						 "Example: --tags shopping,urgent,weekly")]
+			public string? Tags { get; set; }
 
-            [CommandOption("--assignee")]
-            [Description("Assignee name for the task. Example: --assignee john.doe")]
-            public string? Assignee { get; set; }
+			[CommandOption("--project")]
+			[Description("Project name to group related tasks. " +
+						 "Example: --project work or --project home")]
+			public string? Project { get; set; }
 
-            [CommandOption("--status")]
-            [Description("Initial status of the task. Valid values: todo, done, in_progress, blocked. Default: todo. Example: --status in_progress")]
-            public string? Status { get; set; }
+			[CommandOption("--depends-on")]
+			[Description("Comma-separated list of task UIDs that this task depends on. " +
+						  "Example: --depends-on a1b2c3,d4e5f6")]
+			public string? DependsOn { get; set; }
 
-            [CommandOption("--block-reason")]
-            [Description("Optional reason for blocking the task. Only applies when status is blocked. Example: --block-reason 'Waiting on API access'")]
-            public string? BlockReason { get; set; }
-        }
+			[CommandOption("--assignee")]
+			[Description("Assignee name for the task. Example: --assignee john.doe")]
+			public string? Assignee { get; set; }
 
-        public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
-        {
-            var service = await Program.GetTaskServiceAsync(settings, cancellationToken);
+			[CommandOption("--status")]
+			[Description("Initial status of the task. Valid values: todo, done, in_progress, blocked. Default: todo. Example: --status in_progress")]
+			public string? Status { get; set; }
 
-            string? title = null;
-            string? description = settings.Description;
-            string priority = settings.Priority;
-            DateTime? dueDate = null;
-            var tags = string.IsNullOrEmpty(settings.Tags) ? new List<string>() : settings.Tags.Split(',').Select(t => t.Trim()).ToList();
-            string? project = settings.Project;
-            var dependsOn = string.IsNullOrEmpty(settings.DependsOn) ? new List<string>() : settings.DependsOn.Split(',').Select(t => t.Trim()).ToList();
-            string? assignee = settings.Assignee;
-            string? status = settings.Status;
-            string? blockReason = settings.BlockReason;
+			[CommandOption("--block-reason")]
+			[Description("Optional reason for blocking the task. Only applies when status is blocked. Example: --block-reason 'Waiting on API access'")]
+			public string? BlockReason { get; set; }
+		}
 
-            if (!string.IsNullOrEmpty(settings.Title) && !string.IsNullOrEmpty(settings.TitleOption))
-            {
-                ErrorHelper.ShowError(
-                    "Use only one of positional title or --title option.",
-                    "task add 'Task title' OR task add --title 'Task title'",
-                    "task add --help");
-                return 1;
-            }
+		public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
+		{
+			var service = await Program.GetTaskServiceAsync(settings, cancellationToken);
+			var uid = _uidGenerator.GenerateUid();
 
-            title = !string.IsNullOrEmpty(settings.Title) ? settings.Title : settings.TitleOption;
+			string? title = null;
+			string? description = settings.Description;
+			string priority = settings.Priority;
+			DateTime? dueDate = null;
+			var tags = string.IsNullOrEmpty(settings.Tags) ? new List<string>() : settings.Tags.Split(',').Select(t => t.Trim()).ToList();
+			string? project = settings.Project;
+			var dependsOn = string.IsNullOrEmpty(settings.DependsOn) ? new List<string>() : settings.DependsOn.Split(',').Select(t => t.Trim()).ToList();
+			string? assignee = settings.Assignee;
+			string? status = settings.Status;
+			string? blockReason = settings.BlockReason;
 
-            if (!ErrorHelper.ValidatePriority(priority, out var priorityError))
-            {
-                ErrorHelper.ShowError(priorityError!);
-                return 1;
-            }
+			if (!string.IsNullOrEmpty(settings.Title) && !string.IsNullOrEmpty(settings.TitleOption))
+			{
+				ErrorHelper.ShowError(
+					"Use only one of positional title or --title option.",
+					"task add 'Task title' OR task add --title 'Task title'",
+					"task add --help");
+				return 1;
+			}
 
-            if (!ErrorHelper.ValidateStatus(status, out var statusError))
-            {
-                ErrorHelper.ShowError(statusError!);
-                return 1;
-            }
+			title = !string.IsNullOrEmpty(settings.Title) ? settings.Title : settings.TitleOption;
 
-            if (!ErrorHelper.ValidateDate(settings.DueDate, out var dateError))
-            {
-                ErrorHelper.ShowError(dateError!);
-                return 1;
-            }
+			if (!ErrorHelper.ValidatePriority(priority, out var priorityError))
+			{
+				ErrorHelper.ShowError(priorityError!);
+				return 1;
+			}
 
-            if (!ErrorHelper.ValidateAssignee(settings.Assignee, out var assigneeError))
-            {
-                ErrorHelper.ShowError(assigneeError!);
-                return 1;
-            }
+			if (!ErrorHelper.ValidateStatus(status, out var statusError))
+			{
+				ErrorHelper.ShowError(statusError!);
+				return 1;
+			}
 
-            if (string.IsNullOrEmpty(title))
-            {
-                title = AnsiConsole.Prompt(
-                    new TextPrompt<string>("Task title:")
-                        .PromptStyle("yellow")
-                        .Validate(t => !string.IsNullOrWhiteSpace(t), "Title cannot be empty."));
+			if (!ErrorHelper.ValidateDate(settings.DueDate, out var dateError))
+			{
+				ErrorHelper.ShowError(dateError!);
+				return 1;
+			}
 
-                description = AnsiConsole.Prompt(
-                    new TextPrompt<string?>("Task description (optional):")
-                        .AllowEmpty());
+			if (!ErrorHelper.ValidateAssignee(settings.Assignee, out var assigneeError))
+			{
+				ErrorHelper.ShowError(assigneeError!);
+				return 1;
+			}
 
-                priority = AnsiConsole.Prompt(
-                    new SelectionPrompt<string>()
-                        .Title("Priority:")
-                        .AddChoices("high", "medium", "low")
-                        .UseConverter(p => p switch
-                        {
-                            "high" => "[red]high[/]",
-                            "medium" => "[yellow]medium[/]",
-                            "low" => "[green]low[/]",
-                            _ => p
-                        }));
+			if (string.IsNullOrEmpty(title))
+			{
+				title = AnsiConsole.Prompt(
+					new TextPrompt<string>("Task title:")
+						.PromptStyle("yellow")
+						.Validate(t => !string.IsNullOrWhiteSpace(t), "Title cannot be empty."));
 
-                var dueDateInput = AnsiConsole.Prompt(
-                    new TextPrompt<string?>("Due date (YYYY-MM-DD, optional):")
-                        .AllowEmpty()
-                        .Validate(date =>
-                        {
-                            if (string.IsNullOrEmpty(date)) return ValidationResult.Success();
-                            return DateTime.TryParse(date, out _) ? ValidationResult.Success() : ValidationResult.Error("Invalid date format. Use YYYY-MM-DD.");
-                        }));
+				description = AnsiConsole.Prompt(
+					new TextPrompt<string?>("Task description (optional):")
+						.AllowEmpty());
 
-                if (!string.IsNullOrEmpty(dueDateInput))
-                {
-                    dueDate = DateTime.Parse(dueDateInput);
-                }
+				priority = AnsiConsole.Prompt(
+					new SelectionPrompt<string>()
+						.Title("Priority:")
+						.AddChoices("high", "medium", "low")
+						.UseConverter(p => p switch
+						{
+							"high" => "[red]high[/]",
+							"medium" => "[yellow]medium[/]",
+							"low" => "[green]low[/]",
+							_ => p
+						}));
 
-                var availableTags = await service.GetAllUniqueTagsAsync(cancellationToken);
-                if (availableTags.Count > 0)
-                {
-                    var selectedTags = AnsiConsole.Prompt(
-                        new MultiSelectionPrompt<string>()
-                            .Title("Tags (use space to select, enter to confirm):")
-                            .NotRequired()
-                            .AddChoices(availableTags));
+				var dueDateInput = AnsiConsole.Prompt(
+					new TextPrompt<string?>("Due date (YYYY-MM-DD, optional):")
+						.AllowEmpty()
+						.Validate(date =>
+						{
+							if (string.IsNullOrEmpty(date)) return ValidationResult.Success();
+							return DateTime.TryParse(date, out _) ? ValidationResult.Success() : ValidationResult.Error("Invalid date format. Use YYYY-MM-DD.");
+						}));
 
-                    tags = selectedTags.ToList();
-                }
-                else
-                {
-                    var tagsInput = AnsiConsole.Prompt(
-                        new TextPrompt<string?>("Tags (comma-separated, optional):")
-                            .AllowEmpty());
+				if (!string.IsNullOrEmpty(dueDateInput))
+				{
+					dueDate = DateTime.Parse(dueDateInput);
+				}
 
-                    if (!string.IsNullOrEmpty(tagsInput))
-                    {
-                        tags = tagsInput.Split(',').Select(t => t.Trim()).Where(t => !string.IsNullOrEmpty(t)).ToList();
-                    }
-                }
+				var availableTags = await service.GetAllUniqueTagsAsync(cancellationToken);
+				if (availableTags.Count > 0)
+				{
+					var selectedTags = AnsiConsole.Prompt(
+						new MultiSelectionPrompt<string>()
+							.Title("Tags (use space to select, enter to confirm):")
+							.NotRequired()
+							.AddChoices(availableTags));
 
-                assignee = AnsiConsole.Prompt(
-                    new TextPrompt<string?>("Assignee (optional):")
-                        .AllowEmpty());
+					tags = selectedTags.ToList();
+				}
+				else
+				{
+					var tagsInput = AnsiConsole.Prompt(
+						new TextPrompt<string?>("Tags (comma-separated, optional):")
+							.AllowEmpty());
 
-                if (string.IsNullOrEmpty(status))
-                {
-                    status = AnsiConsole.Prompt(
-                        new SelectionPrompt<string>()
-                            .Title("Status:")
-                            .AddChoices("todo", "in_progress", "blocked", "done"));
-                }
-                else
-                {
-                    status = status.ToLower();
-                }
+					if (!string.IsNullOrEmpty(tagsInput))
+					{
+						tags = tagsInput.Split(',').Select(t => t.Trim()).Where(t => !string.IsNullOrEmpty(t)).ToList();
+					}
+				}
 
-                if (string.Equals(status, "blocked", StringComparison.OrdinalIgnoreCase) && blockReason == null)
-                {
-                    blockReason = AnsiConsole.Prompt(
-                        new TextPrompt<string?>("Block reason (optional):")
-                            .AllowEmpty());
+				assignee = AnsiConsole.Prompt(
+					new TextPrompt<string?>("Assignee (optional):")
+						.AllowEmpty());
 
-                    if (string.IsNullOrEmpty(blockReason))
-                    {
-                        blockReason = null;
-                    }
-                }
-            }
-            else
-            {
-                if (!string.IsNullOrEmpty(settings.DueDate))
-                {
-                    if (DateTime.TryParse(settings.DueDate, out var parsedDate))
-                    {
-                        dueDate = parsedDate;
-                    }
-                }
+				if (string.IsNullOrEmpty(status))
+				{
+					status = AnsiConsole.Prompt(
+						new SelectionPrompt<string>()
+							.Title("Status:")
+							.AddChoices("todo", "in_progress", "blocked", "done"));
+				}
+				else
+				{
+					status = status.ToLower();
+				}
 
-                status ??= "todo";
-                status = status.ToLower();
-            }
+				if (string.Equals(status, "blocked", StringComparison.OrdinalIgnoreCase) && blockReason == null)
+				{
+					blockReason = AnsiConsole.Prompt(
+						new TextPrompt<string?>("Block reason (optional):")
+							.AllowEmpty());
 
-            if (!string.IsNullOrEmpty(blockReason) && !string.Equals(status, "blocked", StringComparison.OrdinalIgnoreCase))
-            {
-                ErrorHelper.ShowError("Block reason is only allowed when status is blocked.", "task add --status blocked --block-reason 'Waiting on API access'", "task add --help");
-                return 1;
-            }
+					if (string.IsNullOrEmpty(blockReason))
+					{
+						blockReason = null;
+					}
+				}
+			}
+			else
+			{
+				if (!string.IsNullOrEmpty(settings.DueDate))
+				{
+					if (DateTime.TryParse(settings.DueDate, out var parsedDate))
+					{
+						dueDate = parsedDate;
+					}
+				}
 
-            var task = await service.AddTaskAsync(title, description, priority, dueDate, tags, project, dependsOn, assignee, status ?? "todo", blockReason, cancellationToken);
+				status ??= "todo";
+				status = status.ToLower();
+			}
 
-            Console.Error.WriteLine($"DEBUG: project='{project}', settings.Project='{settings.Project}'");
-            Console.Error.WriteLine($"DEBUG: task.Project='{task.Project}'");
+			if (!string.IsNullOrEmpty(blockReason) && !string.Equals(status, "blocked", StringComparison.OrdinalIgnoreCase))
+			{
+				ErrorHelper.ShowError("Block reason is only allowed when status is blocked.", "task add --status blocked --block-reason 'Waiting on API access'", "task add --help");
+				return 1;
+			}
 
-            if (settings.Json)
-            {
+			var task = await service.AddTaskAsync(uid, title!, description, priority, dueDate, tags, project, dependsOn, assignee, status ?? "todo", blockReason, cancellationToken);
+
+			Console.Error.WriteLine($"DEBUG: project='{project}', settings.Project='{settings.Project}'");
+			Console.Error.WriteLine($"DEBUG: task.Project='{task.Project}'");
+
+			if (settings.Json)
+			{
 #pragma warning disable IL2026
-                Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(task, JsonHelper.Options));
+				Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(task, JsonHelper.Options));
 #pragma warning restore IL2026
-            }
-            else
-            {
-                Console.WriteLine($"Task added: {task.Id}");
-            }
+			}
+			else
+			{
+				Console.WriteLine($"Task added: {task.Uid}");
+			}
 
-            return 0;
-        }
-    }
+			return 0;
+		}
+	}
 }

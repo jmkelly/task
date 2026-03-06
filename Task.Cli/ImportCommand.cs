@@ -26,6 +26,7 @@ namespace Task.Cli
         public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
         {
             var service = await Program.GetTaskServiceAsync(settings, cancellationToken);
+            var uidGenerator = new Uid();
 
             if (string.IsNullOrEmpty(settings.Input))
             {
@@ -82,7 +83,7 @@ namespace Task.Cli
                                 }
 
                                 // Add to database (this will generate new UID and timestamps)
-                                addTasks.Add(service.AddTaskAsync(taskItem.Title, taskItem.Description, taskItem.Priority, taskItem.DueDate, taskItem.Tags, taskItem.Project, taskItem.DependsOn, taskItem.Assignee, taskItem.Status, taskItem.BlockReason, cancellationToken));
+                                addTasks.Add(service.AddTaskAsync(uidGenerator.GenerateUid(), taskItem.Title, taskItem.Description, taskItem.Priority, taskItem.DueDate, taskItem.Tags, taskItem.Project, taskItem.DependsOn, taskItem.Assignee, taskItem.Status, taskItem.BlockReason, cancellationToken));
                                 imported++;
                                 task.Increment(1);
                             }

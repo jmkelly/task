@@ -233,12 +233,8 @@ namespace Task.Core
 			}
 		}
 
-		private string GenerateUid()
-		{
-			return Guid.NewGuid().ToString().Substring(0, 6);
-		}
 
-		public async System.Threading.Tasks.Task<TaskItem> AddTaskAsync(
+		public async System.Threading.Tasks.Task<TaskItem> AddTaskAsync(string uid,
 			string title, string? description, string priority, DateTime? dueDate, List<string> tags, string? project = null, string? assignee = null, string status = "todo", string? blockReason = null, CancellationToken cancellationToken = default)
 		{
 			using var connection = new SqliteConnection($"Data Source={_dbPath}");
@@ -246,7 +242,6 @@ namespace Task.Core
 			using SqliteTransaction transaction = (SqliteTransaction)await connection.BeginTransactionAsync(cancellationToken);
 			try
 			{
-				var uid = GenerateUid();
 				var createdAt = DateTime.UtcNow;
 				var updatedAt = createdAt;
 				var sql = @"

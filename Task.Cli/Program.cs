@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using Spectre.Console.Cli;
 using System;
 using System.ComponentModel;
@@ -27,7 +28,11 @@ namespace Task.Cli
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(HelpCommand))]
         public static int Main(string[] args)
         {
-            var app = new CommandApp();
+            var services = new ServiceCollection();
+            services.AddSingleton<IUid, Uid>();
+
+            var registrar = new TypeRegistrar(services);
+            var app = new CommandApp(registrar);
 
             app.Configure(config =>
             {

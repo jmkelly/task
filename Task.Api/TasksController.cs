@@ -158,6 +158,7 @@ public class TasksController : ControllerBase
 			}
 
 			var task = await _database.AddTaskAsync(
+				string.IsNullOrWhiteSpace(dto.Uid) ? new Uid().GenerateUid() : dto.Uid,
 				dto.Title,
 				dto.Description,
 				dto.Priority,
@@ -405,12 +406,14 @@ public class TasksController : ControllerBase
 
 					task.Priority = string.IsNullOrEmpty(task.Priority) ? "medium" : task.Priority;
 					task.Status = string.IsNullOrEmpty(task.Status) ? "todo" : task.Status;
+					task.Uid = string.IsNullOrWhiteSpace(task.Uid) ? new Uid().GenerateUid() : task.Uid;
 					if (!string.Equals(task.Status, "blocked", StringComparison.OrdinalIgnoreCase))
 					{
 						task.BlockReason = null;
 					}
 
 					var addedTask = await _database.AddTaskAsync(
+						task.Uid,
 						task.Title,
 						task.Description,
 						task.Priority,
@@ -559,7 +562,7 @@ public class TasksController : ControllerBase
 				Tags = headerMap.ContainsKey("tags") && !string.IsNullOrEmpty(values[headerMap["tags"]]) ?
 					values[headerMap["tags"]].Split(',').Select(t => t.Trim()).Where(t => !string.IsNullOrEmpty(t)).ToList() :
 					new List<string>(),
-				Status = headerMap.ContainsKey("status") ? values[headerMap["status"]] : "pending",
+				Status = headerMap.ContainsKey("status") ? values[headerMap["status"]] : "todo",
 				BlockReason = headerMap.ContainsKey("blockreason") ? values[headerMap["blockreason"]] : null,
 				Archived = headerMap.ContainsKey("archived") &&
 				           (values[headerMap["archived"]] == "1" || values[headerMap["archived"]].Equals("true", StringComparison.OrdinalIgnoreCase)),

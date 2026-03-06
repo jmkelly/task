@@ -96,10 +96,11 @@ namespace Task.Core
             return await _database.GetTaskByUidAsync(uid, cancellationToken);
         }
 
-        public async ST.Task<TaskItem> AddTaskAsync(string title, string? description, string priority, DateTime? dueDate, List<string> tags, string? project = null, List<string>? dependsOn = null, string? assignee = null, string status = "todo", string? blockReason = null, CancellationToken cancellationToken = default)
+        public async ST.Task<TaskItem> AddTaskAsync(string uid, string title, string? description, string priority, DateTime? dueDate, List<string> tags, string? project = null, List<string>? dependsOn = null, string? assignee = null, string status = "todo", string? blockReason = null, CancellationToken cancellationToken = default)
         {
-            return await _database.AddTaskAsync(title, description, priority, dueDate, tags, project, assignee, status, blockReason, cancellationToken);
+            return await _database.AddTaskAsync(uid, title, description, priority, dueDate, tags, project, assignee, status, blockReason, cancellationToken);
         }
+
 
         public async ST.Task UpdateTaskAsync(TaskItem task, CancellationToken cancellationToken = default)
         {
