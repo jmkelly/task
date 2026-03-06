@@ -11,7 +11,7 @@ namespace Task.Core.Providers.Telegram;
 public sealed class TelegramNotificationService
 {
     private static readonly HashSet<string> TriggerStatuses =
-        new(StringComparer.OrdinalIgnoreCase) { "todo", "in_progress" };
+        new(StringComparer.OrdinalIgnoreCase) { "todo", "in_progress", "blocked" };
 
     private readonly ITelegramProvider _provider;
     private readonly IOptions<TelegramProviderOptions> _options;
@@ -48,7 +48,7 @@ public sealed class TelegramNotificationService
         var message = _options.Value.DefaultMessage;
         if (string.IsNullOrWhiteSpace(message))
         {
-            message = "No tasks are currently in todo or in_progress.";
+            message = "No tasks are currently in todo, in_progress, or blocked.";
         }
 
         _logger.LogInformation("Telegram notification triggered. Active tasks count is zero.");

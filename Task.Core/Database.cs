@@ -45,6 +45,7 @@ namespace Task.Core
 					project TEXT,
 					assignee TEXT,
 					status TEXT NOT NULL,
+					block_reason TEXT,
 					created_at TEXT NOT NULL,
 					updated_at TEXT NOT NULL,
 					archived INTEGER NOT NULL DEFAULT 0,
@@ -117,6 +118,17 @@ namespace Task.Core
 				using var alterArchivedAtCommand = new SqliteCommand(alterArchivedAtSql, connection);
 				alterArchivedAtCommand.ExecuteNonQuery();
 			}
+
+			// Add block_reason column if it doesn't exist (for migration)
+			var checkBlockReasonSql = "SELECT COUNT(*) FROM pragma_table_info('tasks') WHERE name='block_reason'";
+			using var checkBlockReasonCommand = new SqliteCommand(checkBlockReasonSql, connection);
+			var blockReasonCount = Convert.ToInt64(checkBlockReasonCommand.ExecuteScalar());
+			if (blockReasonCount == 0)
+			{
+				var alterBlockReasonSql = "ALTER TABLE tasks ADD COLUMN block_reason TEXT";
+				using var alterBlockReasonCommand = new SqliteCommand(alterBlockReasonSql, connection);
+				alterBlockReasonCommand.ExecuteNonQuery();
+			}
 		}
 
 		private async System.Threading.Tasks.Task InitializeDatabaseAsync(CancellationToken cancellationToken = default)
@@ -135,6 +147,7 @@ namespace Task.Core
 					project TEXT,
 					assignee TEXT,
 					status TEXT NOT NULL,
+					block_reason TEXT,
 					created_at TEXT NOT NULL,
 					updated_at TEXT NOT NULL,
 					archived INTEGER NOT NULL DEFAULT 0,
@@ -207,18 +220,26 @@ namespace Task.Core
 				using var alterArchivedAtCommand = new SqliteCommand(alterArchivedAtSql, connection);
 				await alterArchivedAtCommand.ExecuteNonQueryAsync(cancellationToken);
 			}
-		}
 
-		// === Restored methods (excluding archive logic) ===
+			// Add block_reason column if it doesn't exist (for migration)
+			var checkBlockReasonSql = "SELECT COUNT(*) FROM pragma_table_info('tasks') WHERE name='block_reason'";
+			using var checkBlockReasonCommand = new SqliteCommand(checkBlockReasonSql, connection);
+			var blockReasonCount = Convert.ToInt64(await checkBlockReasonCommand.ExecuteScalarAsync(cancellationToken));
+			if (blockReasonCount == 0)
+			{
+				var alterBlockReasonSql = "ALTER TABLE tasks ADD COLUMN block_reason TEXT";
+				using var alterBlockReasonCommand = new SqliteCommand(alterBlockReasonSql, connection);
+				await alterBlockReasonCommand.ExecuteNonQueryAsync(cancellationToken);
+			}
+		}
 
 		private string GenerateUid()
 		{
-			// Generate a unique 6-character ID
 			return Guid.NewGuid().ToString().Substring(0, 6);
 		}
 
 		public async System.Threading.Tasks.Task<TaskItem> AddTaskAsync(
-			string title, string? description, string priority, DateTime? dueDate, List<string> tags, string? project = null, string? assignee = null, string status = "todo", CancellationToken cancellationToken = default)
+			string title, string? description, string priority, DateTime? dueDate, List<string> tags, string? project = null, string? assignee = null, string status = "todo", string? blockReason = null, CancellationToken cancellationToken = default)
 		{
 			using var connection = new SqliteConnection($"Data Source={_dbPath}");
 			await connection.OpenAsync(cancellationToken);
@@ -229,9 +250,9 @@ namespace Task.Core
 				var createdAt = DateTime.UtcNow;
 				var updatedAt = createdAt;
 				var sql = @"
-                    INSERT INTO tasks (uid, title, description, priority, due_date, tags, project, assignee, status, created_at, updated_at, archived, archived_at) VALUES
-                    (@uid, @title, @description, @priority, @dueDate, @tags, @project, @assignee, @status, @createdAt, @updatedAt, 0, null)
-                ";
+					INSERT INTO tasks (uid, title, description, priority, due_date, tags, project, assignee, status, block_reason, created_at, updated_at, archived, archived_at) VALUES
+					(@uid, @title, @description, @priority, @dueDate, @tags, @project, @assignee, @status, @blockReason, @createdAt, @updatedAt, 0, null)
+				";
 				using var command = new SqliteCommand(sql, connection, transaction);
 				command.Parameters.AddWithValue("@uid", uid);
 				command.Parameters.AddWithValue("@title", title);
@@ -242,6 +263,14 @@ namespace Task.Core
 				command.Parameters.AddWithValue("@project", project ?? "");
 				command.Parameters.AddWithValue("@assignee", assignee ?? "");
 				command.Parameters.AddWithValue("@status", status);
+				if (blockReason == null)
+				{
+					command.Parameters.AddWithValue("@blockReason", DBNull.Value);
+				}
+				else
+				{
+					command.Parameters.AddWithValue("@blockReason", blockReason);
+				}
 				command.Parameters.AddWithValue("@createdAt", createdAt.ToString("yyyy-MM-dd HH:mm:ss"));
 				command.Parameters.AddWithValue("@updatedAt", updatedAt.ToString("yyyy-MM-dd HH:mm:ss"));
 				await command.ExecuteNonQueryAsync(cancellationToken);
@@ -262,6 +291,7 @@ namespace Task.Core
 					Project = project,
 					Assignee = assignee,
 					Status = status,
+					BlockReason = blockReason,
 					CreatedAt = createdAt,
 					UpdatedAt = updatedAt,
 					Archived = false,
@@ -279,16 +309,15 @@ namespace Task.Core
 		{
 			using var connection = new SqliteConnection($"Data Source={_dbPath}");
 			await connection.OpenAsync(cancellationToken);
-			var sql = "SELECT id, uid, title, description, priority, due_date, tags, project, assignee, status, created_at, updated_at, archived, archived_at FROM tasks WHERE uid = @uid";
+			var sql = "SELECT id, uid, title, description, priority, due_date, tags, project, assignee, status, block_reason, created_at, updated_at, archived, archived_at FROM tasks WHERE uid = @uid";
 			using var command = new SqliteCommand(sql, connection);
 			command.Parameters.AddWithValue("@uid", uid);
 			using var reader = await command.ExecuteReaderAsync(cancellationToken);
-if (await reader.ReadAsync(cancellationToken))
-				{
-					// Hide archived tasks from fetch by UID
-					if (!reader.IsDBNull(12) && reader.GetInt32(12) != 0)
-						return null;
-					return new TaskItem
+			if (await reader.ReadAsync(cancellationToken))
+			{
+				if (!reader.IsDBNull(13) && reader.GetInt32(13) != 0)
+					return null;
+				return new TaskItem
 				{
 					Id = reader.GetInt32(0),
 					Uid = reader.GetString(1),
@@ -300,10 +329,11 @@ if (await reader.ReadAsync(cancellationToken))
 					Project = reader.IsDBNull(7) ? null : reader.GetString(7),
 					Assignee = reader.IsDBNull(8) ? null : reader.GetString(8),
 					Status = reader.GetString(9),
-					CreatedAt = DateTime.Parse(reader.GetString(10), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
-					UpdatedAt = DateTime.Parse(reader.GetString(11), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
-					Archived = !reader.IsDBNull(12) && reader.GetInt32(12) != 0,
-					ArchivedAt = reader.IsDBNull(13) || string.IsNullOrEmpty(reader.GetString(13)) ? (DateTime?)null : DateTime.Parse(reader.GetString(13), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal)
+					BlockReason = reader.IsDBNull(10) ? null : reader.GetString(10),
+					CreatedAt = DateTime.Parse(reader.GetString(11), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
+					UpdatedAt = DateTime.Parse(reader.GetString(12), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
+					Archived = !reader.IsDBNull(13) && reader.GetInt32(13) != 0,
+					ArchivedAt = reader.IsDBNull(14) || string.IsNullOrEmpty(reader.GetString(14)) ? (DateTime?)null : DateTime.Parse(reader.GetString(14), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal)
 				};
 			}
 			return null;
@@ -317,10 +347,10 @@ if (await reader.ReadAsync(cancellationToken))
 			try
 			{
 				var sql = @"
-                UPDATE tasks SET title = @title, description = @description, priority = @priority,
-                due_date = @dueDate, tags = @tags, project = @project, assignee = @assignee, status = @status, updated_at = @updatedAt, archived = @archived, archived_at = @archivedAt
-                WHERE id = @id
-                ";
+				UPDATE tasks SET title = @title, description = @description, priority = @priority,
+				due_date = @dueDate, tags = @tags, project = @project, assignee = @assignee, status = @status, block_reason = @blockReason, updated_at = @updatedAt, archived = @archived, archived_at = @archivedAt
+				WHERE id = @id
+				";
 				using var command = new SqliteCommand(sql, connection, transaction);
 				command.Parameters.AddWithValue("@id", task.Id);
 				command.Parameters.AddWithValue("@title", task.Title);
@@ -331,6 +361,14 @@ if (await reader.ReadAsync(cancellationToken))
 				command.Parameters.AddWithValue("@project", task.Project ?? "");
 				command.Parameters.AddWithValue("@assignee", task.Assignee ?? "");
 				command.Parameters.AddWithValue("@status", task.Status);
+				if (task.BlockReason == null)
+				{
+					command.Parameters.AddWithValue("@blockReason", DBNull.Value);
+				}
+				else
+				{
+					command.Parameters.AddWithValue("@blockReason", task.BlockReason);
+				}
 				command.Parameters.AddWithValue("@updatedAt", DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"));
 				command.Parameters.AddWithValue("@archived", task.Archived ? 1 : 0);
 				command.Parameters.AddWithValue("@archivedAt", task.ArchivedAt?.ToString("yyyy-MM-dd HH:mm:ss") ?? (object)DBNull.Value);
@@ -346,7 +384,6 @@ if (await reader.ReadAsync(cancellationToken))
 
 		public async System.Threading.Tasks.Task DeleteTaskAsync(string uid, CancellationToken cancellationToken = default)
 		{
-			// Archive instead of delete
 			var task = await GetTaskByUidAsync(uid, cancellationToken);
 			if (task == null) return;
 			if (!task.Archived)
@@ -373,7 +410,7 @@ if (await reader.ReadAsync(cancellationToken))
 			var tasks = new List<TaskItem>();
 			using var connection = new SqliteConnection($"Data Source={_dbPath}");
 			await connection.OpenAsync(cancellationToken);
-			var sql = "SELECT id, uid, title, description, priority, due_date, tags, project, assignee, status, created_at, updated_at, archived, archived_at FROM tasks WHERE archived = 0";
+			var sql = "SELECT id, uid, title, description, priority, due_date, tags, project, assignee, status, block_reason, created_at, updated_at, archived, archived_at FROM tasks WHERE archived = 0";
 			using var command = new SqliteCommand(sql, connection);
 			using var reader = await command.ExecuteReaderAsync(cancellationToken);
 			while (await reader.ReadAsync(cancellationToken))
@@ -390,10 +427,11 @@ if (await reader.ReadAsync(cancellationToken))
 					Project = reader.IsDBNull(7) ? null : reader.GetString(7),
 					Assignee = reader.IsDBNull(8) ? null : reader.GetString(8),
 					Status = reader.GetString(9),
-					CreatedAt = DateTime.Parse(reader.GetString(10), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
-					UpdatedAt = DateTime.Parse(reader.GetString(11), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
-					Archived = !reader.IsDBNull(12) && reader.GetInt32(12) != 0,
-					ArchivedAt = reader.IsDBNull(13) || string.IsNullOrEmpty(reader.GetString(13)) ? (DateTime?)null : DateTime.Parse(reader.GetString(13), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal)
+					BlockReason = reader.IsDBNull(10) ? null : reader.GetString(10),
+					CreatedAt = DateTime.Parse(reader.GetString(11), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
+					UpdatedAt = DateTime.Parse(reader.GetString(12), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
+					Archived = !reader.IsDBNull(13) && reader.GetInt32(13) != 0,
+					ArchivedAt = reader.IsDBNull(14) || string.IsNullOrEmpty(reader.GetString(14)) ? (DateTime?)null : DateTime.Parse(reader.GetString(14), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal)
 				};
 				tasks.Add(task);
 			}
@@ -428,11 +466,11 @@ if (await reader.ReadAsync(cancellationToken))
 			using var connection = new SqliteConnection($"Data Source={_dbPath}");
 			await connection.OpenAsync(cancellationToken);
 			var sql = @"
-                SELECT t.id, t.uid, t.title, t.description, t.priority, t.due_date, t.tags, t.project, t.assignee, t.status, t.created_at, t.updated_at, t.archived, t.archived_at
-                FROM tasks_fts fts
-                JOIN tasks t ON t.id = fts.rowid
-                WHERE tasks_fts MATCH @query AND t.archived = 0
-                ORDER BY rank";
+				SELECT t.id, t.uid, t.title, t.description, t.priority, t.due_date, t.tags, t.project, t.assignee, t.status, t.block_reason, t.created_at, t.updated_at, t.archived, t.archived_at
+				FROM tasks_fts fts
+				JOIN tasks t ON t.id = fts.rowid
+				WHERE tasks_fts MATCH @query AND t.archived = 0
+				ORDER BY rank";
 			using var command = new SqliteCommand(sql, connection);
 			command.Parameters.AddWithValue("@query", query);
 			using var reader = await command.ExecuteReaderAsync(cancellationToken);
@@ -450,10 +488,11 @@ if (await reader.ReadAsync(cancellationToken))
 					Project = reader.IsDBNull(7) ? null : reader.GetString(7),
 					Assignee = reader.IsDBNull(8) ? null : reader.GetString(8),
 					Status = reader.GetString(9),
-					CreatedAt = DateTime.Parse(reader.GetString(10), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
-					UpdatedAt = DateTime.Parse(reader.GetString(11), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
-					Archived = !reader.IsDBNull(12) && reader.GetInt32(12) != 0,
-					ArchivedAt = reader.IsDBNull(13) || string.IsNullOrEmpty(reader.GetString(13)) ? (DateTime?)null : DateTime.Parse(reader.GetString(13), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal)
+					BlockReason = reader.IsDBNull(10) ? null : reader.GetString(10),
+					CreatedAt = DateTime.Parse(reader.GetString(11), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
+					UpdatedAt = DateTime.Parse(reader.GetString(12), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
+					Archived = !reader.IsDBNull(13) && reader.GetInt32(13) != 0,
+					ArchivedAt = reader.IsDBNull(14) || string.IsNullOrEmpty(reader.GetString(14)) ? (DateTime?)null : DateTime.Parse(reader.GetString(14), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal)
 				};
 				tasks.Add(task);
 			}
@@ -462,7 +501,6 @@ if (await reader.ReadAsync(cancellationToken))
 
 		public async System.Threading.Tasks.Task<List<TaskItem>> SearchTasksSemanticAsync(string query, CancellationToken cancellationToken = default)
 		{
-			// Placeholder: returns empty; implementation would require vector extensions.
 			return new List<TaskItem>();
 		}
 
@@ -492,7 +530,6 @@ if (await reader.ReadAsync(cancellationToken))
 
 		public async System.Threading.Tasks.Task ClearAllTasksAsync(CancellationToken cancellationToken = default)
 		{
-			// Archive all tasks instead of deleting them
 			using var connection = new SqliteConnection($"Data Source={_dbPath}");
 			await connection.OpenAsync(cancellationToken);
 			var now = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss");
@@ -503,6 +540,3 @@ if (await reader.ReadAsync(cancellationToken))
 		}
 	}
 }
-
-// === End restored methods ===
-

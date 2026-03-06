@@ -12,42 +12,42 @@ namespace Task.Cli
         {
             [CommandArgument(0, "[title]")]
             [Description("The task title. Use quotes for multi-word titles (e.g., 'Buy groceries'). " +
-                        "Cannot be used together with --title.")]
+                         "Cannot be used together with --title.")]
             public string? Title { get; set; }
 
             [CommandOption("-t|--title")]
             [Description("The task title as an option (alternative to positional argument). " +
-                        "Use when title starts with a dash or for consistency with other commands.")]
+                         "Use when title starts with a dash or for consistency with other commands.")]
             public string? TitleOption { get; set; }
 
             [CommandOption("-d|--description")]
             [Description("A detailed description of the task. " +
-                        "Example: -d 'Buy milk, bread, and eggs from the store'")]
+                         "Example: -d 'Buy milk, bread, and eggs from the store'")]
             public string? Description { get; set; }
 
             [CommandOption("-p|--priority")]
             [Description("Priority level for the task. Valid values: low, medium, high. " +
-                        "Default: medium. Example: --priority high")]
+                         "Default: medium. Example: --priority high")]
             public string Priority { get; set; } = "medium";
 
             [CommandOption("--due-date")]
             [Description("Due date for the task in YYYY-MM-DD format. " +
-                        "Example: --due-date 2024-04-01")]
+                         "Example: --due-date 2024-04-01")]
             public string? DueDate { get; set; }
 
             [CommandOption("--tags")]
             [Description("Comma-separated list of tags for organization. " +
-                        "Example: --tags shopping,urgent,weekly")]
+                         "Example: --tags shopping,urgent,weekly")]
             public string? Tags { get; set; }
 
             [CommandOption("--project")]
             [Description("Project name to group related tasks. " +
-                        "Example: --project work or --project home")]
+                         "Example: --project work or --project home")]
             public string? Project { get; set; }
 
             [CommandOption("--depends-on")]
             [Description("Comma-separated list of task UIDs that this task depends on. " +
-                         "Example: --depends-on a1b2c3,d4e5f6")]
+                          "Example: --depends-on a1b2c3,d4e5f6")]
             public string? DependsOn { get; set; }
 
             [CommandOption("--assignee")]
@@ -55,8 +55,12 @@ namespace Task.Cli
             public string? Assignee { get; set; }
 
             [CommandOption("--status")]
-            [Description("Initial status of the task. Valid values: todo, done, in_progress. Default: todo. Example: --status in_progress")]
+            [Description("Initial status of the task. Valid values: todo, done, in_progress, blocked. Default: todo. Example: --status in_progress")]
             public string? Status { get; set; }
+
+            [CommandOption("--block-reason")]
+            [Description("Optional reason for blocking the task. Only applies when status is blocked. Example: --block-reason 'Waiting on API access'")]
+            public string? BlockReason { get; set; }
         }
 
         public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
@@ -71,8 +75,9 @@ namespace Task.Cli
             string? project = settings.Project;
             var dependsOn = string.IsNullOrEmpty(settings.DependsOn) ? new List<string>() : settings.DependsOn.Split(',').Select(t => t.Trim()).ToList();
             string? assignee = settings.Assignee;
+            string? status = settings.Status;
+            string? blockReason = settings.BlockReason;
 
-            // Handle title: either positional or --title option, but not both
             if (!string.IsNullOrEmpty(settings.Title) && !string.IsNullOrEmpty(settings.TitleOption))
             {
                 ErrorHelper.ShowError(
@@ -84,38 +89,32 @@ namespace Task.Cli
 
             title = !string.IsNullOrEmpty(settings.Title) ? settings.Title : settings.TitleOption;
 
-            // Validate priority
             if (!ErrorHelper.ValidatePriority(priority, out var priorityError))
             {
                 ErrorHelper.ShowError(priorityError!);
                 return 1;
             }
 
-            // Validate status
-            if (!ErrorHelper.ValidateStatus(settings.Status, out var statusError))
+            if (!ErrorHelper.ValidateStatus(status, out var statusError))
             {
                 ErrorHelper.ShowError(statusError!);
                 return 1;
             }
 
-            // Validate due date
             if (!ErrorHelper.ValidateDate(settings.DueDate, out var dateError))
             {
                 ErrorHelper.ShowError(dateError!);
                 return 1;
             }
 
-            // Validate assignee
             if (!ErrorHelper.ValidateAssignee(settings.Assignee, out var assigneeError))
             {
                 ErrorHelper.ShowError(assigneeError!);
                 return 1;
             }
 
-            // If no title provided, run in interactive mode
             if (string.IsNullOrEmpty(title))
             {
-                // Interactive mode: prompt for inputs
                 title = AnsiConsole.Prompt(
                     new TextPrompt<string>("Task title:")
                         .PromptStyle("yellow")
@@ -177,10 +176,33 @@ namespace Task.Cli
                 assignee = AnsiConsole.Prompt(
                     new TextPrompt<string?>("Assignee (optional):")
                         .AllowEmpty());
+
+                if (string.IsNullOrEmpty(status))
+                {
+                    status = AnsiConsole.Prompt(
+                        new SelectionPrompt<string>()
+                            .Title("Status:")
+                            .AddChoices("todo", "in_progress", "blocked", "done"));
+                }
+                else
+                {
+                    status = status.ToLower();
+                }
+
+                if (string.Equals(status, "blocked", StringComparison.OrdinalIgnoreCase) && blockReason == null)
+                {
+                    blockReason = AnsiConsole.Prompt(
+                        new TextPrompt<string?>("Block reason (optional):")
+                            .AllowEmpty());
+
+                    if (string.IsNullOrEmpty(blockReason))
+                    {
+                        blockReason = null;
+                    }
+                }
             }
             else
             {
-                // Non-interactive mode validation
                 if (!string.IsNullOrEmpty(settings.DueDate))
                 {
                     if (DateTime.TryParse(settings.DueDate, out var parsedDate))
@@ -188,9 +210,18 @@ namespace Task.Cli
                         dueDate = parsedDate;
                     }
                 }
+
+                status ??= "todo";
+                status = status.ToLower();
             }
 
-            var task = await service.AddTaskAsync(title, description, priority, dueDate, tags, project, dependsOn, assignee, settings.Status ?? "todo", cancellationToken);
+            if (!string.IsNullOrEmpty(blockReason) && !string.Equals(status, "blocked", StringComparison.OrdinalIgnoreCase))
+            {
+                ErrorHelper.ShowError("Block reason is only allowed when status is blocked.", "task add --status blocked --block-reason 'Waiting on API access'", "task add --help");
+                return 1;
+            }
+
+            var task = await service.AddTaskAsync(title, description, priority, dueDate, tags, project, dependsOn, assignee, status ?? "todo", blockReason, cancellationToken);
 
             Console.Error.WriteLine($"DEBUG: project='{project}', settings.Project='{settings.Project}'");
             Console.Error.WriteLine($"DEBUG: task.Project='{task.Project}'");

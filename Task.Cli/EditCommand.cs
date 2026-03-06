@@ -46,8 +46,12 @@ namespace Task.Cli
             public string? Assignee { get; set; }
 
             [CommandOption("--status")]
-            [Description("Update the status: todo, done, or in_progress (e.g., 'done')")]
+            [Description("Update the status: todo, done, in_progress, or blocked (e.g., 'done')")]
             public string? Status { get; set; }
+
+            [CommandOption("--block-reason")]
+            [Description("Update the block reason (only valid when status is blocked). Use empty string to clear.")]
+            public string? BlockReason { get; set; }
         }
 
         public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
@@ -76,6 +80,8 @@ namespace Task.Cli
                     failed.Add(id);
                     continue;
                 }
+
+                var updatedStatus = task.Status;
 
                 if (!string.IsNullOrEmpty(settings.Title)) task.Title = settings.Title;
                 if (!string.IsNullOrEmpty(settings.Description)) task.Description = settings.Description;
@@ -155,8 +161,22 @@ namespace Task.Cli
                         ErrorHelper.ShowError($"Invalid status '{settings.Status}' for task {id}. {statusError}");
                         continue;
                     }
-                    task.Status = settings.Status.ToLower();
+                    updatedStatus = settings.Status.ToLower();
                 }
+
+                if (settings.BlockReason != null)
+                {
+                    var nextStatus = updatedStatus;
+                    if (!string.Equals(nextStatus, "blocked", StringComparison.OrdinalIgnoreCase))
+                    {
+                        ErrorHelper.ShowError($"Block reason can only be set when status is blocked for task {id}.");
+                        continue;
+                    }
+
+                    task.BlockReason = string.IsNullOrEmpty(settings.BlockReason) ? null : settings.BlockReason;
+                }
+
+                task.Status = updatedStatus;
 
                 await service.UpdateTaskAsync(task, cancellationToken);
                 updated.Add(id);

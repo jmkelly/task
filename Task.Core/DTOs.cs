@@ -2,7 +2,6 @@ using System.Text.Json.Serialization;
 
 namespace Task.Core;
 
-// DTOs for API communication (simplified versions)
 public class TaskDto
 {
     public int Id { get; set; }
@@ -17,6 +16,7 @@ public class TaskDto
     public string? Assignee { get; set; }
     public List<string> DependsOn { get; set; } = new();
     public string? Status { get; set; }
+    public string? BlockReason { get; set; }
     public bool Archived { get; set; }
     [JsonConverter(typeof(DateTimeNullableConverter))]
     public DateTime? ArchivedAt { get; set; }
@@ -36,6 +36,7 @@ public class TaskCreateDto
     public string? Assignee { get; set; }
     public List<string>? DependsOn { get; set; }
     public string? Status { get; set; }
+    public string? BlockReason { get; set; }
     public bool? Archived { get; set; }
     [JsonConverter(typeof(DateTimeNullableConverter))]
     public DateTime? ArchivedAt { get; set; }
@@ -53,6 +54,7 @@ public class TaskUpdateDto
     public string? Assignee { get; set; }
     public List<string>? DependsOn { get; set; }
     public string? Status { get; set; }
+    public string? BlockReason { get; set; }
     public bool? Archived { get; set; }
     [JsonConverter(typeof(DateTimeNullableConverter))]
     public DateTime? ArchivedAt { get; set; }
@@ -70,6 +72,7 @@ public class TaskImportDto
     public string? Assignee { get; set; }
     public List<string>? DependsOn { get; set; }
     public string? Status { get; set; }
+    public string? BlockReason { get; set; }
     public bool? Archived { get; set; }
     [JsonConverter(typeof(DateTimeNullableConverter))]
     public DateTime? ArchivedAt { get; set; }

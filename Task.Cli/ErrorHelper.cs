@@ -46,10 +46,10 @@ namespace Task.Cli
                 return true;
             }
 
-            var validStatuses = new[] { "todo", "done", "in_progress" };
+            var validStatuses = new[] { "todo", "done", "in_progress", "blocked" };
             if (!validStatuses.Contains(status.ToLower()))
             {
-                errorMessage = $"'{status}' is not a valid status (must be: todo, done, in_progress). See: task add --help";
+                errorMessage = $"'{status}' is not a valid status (must be: todo, done, in_progress, blocked). See: task add --help";
                 return false;
             }
             return true;

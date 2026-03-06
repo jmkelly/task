@@ -23,7 +23,6 @@ public class ApiClient : ITaskService
 
     public async System.Threading.Tasks.Task InitializeAsync(CancellationToken cancellationToken = default)
     {
-        // API client doesn't need initialization
         await System.Threading.Tasks.Task.CompletedTask;
     }
 
@@ -90,11 +89,17 @@ public class ApiClient : ITaskService
         List<string>? dependsOn = null,
         string? assignee = null,
         string? status = "todo",
+        string? blockReason = null,
         CancellationToken cancellationToken = default)
     {
-        var taskStatus = !string.IsNullOrEmpty(status) && new[] { "todo", "done", "in_progress" }.Contains(status.ToLower())
+        var taskStatus = !string.IsNullOrEmpty(status) && new[] { "todo", "done", "in_progress", "blocked" }.Contains(status.ToLower())
             ? status.ToLower()
             : "todo";
+
+        if (!string.IsNullOrEmpty(blockReason) && !string.Equals(taskStatus, "blocked", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new ArgumentException("Block reason is only allowed when status is blocked.");
+        }
 
         var createDto = new TaskCreateDto
         {
@@ -106,7 +111,8 @@ public class ApiClient : ITaskService
             Project = project,
             Assignee = assignee,
             DependsOn = dependsOn,
-            Status = taskStatus
+            Status = taskStatus,
+            BlockReason = blockReason
         };
 
         var url = $"{_baseUrl}/api/tasks";
@@ -127,6 +133,7 @@ public class ApiClient : ITaskService
             DueDate = task.DueDate,
             Tags = task.Tags,
             Status = task.Status,
+            BlockReason = task.BlockReason,
             Archived = task.Archived,
             ArchivedAt = task.ArchivedAt
         };
@@ -209,7 +216,6 @@ public class ApiClient : ITaskService
 
     public System.Threading.Tasks.Task ArchiveAllTasksAsync(System.Threading.CancellationToken cancellationToken = default)
     {
-        // Not implemented for CLI/remote API yet
         throw new NotImplementedException();
     }
 
@@ -228,6 +234,7 @@ public class ApiClient : ITaskService
             Assignee = dto.Assignee,
             DependsOn = dto.DependsOn ?? new List<string>(),
             Status = dto.Status ?? "todo",
+            BlockReason = dto.BlockReason,
             Archived = dto.Archived,
             ArchivedAt = dto.ArchivedAt,
             CreatedAt = dto.CreatedAt,

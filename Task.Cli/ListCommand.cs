@@ -11,7 +11,7 @@ namespace Task.Cli
         public class Settings : Program.TaskCommandSettings
         {
             [CommandOption("--status")]
-            [Description("Filter tasks by status: todo, done, or in_progress (e.g., --status todo)")]
+            [Description("Filter tasks by status: todo, done, in_progress, or blocked (e.g., --status blocked)")]
             public string? Status { get; set; }
 
             [CommandOption("--priority")]

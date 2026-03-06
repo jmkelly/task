@@ -76,9 +76,13 @@ namespace Task.Cli
                                 // Set defaults if missing
                                 taskItem.Priority = string.IsNullOrEmpty(taskItem.Priority) ? "medium" : taskItem.Priority;
                                 taskItem.Status = string.IsNullOrEmpty(taskItem.Status) ? "pending" : taskItem.Status;
+                                if (!string.Equals(taskItem.Status, "blocked", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    taskItem.BlockReason = null;
+                                }
 
                                 // Add to database (this will generate new UID and timestamps)
-                                addTasks.Add(service.AddTaskAsync(taskItem.Title, taskItem.Description, taskItem.Priority, taskItem.DueDate, taskItem.Tags, taskItem.Project, taskItem.DependsOn, taskItem.Assignee, taskItem.Status, cancellationToken));
+                                addTasks.Add(service.AddTaskAsync(taskItem.Title, taskItem.Description, taskItem.Priority, taskItem.DueDate, taskItem.Tags, taskItem.Project, taskItem.DependsOn, taskItem.Assignee, taskItem.Status, taskItem.BlockReason, cancellationToken));
                                 imported++;
                                 task.Increment(1);
                             }
@@ -169,6 +173,7 @@ namespace Task.Cli
                                 Tags = headerMap.ContainsKey("tags") && !string.IsNullOrEmpty(values[headerMap["tags"]]) ?
                                     values[headerMap["tags"]].Split(',').Select(t => t.Trim()).Where(t => !string.IsNullOrEmpty(t)).ToList() : new List<string>(),
                                 Status = headerMap.ContainsKey("status") ? values[headerMap["status"]] : "pending",
+                                BlockReason = headerMap.ContainsKey("blockreason") ? values[headerMap["blockreason"]] : null,
                                 Archived = headerMap.ContainsKey("archived") &&
                                            (values[headerMap["archived"]] == "1" || values[headerMap["archived"]].Equals("true", StringComparison.OrdinalIgnoreCase)),
                                 ArchivedAt = headerMap.ContainsKey("archivedat") && DateTime.TryParse(values[headerMap["archivedat"]], out var archivedAt)
@@ -206,6 +211,7 @@ namespace Task.Cli
                         Tags = headerMap.ContainsKey("tags") && !string.IsNullOrEmpty(values[headerMap["tags"]]) ?
                             values[headerMap["tags"]].Split(',').Select(t => t.Trim()).Where(t => !string.IsNullOrEmpty(t)).ToList() : new List<string>(),
                         Status = headerMap.ContainsKey("status") ? values[headerMap["status"]] : "pending",
+                        BlockReason = headerMap.ContainsKey("blockreason") ? values[headerMap["blockreason"]] : null,
                         Archived = headerMap.ContainsKey("archived") &&
                                    (values[headerMap["archived"]] == "1" || values[headerMap["archived"]].Equals("true", StringComparison.OrdinalIgnoreCase)),
                         ArchivedAt = headerMap.ContainsKey("archivedat") && DateTime.TryParse(values[headerMap["archivedat"]], out var archivedAt)

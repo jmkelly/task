@@ -36,7 +36,6 @@ namespace Task.Core
         {
             var tasks = await _database.GetAllTasksAsync(cancellationToken);
 
-            // Apply filters
             if (!string.IsNullOrEmpty(status))
             {
                 tasks = tasks.Where(t => t.Status.Equals(status, StringComparison.OrdinalIgnoreCase)).ToList();
@@ -67,7 +66,6 @@ namespace Task.Core
                 tasks = tasks.Where(t => t.DueDate.HasValue && t.DueDate.Value >= dueAfter.Value).ToList();
             }
 
-            // Apply sorting
             if (!string.IsNullOrEmpty(sortBy))
             {
                 tasks = sortBy.ToLower() switch
@@ -81,7 +79,6 @@ namespace Task.Core
                 };
             }
 
-            // Apply limit and offset
             if (offset.HasValue)
             {
                 tasks = tasks.Skip(offset.Value).ToList();
@@ -99,9 +96,9 @@ namespace Task.Core
             return await _database.GetTaskByUidAsync(uid, cancellationToken);
         }
 
-        public async ST.Task<TaskItem> AddTaskAsync(string title, string? description, string priority, DateTime? dueDate, List<string> tags, string? project = null, List<string>? dependsOn = null, string? assignee = null, string status = "todo", CancellationToken cancellationToken = default)
+        public async ST.Task<TaskItem> AddTaskAsync(string title, string? description, string priority, DateTime? dueDate, List<string> tags, string? project = null, List<string>? dependsOn = null, string? assignee = null, string status = "todo", string? blockReason = null, CancellationToken cancellationToken = default)
         {
-            return await _database.AddTaskAsync(title, description, priority, dueDate, tags, project, assignee, status, cancellationToken);
+            return await _database.AddTaskAsync(title, description, priority, dueDate, tags, project, assignee, status, blockReason, cancellationToken);
         }
 
         public async ST.Task UpdateTaskAsync(TaskItem task, CancellationToken cancellationToken = default)
@@ -111,7 +108,6 @@ namespace Task.Core
 
         public async ST.Task DeleteTaskAsync(string uid, CancellationToken cancellationToken = default)
         {
-            // Archive instead of hard delete
             var task = await _database.GetTaskByUidAsync(uid, cancellationToken);
             if (task == null) return;
             if (!task.Archived)
@@ -139,7 +135,6 @@ namespace Task.Core
 
         public async ST.Task<List<string>> GetAllUniqueProjectsAsync(CancellationToken cancellationToken = default)
         {
-            // Database doesn't have this method, implement it
             var tasks = await _database.GetAllTasksAsync(cancellationToken);
             var projects = tasks.Where(t => !string.IsNullOrEmpty(t.Project)).Select(t => t.Project!).Distinct().OrderBy(p => p).ToList();
             return projects;
@@ -147,7 +142,6 @@ namespace Task.Core
 
         public async ST.Task<List<string>> GetAllUniqueAssigneesAsync(CancellationToken cancellationToken = default)
         {
-            // Database doesn't have this method, implement it
             var tasks = await _database.GetAllTasksAsync(cancellationToken);
             var assignees = tasks.Where(t => !string.IsNullOrEmpty(t.Assignee)).Select(t => t.Assignee!).Distinct().OrderBy(a => a).ToList();
             return assignees;
@@ -155,13 +149,11 @@ namespace Task.Core
 
         public async ST.Task<List<TaskItem>> GetTasksDependingOnAsync(string uid, CancellationToken cancellationToken = default)
         {
-            // For now, return empty as dependencies are not implemented in DB
             return new List<TaskItem>();
         }
 
         public async ST.Task<bool> ValidateDependenciesAsync(string uid, List<string> dependsOn, CancellationToken cancellationToken = default)
         {
-            // Simple validation: check if all dependsOn exist
             foreach (var dep in dependsOn)
             {
                 var task = await _database.GetTaskByUidAsync(dep, cancellationToken);
