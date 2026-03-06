@@ -28,6 +28,8 @@
 <!-- Modal container for task creation -->
 <div id="modal-container"></div>
 
+@await Html.PartialAsync("_BlockReasonModal")
+
 @Html.AntiForgeryToken()
 
 @section Scripts {
@@ -70,12 +72,45 @@
             });
         }
 
-        function requestBlockReason() {
-            const reason = window.prompt('Reason for block (optional):');
-            if (reason === null) {
-                return null;
+        function openBlockReasonModal(uid, status) {
+            const template = document.getElementById('block-reason-modal-template');
+            if (!template || !template.content) {
+                updateTaskStatus(uid, status, '');
+                return;
             }
-            return reason.trim();
+
+            const existingModal = document.querySelector('[data-block-reason-modal]');
+            if (existingModal) {
+                existingModal.remove();
+            }
+
+            const modal = template.content.firstElementChild.cloneNode(true);
+            const form = modal.querySelector('[data-block-reason-form]');
+            const input = modal.querySelector('[data-block-reason-input]');
+            const cancelButton = modal.querySelector('[data-block-reason-cancel]');
+
+            const closeModal = () => {
+                modal.remove();
+            };
+
+            if (cancelButton) {
+                cancelButton.addEventListener('click', closeModal);
+            }
+
+            if (form) {
+                form.addEventListener('submit', function(event) {
+                    event.preventDefault();
+                    const reason = input && typeof input.value === 'string' ? input.value.trim() : '';
+                    updateTaskStatus(uid, status, reason);
+                    closeModal();
+                });
+            }
+
+            document.body.appendChild(modal);
+
+            if (input) {
+                input.focus();
+            }
         }
 
         function handleDrop(event) {
@@ -88,11 +123,7 @@
                 draggedElement.classList.remove('dragging');
 
                 if (status === 'blocked') {
-                    const reason = requestBlockReason();
-                    if (reason === null) {
-                        return;
-                    }
-                    updateTaskStatus(uid, status, reason);
+                    openBlockReasonModal(uid, status);
                     return;
                 }
 

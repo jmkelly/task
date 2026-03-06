@@ -1,0 +1,17 @@
+<template id="block-reason-modal-template">
+    <div class="modal-overlay" data-block-reason-modal onclick="this.remove()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h2>Block Task</h2>
+            <form data-block-reason-form>
+                <div class="form-group">
+                    <label for="blockReasonInput">Reason for block (optional)</label>
+                    <textarea id="blockReasonInput" name="blockReason" rows="3" placeholder="e.g., Waiting on external API access..." data-block-reason-input></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary">Block Task</button>
+                    <button type="button" class="btn-secondary" data-block-reason-cancel>Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</template>

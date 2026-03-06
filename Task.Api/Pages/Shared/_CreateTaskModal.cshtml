@@ -43,7 +43,7 @@
 
             <div class="form-group">
                 <label for="status">Status</label>
-                <select id="status" name="status" onchange="toggleBlockReason(this)">
+                <select id="status" name="status" onchange="toggleBlockReason(this)" aria-controls="block-reason-group" aria-expanded="false">
                     <option value="todo" selected>Todo</option>
                     <option value="in_progress">In Progress</option>
                     <option value="blocked">Blocked</option>
@@ -71,6 +71,9 @@
             return;
         }
         const isBlocked = selectElement && selectElement.value === 'blocked';
-        group.style.display = isBlocked ? 'block' : 'none';
+        group.style.display = isBlocked ? '' : 'none';
+        if (selectElement) {
+            selectElement.setAttribute('aria-expanded', isBlocked ? 'true' : 'false');
+        }
     }
 </script>

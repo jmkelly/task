@@ -210,8 +210,8 @@
                             @if (!string.IsNullOrEmpty(task.BlockReason))
                             {
                                 <div class="task-block-reason">
-                                    <span class="emoji">⛔</span>
-                                    @task.BlockReason
+                                    <span class="task-block-icon" aria-hidden="true">⛔</span>
+                                    <span class="task-block-text">@task.BlockReason</span>
                                 </div>
                             }
                             @if (task.DueDate.HasValue)
