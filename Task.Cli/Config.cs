@@ -27,13 +27,19 @@ namespace Task.Cli
         {
             try
             {
-                if (!File.Exists(ConfigFile))
+                var config = new Config { DefaultOutput = "plain" };
+                // Load from config file if exists
+                if (File.Exists(ConfigFile))
                 {
-                    return new Config { DefaultOutput = "plain" };
+                    var json = File.ReadAllText(ConfigFile);
+                    config = JsonSerializer.Deserialize(json, TaskJsonContext.Default.Config) ?? config;
                 }
-
-                var json = File.ReadAllText(ConfigFile);
-                var config = JsonSerializer.Deserialize(json, TaskJsonContext.Default.Config) ?? new Config();
+                // Override Telegram with env vars if present
+                var botTokenEnv = Environment.GetEnvironmentVariable("TELEGRAM_BOT_TOKEN") ?? Environment.GetEnvironmentVariable("Telegram__BotToken");
+                var chatIdEnv = Environment.GetEnvironmentVariable("TELEGRAM_CHAT_ID") ?? Environment.GetEnvironmentVariable("Telegram__ChatId");
+                if (config.Telegram == null) config.Telegram = new TelegramConfig();
+                if (!string.IsNullOrEmpty(botTokenEnv)) config.Telegram.BotToken = botTokenEnv;
+                if (!string.IsNullOrEmpty(chatIdEnv)) config.Telegram.ChatId = chatIdEnv;
 
                 if (string.IsNullOrEmpty(config.DefaultOutput))
                 {
@@ -44,7 +50,6 @@ namespace Task.Cli
                 {
                     throw new ArgumentException("Invalid API URL format in config. Must be a valid HTTP or HTTPS URL.");
                 }
-
                 return config;
             }
             catch (Exception)
