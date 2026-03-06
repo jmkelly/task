@@ -1,0 +1,159 @@
+Changelog
+=========
+
+2026-03-06
+----------
+- chore(db): update database file
+- build(cli): bump CLI project version
+- test(telegram): add binding tests and make options mutable
+- feat(telegram): enable Telegram notifications by credentials
+- chore(db): update database file
+- build(cli): bump CLI version
+- chore(config): enable Telegram config via environment variables
+- feat(api,telegram): notify on blocked status via Razor
+- feat(api,telegram,test): add Telegram notification for task blocked status transition
+- style(blocked-status): update block reason group visibility logic in edit task modal
+- test(uid): update tests to use new UID generation for task creation
+- feat(uid): unify UID generation for tasks across CLI, API, and core
+- feat(kanban): add block reason modal and update blocked status functionality
+- chore(kanban): fix block control
+- docs(readme): update usage instructions and feature overview
+- test(integration): improve and expand integration test coverage
+- refactor(cli,core): update CLI commands and improve core service logic
+- feat(kanban): add blocked status column and UI integration
+
+2026-03-05
+----------
+- fix(web/kanban): filter archived tasks in API Kanban page
+- build(cli): bump CLI version and project references
+- refactor(cli): update CLI wire-up and internal logic for new features
+- feat(cli/help): expand and modernize help command output and examples
+- feat(cli/config): improve config, URL, and Telegram option handling
+- feat(cli/telegram): add Telegram chat ID discovery command to CLI
+- docs(readme): update getting started and CLI/API documentation
+- build: increment build versions in scripts
+- feat(cli/server): add server management commands and wiring
+- feat(api): add server host classes and switch to new entrypoint
+- docs(config,server): update CLI/server documentation and specs
+
+2026-03-01
+----------
+- Merge branch 'feature/telegram-provider-scaffold'
+- chore(log): update progress log
+- test(db): improve integration database tests
+- refactor(cli): remove ExportCommand and entrypoint cleanup
+- feat(api): update tasks controller logic
+- test(api): update and expand integration/API tests
+- docs(planning): update planning and specs documents
+- docs(telegram): document provider setup
+- test(api): cover telegram notifications
+- feat(telegram): add provider and wiring
+- build(api): conditionally copy native libs
+- refactor(cli/docs): remove local database and --db option; enforce API-only CLI
+- chore(sql): add migration archive and patch for archived column
+- test(taskservice): add tests for task service with archiving logic
+- feat(archive): add archiving support for tasks and migrate to service abstraction
+- docs(screenshots): update board view screenshot for readme
+- feat(filters): add advanced task filtering and UI refactor for board
+
+2026-02-28
+----------
+- docs(demo): update GIF demo in readme and add new large GIF asset
+- docs(screenshots): reorder screenshot sections in readme
+- docs(demo): embed animated demo GIF in readme
+- refactor(cli): simplify complete command logic
+- docs(readme): update documentation and add demo video
+- perf(core): add database indexes for common query columns
+- style(web): minor content tweak in marketing.html
+- refactor(core): minor update to Database logic
+- feat(cli): enhance CLI command implementations
+- docs(readme): refine main readme
+- docs(planning): update planning and example documents
+- docs(requirements): update .NET version from 8 to 10 in docs
+- docs(readme): update API explorer references from Swagger to Scalar
+- docs(screenshots): add web UI/API screenshots and update docs
+- chore(repo): add repository configuration directories
+- docs(meta): add standard project metadata and docs files
+- docs(readme): refine agent-focused intro
+- docs(readme): agent- and LLM-first call to action
+- docs(design): add design system and style guide documentation
+- feat(styles): migrate to TailwindCSS, remove legacy styles
+- refactor(task-ui): overhaul Kanban board and layout for new design system
+
+2026-02-22
+----------
+- chore(build): update .gitignore
+- chore(Task.Api): remove test database and vector stores
+- chore(Task.Api): update test database
+- feat(test): enhance stress test with assignee and delete operations
+- feat(Task.Api): add assignee support to tasks
+- test: update api integration tests
+- style(cli): update command indentation and logic
+- refactor(core): update task service interface and database
+- style: convert indentation from tabs to spaces
+- refactor(cli): reorganize AddCommand logic and ImportCommand attributes
+- feat(cli): improve command descriptions and add help command
+- feat(cli): add --status and --sort options, plus API URL validation
+- chore(planning): archive task assignee spec
+- test: update database integration tests
+- docs: update README with latest changes
+- feat(Task.Cli): enhance CLI commands with API integration
+- feat(Task.Core): enhance task service and database logic
+- chore(planning): archive CLI API separation spec
+- feat(Task.Core): implement TaskService for shared task management logic
+- feat(Task.Api): add API tests, build script, and README for component isolation
+- feat(Task.Api): integrate Task.Core dependencies and update test database
+- docs: update build scripts and README for Task.Cli executable and directory changes
+- refactor(tests): update namespaces and references for Task.Cli and Task.Core integration
+- chore: update project files and solution for Task.Cli, Task.Api, and Task.Core separation
+- refactor(Task.Cli): update namespaces and integrate Task.Core references for modularity
+- refactor: move CLI code to Task.Cli directory to enable component separation
+- docs(1-1): complete Prepare Shared Components plan
+- feat(1-1): extract ITaskService interface, DTOs, Database logic into Task.Core
+- feat(1-1): create Task.Core class library project
+- docs(planning): add specs for API separation and task assignee
+- chore(planning): archive completed planning specs to completed directory
+- docs(planning): update CLI enhancements plan
+- feat(kanban): enhance kanban board and modals
+- refactor(cli): remove local database and undo functionality
+- chore: add quick build script
+- docs: add documentation directory
+- test: update stress test script
+- test: refactor tests by removing old and adding new integration tests
+- feat(cli): add undo action model
+- refactor(cli): always use API client instead of local database
+- feat(api): add project support and refactor database methods to async
+- test: update stress test script
+- chore(database): move tasks database to api directory
+- feat: add vector search libraries
+- feat(kanban): add edit task modal and enhance kanban board ui
+- docs(planning): add CLI enhancements, config command, error handling, kanban, and project specs
+- build(api): upgrade to .NET 10 and migrate from Swagger to Scalar
+- test(cli): add tests for task add command validation
+- feat(cli): improve task add command help text and descriptions
+- docs(readme): update documentation
+- test: update integration and unit tests
+- refactor(commands): improve command implementations
+- refactor(database): enhance database operations
+- feat(cli): add error helper for consistent error handling
+- test(api): add API integration tests
+- feat(kanban): add kanban board migration and docker compose
+- feat(cli): add API client for remote sync
+- feat(cli): add config, reset, and undo commands
+- feat(api): add REST API project with web UI
+
+2026-02-21
+----------
+- chore(docs): organise the plans into specs
+
+2026-02-19
+----------
+- add (marketing): add marketing assets
+- refactor (commands): update commands to async execution
+- refactor (database): convert database operations to async
+- add (stress): add stress test folder
+- init (solution): add solution file
+- init (build): add build script and directories
+- init (src): add main source code and tests
+- init (db): add database schema and file
+- init (.gitignore): add dotnet .gitignore
