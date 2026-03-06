@@ -206,6 +206,7 @@ EXAMPLES:
     task add --title Refactor code --priority high --tags code,refactor
     task add --title Upload report --due-date 2024-04-01
     task add --title Team meeting --project work --status in_progress
+    task add --title "Blocked by API" --status blocked --block-reason "Waiting on API access"
     task add Buy groceries --priority high --assignee john.doe --tags errands 
     --due-date 2026-03-01
     task start
