@@ -348,7 +348,7 @@ public class TasksController : ControllerBase
 				var csv = "Id,Uid,Title,Description,Priority,DueDate,Tags,Status,BlockReason,Archived,ArchivedAt,CreatedAt,UpdatedAt\n";
 				foreach (var task in tasks)
 				{
-					csv += $"{task.Id},{task.Uid},\"{task.Title.Replace("\"", "\"\"") }\",\"{(task.Description ?? "").Replace("\"", "\"\"") }\",{task.Priority},{task.DueDateString},\"{task.TagsString}\",{task.Status},\"{(task.BlockReason ?? "").Replace("\"", "\"\"") }\",{(task.Archived ? 1 : 0)},{task.ArchivedAt:yyyy-MM-dd HH:mm:ss},{task.CreatedAt:yyyy-MM-dd HH:mm:ss},{task.UpdatedAt:yyyy-MM-dd HH:mm:ss}\n";
+					csv += $"{task.Id},{task.Uid},\"{task.Title.Replace("\"", "\"\"")}\",\"{(task.Description ?? "").Replace("\"", "\"\"")}\",{task.Priority},{task.DueDateString},\"{task.TagsString}\",{task.Status},\"{(task.BlockReason ?? "").Replace("\"", "\"\"")}\",{(task.Archived ? 1 : 0)},{task.ArchivedAt:yyyy-MM-dd HH:mm:ss},{task.CreatedAt:yyyy-MM-dd HH:mm:ss},{task.UpdatedAt:yyyy-MM-dd HH:mm:ss}\n";
 				}
 				return File(System.Text.Encoding.UTF8.GetBytes(csv), "text/csv", "tasks.csv");
 			}
@@ -565,14 +565,14 @@ public class TasksController : ControllerBase
 				Description = headerMap.ContainsKey("description") ? values[headerMap["description"]] : null,
 				Priority = headerMap.ContainsKey("priority") ? values[headerMap["priority"]] : "medium",
 				DueDate = headerMap.ContainsKey("duedate") && !string.IsNullOrEmpty(values[headerMap["duedate"]]) &&
-				         DateTime.TryParse(values[headerMap["duedate"]], out var dd) ? dd : null,
+						 DateTime.TryParse(values[headerMap["duedate"]], out var dd) ? dd : null,
 				Tags = headerMap.ContainsKey("tags") && !string.IsNullOrEmpty(values[headerMap["tags"]]) ?
 					values[headerMap["tags"]].Split(',').Select(t => t.Trim()).Where(t => !string.IsNullOrEmpty(t)).ToList() :
 					new List<string>(),
 				Status = headerMap.ContainsKey("status") ? values[headerMap["status"]] : "todo",
 				BlockReason = headerMap.ContainsKey("blockreason") ? values[headerMap["blockreason"]] : null,
 				Archived = headerMap.ContainsKey("archived") &&
-				           (values[headerMap["archived"]] == "1" || values[headerMap["archived"]].Equals("true", StringComparison.OrdinalIgnoreCase)),
+						   (values[headerMap["archived"]] == "1" || values[headerMap["archived"]].Equals("true", StringComparison.OrdinalIgnoreCase)),
 				ArchivedAt = headerMap.ContainsKey("archivedat") && DateTime.TryParse(values[headerMap["archivedat"]], out var archivedAt)
 					? archivedAt
 					: null,
