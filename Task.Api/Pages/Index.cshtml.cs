@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Text.Json;
 using Task.Core;
+using Task.Core.Providers.Telegram;
 using TaskItem = Task.Core.TaskItem;
 
 namespace Task.Api.Pages
@@ -9,11 +10,16 @@ namespace Task.Api.Pages
     public class IndexModel : PageModel
     {
         private readonly ITaskService _taskService;
+        private readonly TelegramNotificationService _telegramNotifications;
         private readonly IUid uidGenerator;
 
-        public IndexModel(ITaskService taskService, IUid uidGenerator)
+        public IndexModel(
+            ITaskService taskService,
+            TelegramNotificationService telegramNotifications,
+            IUid uidGenerator)
         {
             _taskService = taskService;
+            _telegramNotifications = telegramNotifications;
             this.uidGenerator = uidGenerator;
         }
 
@@ -57,11 +63,13 @@ namespace Task.Api.Pages
                 return NotFound();
             }
 
-            task.Status = status;
             if (string.IsNullOrWhiteSpace(status))
             {
                 return BadRequest("Status is required");
             }
+
+            var previousStatus = task.Status;
+            task.Status = status;
 
             if (!string.Equals(status, "blocked", StringComparison.OrdinalIgnoreCase))
             {
@@ -71,7 +79,13 @@ namespace Task.Api.Pages
             {
                 task.BlockReason = string.IsNullOrEmpty(blockReason) ? null : blockReason;
             }
+
             await _taskService.UpdateTaskAsync(task);
+            await _telegramNotifications.NotifyWhenTaskTransitionsToBlockedAsync(
+                task,
+                previousStatus,
+                task.Status,
+                HttpContext.RequestAborted);
 
             var tasks = await _taskService.GetAllTasksAsync();
             PopulateOptions(tasks);
@@ -119,6 +133,8 @@ namespace Task.Api.Pages
                 return NotFound();
             }
 
+            var previousStatus = task.Status;
+
             task.Title = title;
             task.Description = description;
             task.Priority = priority;
@@ -145,6 +161,11 @@ namespace Task.Api.Pages
             task.UpdatedAt = DateTime.UtcNow;
 
             await _taskService.UpdateTaskAsync(task);
+            await _telegramNotifications.NotifyWhenTaskTransitionsToBlockedAsync(
+                task,
+                previousStatus,
+                task.Status,
+                HttpContext.RequestAborted);
 
             var tasks = await _taskService.GetAllTasksAsync();
             PopulateOptions(tasks);

@@ -7,6 +7,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -490,6 +491,35 @@ namespace Task.Api.Tests.IntegrationTests
 			return task!;
 		}
 
+		private async System.Threading.Tasks.Task<HttpResponseMessage> PostRazorHandlerAsync(
+			string handler,
+			Dictionary<string, string> formValues)
+		{
+			var pageResponse = await _client.GetAsync("/");
+			pageResponse.EnsureSuccessStatusCode();
+			var html = await pageResponse.Content.ReadAsStringAsync();
+
+			var tokenMatch = Regex.Match(
+				html,
+				"name=\"__RequestVerificationToken\"\\s+type=\"hidden\"\\s+value=\"([^\"]+)\"");
+
+			if (!tokenMatch.Success)
+			{
+				throw new InvalidOperationException("Could not find antiforgery token on Index page.");
+			}
+
+			var token = tokenMatch.Groups[1].Value;
+			formValues["__RequestVerificationToken"] = token;
+
+			var request = new HttpRequestMessage(HttpMethod.Post, $"/Index?handler={handler}")
+			{
+				Content = new FormUrlEncodedContent(formValues)
+			};
+			request.Headers.Add("RequestVerificationToken", token);
+
+			return await _client.SendAsync(request);
+		}
+
 		private sealed class ImportResponse
 		{
 			[JsonPropertyName("imported")]
@@ -574,6 +604,61 @@ namespace Task.Api.Tests.IntegrationTests
 				Status = "in_progress"
 			});
 			updateResponse.EnsureSuccessStatusCode();
+
+			Assert.Empty(_factory.TelegramProvider.Messages);
+		}
+
+		[Fact]
+		public async SystemTask RazorUpdateStatus_SendsTelegramMessage_OnTransitionToBlocked()
+		{
+			_factory.TelegramProvider.Messages.Clear();
+
+			var createdTask = await CreateTaskAsync(new TaskCreateDto
+			{
+				Uid = new Uid().GenerateUid(),
+				Title = "Razor transition to blocked",
+				Priority = "medium",
+				Status = "todo"
+			});
+
+			var response = await PostRazorHandlerAsync("UpdateStatus", new Dictionary<string, string>
+			{
+				["uid"] = createdTask.Uid,
+				["status"] = "blocked",
+				["blockReason"] = "Waiting on UI dependency"
+			});
+
+			response.EnsureSuccessStatusCode();
+
+			Assert.Single(_factory.TelegramProvider.Messages);
+			Assert.Contains(createdTask.Uid, _factory.TelegramProvider.Messages[0]);
+			Assert.Contains(createdTask.Title, _factory.TelegramProvider.Messages[0]);
+		}
+
+		[Fact]
+		public async SystemTask RazorUpdateStatus_DoesNotSendTelegramMessage_WhenStatusRemainsBlocked()
+		{
+			_factory.TelegramProvider.Messages.Clear();
+
+			var createdTask = await CreateTaskAsync(new TaskCreateDto
+			{
+				Uid = new Uid().GenerateUid(),
+				Title = "Razor remains blocked",
+				Priority = "medium",
+				Status = "blocked",
+				BlockReason = "Initial reason"
+			});
+
+			_factory.TelegramProvider.Messages.Clear();
+
+			var response = await PostRazorHandlerAsync("UpdateStatus", new Dictionary<string, string>
+			{
+				["uid"] = createdTask.Uid,
+				["status"] = "blocked",
+				["blockReason"] = "Updated reason"
+			});
+
+			response.EnsureSuccessStatusCode();
 
 			Assert.Empty(_factory.TelegramProvider.Messages);
 		}
