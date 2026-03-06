@@ -10,6 +10,9 @@ namespace Task.Cli.Tests.IntegrationTests
 	{
 		private readonly string _testDbPath;
 		private readonly Database _database;
+		private readonly IUid _uidGenerator = new Uid();
+
+		private string NewUid() => _uidGenerator.GenerateUid();
 
 		public DatabaseTests()
 		{
@@ -27,23 +30,24 @@ namespace Task.Cli.Tests.IntegrationTests
 		}
 
 		[Fact]
-		public async System.Threading.Tasks.Task AddTask_ShouldCreateTaskWithUniqueUid()
+		public async System.Threading.Tasks.Task AddTask_ShouldUseProvidedUid()
 		{
-			var task = await _database.AddTaskAsync("Test Title", "Test Description", "high", null, new List<string>());
+			var uid = NewUid();
+			var task = await _database.AddTaskAsync(uid, "Test Title", "Test Description", "high", null, new List<string>());
 
 			Assert.NotNull(task);
 			Assert.Equal("Test Title", task.Title);
 			Assert.Equal("Test Description", task.Description);
 			Assert.Equal("high", task.Priority);
 			Assert.Equal("todo", task.Status);
-			Assert.NotNull(task.Uid);
+			Assert.Equal(uid, task.Uid);
 			Assert.True(task.Uid.Length == 6);
 		}
 
 		[Fact]
 		public async System.Threading.Tasks.Task AddTask_ShouldHandleNullDescription()
 		{
-			var task = await _database.AddTaskAsync("Test Title", null, "medium", null, new List<string>());
+			var task = await _database.AddTaskAsync(NewUid(), "Test Title", null, "medium", null, new List<string>());
 
 			Assert.NotNull(task);
 			Assert.Equal("Test Title", task.Title);
@@ -54,6 +58,7 @@ namespace Task.Cli.Tests.IntegrationTests
 		public async System.Threading.Tasks.Task AddTask_WithBlockedStatus_PersistsBlockReason()
 		{
 			var task = await _database.AddTaskAsync(
+				NewUid(),
 				"Blocked Task",
 				"Needs review",
 				"medium",
@@ -74,7 +79,7 @@ namespace Task.Cli.Tests.IntegrationTests
 		[Fact]
 		public async System.Threading.Tasks.Task UpdateTask_ShouldPersistBlockReasonChanges()
 		{
-			var task = await _database.AddTaskAsync("Update block", null, "medium", null, new List<string>());
+			var task = await _database.AddTaskAsync(NewUid(), "Update block", null, "medium", null, new List<string>());
 
 			task.Status = "blocked";
 			task.BlockReason = "Waiting on dependency";
@@ -89,8 +94,8 @@ namespace Task.Cli.Tests.IntegrationTests
 		[Fact]
 		public async System.Threading.Tasks.Task GetAllTasks_ShouldReturnAllTasks()
 		{
-			var task1 = await _database.AddTaskAsync("Task 1", null, "medium", null, new List<string>());
-			var task2 = await _database.AddTaskAsync("Task 2", null, "medium", null, new List<string>());
+			var task1 = await _database.AddTaskAsync(NewUid(), "Task 1", null, "medium", null, new List<string>());
+			var task2 = await _database.AddTaskAsync(NewUid(), "Task 2", null, "medium", null, new List<string>());
 
 			var tasks = await _database.GetAllTasksAsync();
 
@@ -102,7 +107,7 @@ namespace Task.Cli.Tests.IntegrationTests
 		[Fact]
 		public async System.Threading.Tasks.Task GetTaskByUid_ShouldReturnCorrectTask()
 		{
-			var addedTask = await _database.AddTaskAsync("Unique Task", null, "medium", null, new List<string>());
+			var addedTask = await _database.AddTaskAsync(NewUid(), "Unique Task", null, "medium", null, new List<string>());
 
 			var retrievedTask = await _database.GetTaskByUidAsync(addedTask.Uid);
 
@@ -122,7 +127,7 @@ namespace Task.Cli.Tests.IntegrationTests
 		[Fact]
 		public async System.Threading.Tasks.Task UpdateTask_ShouldUpdateFields()
 		{
-			var task = await _database.AddTaskAsync("Original Title", "Original Desc", "low", null, new List<string>());
+			var task = await _database.AddTaskAsync(NewUid(), "Original Title", "Original Desc", "low", null, new List<string>());
 			var oldUpdatedAt = task.UpdatedAt;
 			task.Title = "Updated Title";
 			task.Description = "Updated Desc";
@@ -141,7 +146,7 @@ namespace Task.Cli.Tests.IntegrationTests
 		[Fact]
 		public async System.Threading.Tasks.Task DeleteTask_ShouldRemoveTask()
 		{
-			var task = await _database.AddTaskAsync("To Delete", null, "medium", null, new List<string>());
+			var task = await _database.AddTaskAsync(NewUid(), "To Delete", null, "medium", null, new List<string>());
 
 			await _database.DeleteTaskAsync(task.Uid);
 
@@ -152,7 +157,7 @@ namespace Task.Cli.Tests.IntegrationTests
 		[Fact]
 		public async System.Threading.Tasks.Task CompleteTask_ShouldSetStatusToCompleted()
 		{
-			var task = await _database.AddTaskAsync("To Complete", null, "medium", null, new List<string>());
+			var task = await _database.AddTaskAsync(NewUid(), "To Complete", null, "medium", null, new List<string>());
 
 			await _database.CompleteTaskAsync(task.Uid);
 
@@ -164,8 +169,8 @@ namespace Task.Cli.Tests.IntegrationTests
 		[Fact]
 		public async System.Threading.Tasks.Task SearchTasksFTS_ShouldFindByTitle()
 		{
-			await _database.AddTaskAsync("Buy groceries", "Milk, bread", "medium", null, new List<string>());
-			await _database.AddTaskAsync("Clean house", null, "medium", null, new List<string>());
+			await _database.AddTaskAsync(NewUid(), "Buy groceries", "Milk, bread", "medium", null, new List<string>());
+			await _database.AddTaskAsync(NewUid(), "Clean house", null, "medium", null, new List<string>());
 
 			var results = await _database.SearchTasksFTSAsync("groceries");
 
@@ -176,8 +181,8 @@ namespace Task.Cli.Tests.IntegrationTests
 		[Fact]
 		public async System.Threading.Tasks.Task SearchTasksFTS_ShouldFindByDescription()
 		{
-			await _database.AddTaskAsync("Task", "Important meeting", "medium", null, new List<string>());
-			await _database.AddTaskAsync("Other task", null, "medium", null, new List<string>());
+			await _database.AddTaskAsync(NewUid(), "Task", "Important meeting", "medium", null, new List<string>());
+			await _database.AddTaskAsync(NewUid(), "Other task", null, "medium", null, new List<string>());
 
 			var results = await _database.SearchTasksFTSAsync("meeting");
 
@@ -188,8 +193,8 @@ namespace Task.Cli.Tests.IntegrationTests
 		[Fact]
 		public async System.Threading.Tasks.Task SearchTasksSemantic_ShouldFindSimilarTasks()
 		{
-			await _database.AddTaskAsync("Buy milk at store", null, "medium", null, new List<string>());
-			await _database.AddTaskAsync("Purchase groceries", null, "medium", null, new List<string>());
+			await _database.AddTaskAsync(NewUid(), "Buy milk at store", null, "medium", null, new List<string>());
+			await _database.AddTaskAsync(NewUid(), "Purchase groceries", null, "medium", null, new List<string>());
 
 			var results = await _database.SearchTasksSemanticAsync("get groceries");
 
@@ -199,8 +204,8 @@ namespace Task.Cli.Tests.IntegrationTests
 		[Fact]
 		public async System.Threading.Tasks.Task SearchTasksHybrid_ShouldCombineFTSAndSemantic()
 		{
-			await _database.AddTaskAsync("Buy groceries", "Milk, bread", "medium", null, new List<string>());
-			await _database.AddTaskAsync("Clean house", null, "medium", null, new List<string>());
+			await _database.AddTaskAsync(NewUid(), "Buy groceries", "Milk, bread", "medium", null, new List<string>());
+			await _database.AddTaskAsync(NewUid(), "Clean house", null, "medium", null, new List<string>());
 
 			var results = await _database.SearchTasksHybridAsync("groceries");
 
@@ -211,7 +216,7 @@ namespace Task.Cli.Tests.IntegrationTests
 		public async System.Threading.Tasks.Task AddTask_ShouldHandleTags()
 		{
 			var tags = new List<string> { "urgent", "work" };
-			var task = await _database.AddTaskAsync("Tagged Task", null, "medium", null, tags);
+			var task = await _database.AddTaskAsync(NewUid(), "Tagged Task", null, "medium", null, tags);
 
 			Assert.Equal(tags, task.Tags);
 		}
@@ -220,7 +225,7 @@ namespace Task.Cli.Tests.IntegrationTests
 		public async System.Threading.Tasks.Task AddTask_ShouldHandleDueDate()
 		{
 			var dueDate = new DateTime(2023, 12, 31);
-			var task = await _database.AddTaskAsync("Due Task", null, "medium", dueDate, new List<string>());
+			var task = await _database.AddTaskAsync(NewUid(), "Due Task", null, "medium", dueDate, new List<string>());
 
 			Assert.Equal(dueDate, task.DueDate);
 		}
@@ -228,7 +233,7 @@ namespace Task.Cli.Tests.IntegrationTests
 		[Fact]
 		public async System.Threading.Tasks.Task EndToEnd_AddAndListTasks()
 		{
-			await _database.AddTaskAsync("Integration Test Task", "Test description", "high", null, new List<string>());
+			await _database.AddTaskAsync(NewUid(), "Integration Test Task", "Test description", "high", null, new List<string>());
 
 			var tasks = await _database.GetAllTasksAsync();
 
@@ -242,7 +247,7 @@ namespace Task.Cli.Tests.IntegrationTests
 		[Fact]
 		public async System.Threading.Tasks.Task EndToEnd_AddEditCompleteWorkflow()
 		{
-			var task = await _database.AddTaskAsync("Workflow Task", "Original description", "medium", null, new List<string>());
+			var task = await _database.AddTaskAsync(NewUid(), "Workflow Task", "Original description", "medium", null, new List<string>());
 
 			task.Title = "Updated Workflow Task";
 			task.Description = "Updated description";
@@ -262,9 +267,9 @@ namespace Task.Cli.Tests.IntegrationTests
 		[Fact]
 		public async System.Threading.Tasks.Task EndToEnd_FullTextSearch()
 		{
-			await _database.AddTaskAsync("Buy groceries", "Milk, bread, eggs", "medium", null, new List<string>());
-			await _database.AddTaskAsync("Clean the house", "Vacuum and dust", "medium", null, new List<string>());
-			await _database.AddTaskAsync("Write report", "Q4 financial report", "medium", null, new List<string>());
+			await _database.AddTaskAsync(NewUid(), "Buy groceries", "Milk, bread, eggs", "medium", null, new List<string>());
+			await _database.AddTaskAsync(NewUid(), "Clean the house", "Vacuum and dust", "medium", null, new List<string>());
+			await _database.AddTaskAsync(NewUid(), "Write report", "Q4 financial report", "medium", null, new List<string>());
 
 			var results = await _database.SearchTasksAsync("house");
 
@@ -275,8 +280,8 @@ namespace Task.Cli.Tests.IntegrationTests
 		[Fact]
 		public async System.Threading.Tasks.Task EndToEnd_HybridSearch()
 		{
-			await _database.AddTaskAsync("Buy groceries", "Milk and bread", "medium", null, new List<string>());
-			await _database.AddTaskAsync("Purchase items", "Shopping list", "medium", null, new List<string>());
+			await _database.AddTaskAsync(NewUid(), "Buy groceries", "Milk and bread", "medium", null, new List<string>());
+			await _database.AddTaskAsync(NewUid(), "Purchase items", "Shopping list", "medium", null, new List<string>());
 
 			var results = await _database.SearchTasksAsync("buy");
 
@@ -286,7 +291,7 @@ namespace Task.Cli.Tests.IntegrationTests
 		[Fact]
 		public async System.Threading.Tasks.Task QuickAdd_WithTitle_CreatesTask()
 		{
-			await _database.AddTaskAsync("Buy milk", null, "medium", null, new List<string>());
+			await _database.AddTaskAsync(NewUid(), "Buy milk", null, "medium", null, new List<string>());
 
 			var tasks = await _database.GetAllTasksAsync();
 			Assert.Single(tasks);
@@ -298,6 +303,7 @@ namespace Task.Cli.Tests.IntegrationTests
 		public async System.Threading.Tasks.Task QuickAdd_WithAllOptions_CreatesTask()
 		{
 			await _database.AddTaskAsync(
+				NewUid(),
 				"Complex task",
 				"Full description",
 				"high",
@@ -322,6 +328,7 @@ namespace Task.Cli.Tests.IntegrationTests
 		public async System.Threading.Tasks.Task QuickAdd_WithValidStatus_CreatesTask()
 		{
 			await _database.AddTaskAsync(
+				NewUid(),
 				"Test task",
 				null,
 				"medium",
@@ -340,7 +347,7 @@ namespace Task.Cli.Tests.IntegrationTests
 		[Fact]
 		public async System.Threading.Tasks.Task DeleteTask_ShouldArchiveAndHideFromQueries()
 		{
-			var task = await _database.AddTaskAsync("Archive me", null, "medium", null, new List<string>());
+			var task = await _database.AddTaskAsync(NewUid(), "Archive me", null, "medium", null, new List<string>());
 
 			await _database.DeleteTaskAsync(task.Uid);
 
@@ -354,8 +361,8 @@ namespace Task.Cli.Tests.IntegrationTests
 		[Fact]
 		public async System.Threading.Tasks.Task ClearAllTasksAsync_ShouldArchiveAllTasks()
 		{
-			await _database.AddTaskAsync("One", null, "medium", null, new List<string>());
-			await _database.AddTaskAsync("Two", null, "medium", null, new List<string>());
+			await _database.AddTaskAsync(NewUid(), "One", null, "medium", null, new List<string>());
+			await _database.AddTaskAsync(NewUid(), "Two", null, "medium", null, new List<string>());
 
 			await _database.ClearAllTasksAsync();
 
@@ -366,8 +373,8 @@ namespace Task.Cli.Tests.IntegrationTests
 		[Fact]
 		public async System.Threading.Tasks.Task GetAllUniqueTagsAsync_ShouldExcludeArchivedTasks()
 		{
-			await _database.AddTaskAsync("Active", null, "medium", null, new List<string> { "alpha", "beta" });
-			var archived = await _database.AddTaskAsync("Archived", null, "medium", null, new List<string> { "legacy" });
+			await _database.AddTaskAsync(NewUid(), "Active", null, "medium", null, new List<string> { "alpha", "beta" });
+			var archived = await _database.AddTaskAsync(NewUid(), "Archived", null, "medium", null, new List<string> { "legacy" });
 
 			await _database.DeleteTaskAsync(archived.Uid);
 
@@ -378,8 +385,8 @@ namespace Task.Cli.Tests.IntegrationTests
 		[Fact]
 		public async System.Threading.Tasks.Task SearchTasksFTS_ShouldExcludeArchivedTasks()
 		{
-			var active = await _database.AddTaskAsync("Visible task", "keep", "medium", null, new List<string>());
-			var archived = await _database.AddTaskAsync("Hidden task", "archive", "medium", null, new List<string>());
+			var active = await _database.AddTaskAsync(NewUid(), "Visible task", "keep", "medium", null, new List<string>());
+			var archived = await _database.AddTaskAsync(NewUid(), "Hidden task", "archive", "medium", null, new List<string>());
 
 			await _database.DeleteTaskAsync(archived.Uid);
 
@@ -392,7 +399,7 @@ namespace Task.Cli.Tests.IntegrationTests
 		[Fact]
 		public async System.Threading.Tasks.Task AddTask_ShouldPersistAssigneeAndProject()
 		{
-			var task = await _database.AddTaskAsync("Assigned", "desc", "medium", null, new List<string>(), "alpha", "jordan");
+			var task = await _database.AddTaskAsync(NewUid(), "Assigned", "desc", "medium", null, new List<string>(), "alpha", "jordan");
 
 			var fetched = await _database.GetTaskByUidAsync(task.Uid);
 

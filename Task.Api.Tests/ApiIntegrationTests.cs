@@ -46,6 +46,7 @@ namespace Task.Api.Tests.IntegrationTests
 		{
 			var newTask = new TaskCreateDto
 			{
+				Uid = new Uid().GenerateUid(),
 				Title = "Test Task",
 				Description = "Test Description",
 				Priority = "high",
@@ -69,6 +70,7 @@ namespace Task.Api.Tests.IntegrationTests
 		{
 			var newTask = new TaskCreateDto
 			{
+				Uid = new Uid().GenerateUid(),
 				Title = "Blocked Task",
 				Description = "Needs review",
 				Priority = "medium",
@@ -96,6 +98,7 @@ namespace Task.Api.Tests.IntegrationTests
 		{
 			var newTask = new TaskCreateDto
 			{
+				Uid = new Uid().GenerateUid(),
 				Title = "Invalid Block",
 				Priority = "medium",
 				Status = "todo",
@@ -109,7 +112,7 @@ namespace Task.Api.Tests.IntegrationTests
 		[Fact]
 		public async SystemTask GetTask_ReturnsTask_WhenExists()
 		{
-			var newTask = new TaskCreateDto { Title = "Get Test", Priority = "medium" };
+			var newTask = new TaskCreateDto { Title = "Get Test", Priority = "medium" , Uid = new Uid().GenerateUid()};
 			var createResponse = await _client.PostAsJsonAsync("/api/tasks", newTask);
 			var createdTask = await createResponse.Content.ReadFromJsonAsync<TaskDto>();
 			Assert.NotNull(createdTask);
@@ -126,7 +129,7 @@ namespace Task.Api.Tests.IntegrationTests
 		[Fact]
 		public async SystemTask UpdateTask_UpdatesExistingTask()
 		{
-			var newTask = new TaskCreateDto { Title = "Original", Priority = "low" };
+			var newTask = new TaskCreateDto { Title = "Original", Priority = "low", Uid = new Uid().GenerateUid() };
 			var createResponse = await _client.PostAsJsonAsync("/api/tasks", newTask);
 			var createdTask = await createResponse.Content.ReadFromJsonAsync<TaskDto>();
 			Assert.NotNull(createdTask);
@@ -149,7 +152,7 @@ namespace Task.Api.Tests.IntegrationTests
 		[Fact]
 		public async SystemTask UpdateTask_WithBlockReasonWhenNotBlocked_ReturnsBadRequest()
 		{
-			var newTask = new TaskCreateDto { Title = "Needs block", Priority = "medium" };
+			var newTask = new TaskCreateDto { Title = "Needs block", Priority = "medium" , Uid = new Uid().GenerateUid()};
 			var createResponse = await _client.PostAsJsonAsync("/api/tasks", newTask);
 			var createdTask = await createResponse.Content.ReadFromJsonAsync<TaskDto>();
 			Assert.NotNull(createdTask);
@@ -165,7 +168,7 @@ namespace Task.Api.Tests.IntegrationTests
 		[Fact]
 		public async SystemTask UpdateTask_ToBlockedWithReason_PersistsBlockReason()
 		{
-			var newTask = new TaskCreateDto { Title = "Will block", Priority = "medium" };
+			var newTask = new TaskCreateDto { Title = "Will block", Priority = "medium", Uid = new Uid().GenerateUid() };
 			var createResponse = await _client.PostAsJsonAsync("/api/tasks", newTask);
 			var createdTask = await createResponse.Content.ReadFromJsonAsync<TaskDto>();
 			Assert.NotNull(createdTask);
@@ -193,7 +196,8 @@ namespace Task.Api.Tests.IntegrationTests
 				Title = "Clear block",
 				Priority = "medium",
 				Status = "blocked",
-				BlockReason = "Waiting on approval"
+				BlockReason = "Waiting on approval",
+				Uid = new Uid().GenerateUid()
 			};
 
 			var createResponse = await _client.PostAsJsonAsync("/api/tasks", newTask);
@@ -219,6 +223,7 @@ namespace Task.Api.Tests.IntegrationTests
 		{
 			var newTask = new TaskCreateDto
 			{
+				Uid = new Uid().GenerateUid(),
 				Title = "Drop reason",
 				Priority = "medium",
 				Status = "blocked",
@@ -247,7 +252,7 @@ namespace Task.Api.Tests.IntegrationTests
 		[Fact]
 		public async SystemTask DeleteTask_RemovesTask()
 		{
-			var newTask = new TaskCreateDto { Title = "To Delete", Priority = "medium" };
+			var newTask = new TaskCreateDto { Title = "To Delete", Priority = "medium", Uid = new Uid().GenerateUid() };
 			var createResponse = await _client.PostAsJsonAsync("/api/tasks", newTask);
 			var createdTask = await createResponse.Content.ReadFromJsonAsync<TaskDto>();
 			Assert.NotNull(createdTask);
@@ -262,7 +267,7 @@ namespace Task.Api.Tests.IntegrationTests
 		[Fact]
 		public async SystemTask CompleteTask_SetsStatusToCompleted()
 		{
-			var newTask = new TaskCreateDto { Title = "To Complete", Priority = "medium" };
+			var newTask = new TaskCreateDto { Title = "To Complete", Priority = "medium", Uid = new Uid().GenerateUid() };
 			var createResponse = await _client.PostAsJsonAsync("/api/tasks", newTask);
 			var createdTask = await createResponse.Content.ReadFromJsonAsync<TaskDto>();
 			Assert.NotNull(createdTask);
@@ -279,8 +284,8 @@ namespace Task.Api.Tests.IntegrationTests
 		[Fact]
 		public async SystemTask SearchTasks_ReturnsMatchingTasks()
 		{
-			await _client.PostAsJsonAsync("/api/tasks", new TaskCreateDto { Title = "Buy groceries", Priority = "medium" });
-			await _client.PostAsJsonAsync("/api/tasks", new TaskCreateDto { Title = "Clean house", Priority = "medium" });
+			await _client.PostAsJsonAsync("/api/tasks", new TaskCreateDto { Title = "Buy groceries", Priority = "medium", Uid = new Uid().GenerateUid() });
+			await _client.PostAsJsonAsync("/api/tasks", new TaskCreateDto { Title = "Clean house", Priority = "medium", Uid = new Uid().GenerateUid() });
 
 			var searchResponse = await _client.GetAsync("/api/tasks/search?q=groceries");
 			searchResponse.EnsureSuccessStatusCode();
@@ -303,6 +308,7 @@ namespace Task.Api.Tests.IntegrationTests
 		{
 			var match = await CreateTaskAsync(new TaskCreateDto
 			{
+				Uid = new Uid().GenerateUid(),
 				Title = "Match",
 				Description = "Focus",
 				Priority = "high",
@@ -316,6 +322,7 @@ namespace Task.Api.Tests.IntegrationTests
 			await CreateTaskAsync(new TaskCreateDto
 			{
 				Title = "Other",
+				Uid = new Uid().GenerateUid(),
 				Priority = "low",
 				DueDate = new DateTime(2024, 2, 10),
 				Tags = new List<string> { "frontend" },
@@ -336,9 +343,9 @@ namespace Task.Api.Tests.IntegrationTests
 		[Fact]
 		public async System.Threading.Tasks.Task GetTasks_SortsAndPaginates()
 		{
-			await CreateTaskAsync(new TaskCreateDto { Title = "Bravo", Priority = "medium" });
-			await CreateTaskAsync(new TaskCreateDto { Title = "Alpha", Priority = "medium" });
-			await CreateTaskAsync(new TaskCreateDto { Title = "Charlie", Priority = "medium" });
+			await CreateTaskAsync(new TaskCreateDto { Title = "Bravo", Priority = "medium", Uid = new Uid().GenerateUid() });
+			await CreateTaskAsync(new TaskCreateDto { Title = "Alpha", Priority = "medium", Uid = new Uid().GenerateUid() });
+			await CreateTaskAsync(new TaskCreateDto { Title = "Charlie", Priority = "medium", Uid =	new Uid().GenerateUid() });
 
 			var response = await _client.GetAsync("/api/tasks?sortBy=title&sortOrder=asc&offset=1&limit=1");
 			response.EnsureSuccessStatusCode();
@@ -351,8 +358,8 @@ namespace Task.Api.Tests.IntegrationTests
 		[Fact]
 		public async System.Threading.Tasks.Task DeleteTask_ArchivesAndExcludesFromListings()
 		{
-			var keep = await CreateTaskAsync(new TaskCreateDto { Title = "Keep", Priority = "low" });
-			var archive = await CreateTaskAsync(new TaskCreateDto { Title = "Archive", Priority = "medium" });
+			var keep = await CreateTaskAsync(new TaskCreateDto { Title = "Keep", Priority = "low", Uid = new Uid().GenerateUid() });
+			var archive = await CreateTaskAsync(new TaskCreateDto { Title = "Archive", Priority = "medium", Uid = new Uid().GenerateUid() });
 
 			var deleteResponse = await _client.DeleteAsync($"/api/tasks/{archive.Uid}");
 			deleteResponse.EnsureSuccessStatusCode();
@@ -437,12 +444,14 @@ namespace Task.Api.Tests.IntegrationTests
 		{
 			var keep = await CreateTaskAsync(new TaskCreateDto
 			{
+				Uid = new Uid().GenerateUid(),
 				Title = "Tagged",
 				Priority = "medium",
 				Tags = new List<string> { "beta", "alpha" }
 			});
 			var archive = await CreateTaskAsync(new TaskCreateDto
 			{
+				Uid = new Uid().GenerateUid(),
 				Title = "Archive Tags",
 				Priority = "medium",
 				Tags = new List<string> { "old" }
@@ -460,9 +469,9 @@ namespace Task.Api.Tests.IntegrationTests
 		[Fact]
 		public async System.Threading.Tasks.Task GetAssignees_ReturnsDistinctSortedAssignees()
 		{
-			await CreateTaskAsync(new TaskCreateDto { Title = "A", Priority = "low", Assignee = "zoe" });
-			await CreateTaskAsync(new TaskCreateDto { Title = "B", Priority = "low", Assignee = "amy" });
-			await CreateTaskAsync(new TaskCreateDto { Title = "C", Priority = "low", Assignee = "amy" });
+			await CreateTaskAsync(new TaskCreateDto { Title = "A", Priority = "low", Assignee = "zoe", Uid = new Uid().GenerateUid() });
+			await CreateTaskAsync(new TaskCreateDto { Title = "B", Priority = "low", Assignee = "amy", Uid = new Uid().GenerateUid() });
+			await CreateTaskAsync(new TaskCreateDto { Title = "C", Priority = "low", Assignee = "amy", Uid = new Uid().GenerateUid() });
 
 			var response = await _client.GetAsync("/api/assignees");
 			response.EnsureSuccessStatusCode();
@@ -505,7 +514,8 @@ namespace Task.Api.Tests.IntegrationTests
 			{
 				Title = "Todo Task",
 				Priority = "medium",
-				Status = "todo"
+				Status = "todo",
+				Uid = new Uid().GenerateUid()
 			});
 
 			var response = await _client.GetAsync("/api/tasks?status=done");

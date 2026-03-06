@@ -10,6 +10,9 @@ namespace Task.Api.Tests.IntegrationTests
     {
         private readonly TestWebApplicationFactory _factory;
         private readonly HttpClient _client;
+        private readonly IUid _uidGenerator = new Uid();
+
+        private string NewUid() => _uidGenerator.GenerateUid();
 
         public BlockedStatusUiTests(TestWebApplicationFactory factory)
         {
@@ -54,8 +57,9 @@ namespace Task.Api.Tests.IntegrationTests
             var html = await response.Content.ReadAsStringAsync();
 
             Assert.Contains("value=\"blocked\"", html);
+            Assert.Contains("aria-expanded=\"true\"", html);
             Assert.Contains("edit-block-reason-group", html);
-            Assert.Contains("display: block", html);
+            Assert.DoesNotContain("id=\"edit-block-reason-group\" style=\"display: none;\"", html);
             Assert.Contains("Waiting on approval", html);
         }
 
@@ -90,6 +94,7 @@ namespace Task.Api.Tests.IntegrationTests
         {
             var newTask = new TaskCreateDto
             {
+                Uid = NewUid(),
                 Title = title,
                 Priority = "medium",
                 Status = "blocked",

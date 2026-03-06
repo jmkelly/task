@@ -9,6 +9,10 @@ namespace Task.Api.Tests.UnitTests
 {
     public class TaskServiceTests
     {
+        private readonly IUid _uidGenerator = new Uid();
+
+        private string NewUid() => _uidGenerator.GenerateUid();
+
         [Fact]
         public async SystemTask ArchiveAllTasksAsync_ArchivesEveryTask()
         {
@@ -18,9 +22,9 @@ namespace Task.Api.Tests.UnitTests
                 var service = new TaskService(dbPath);
                 await service.InitializeAsync();
 
-                await service.AddTaskAsync("Task 1", "desc", "medium", null, new List<string>());
-                await service.AddTaskAsync("Task 2", null, "low", null, new List<string>());
-                await service.AddTaskAsync("Task 3", null, "high", null, new List<string>());
+                await service.AddTaskAsync(NewUid(), "Task 1", "desc", "medium", null, new List<string>());
+                await service.AddTaskAsync(NewUid(), "Task 2", null, "low", null, new List<string>());
+                await service.AddTaskAsync(NewUid(), "Task 3", null, "high", null, new List<string>());
 
                 var pre = await service.GetAllTasksAsync();
                 Assert.All(pre, t => Assert.False(t.Archived));
