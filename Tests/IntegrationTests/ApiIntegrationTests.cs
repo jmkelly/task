@@ -11,189 +11,203 @@ using Task.Core;
 
 namespace Task.Cli.Tests.IntegrationTests
 {
-    public class ApiIntegrationTests : IClassFixture<TestWebApplicationFactory>
-    {
-        private readonly TestWebApplicationFactory _factory;
-        private readonly HttpClient _client;
+	public class ApiIntegrationTests : IClassFixture<TestWebApplicationFactory>
+	{
+		private readonly TestWebApplicationFactory _factory;
+		private readonly HttpClient _client;
 
-        public ApiIntegrationTests(TestWebApplicationFactory factory)
-        {
-            _factory = factory;
-            _client = _factory.CreateClient();
-            _factory.ClearDatabase();
-        }
+		public ApiIntegrationTests(TestWebApplicationFactory factory)
+		{
+			_factory = factory;
+			_client = _factory.CreateClient();
+			_factory.ClearDatabase();
+		}
 
-        [Fact]
-        public async System.Threading.Tasks.Task GetTasks_ReturnsEmptyList_WhenNoTasks()
-        {
-            var response = await _client.GetAsync("/api/tasks");
-            response.EnsureSuccessStatusCode();
-            var tasks = await response.Content.ReadFromJsonAsync<List<TaskDto>>();
-            Assert.NotNull(tasks);
-            Assert.Empty(tasks);
-        }
+		[Fact]
+		public async System.Threading.Tasks.Task GetTasks_ReturnsEmptyList_WhenNoTasks()
+		{
+			var response = await _client.GetAsync("/api/tasks");
+			response.EnsureSuccessStatusCode();
+			var tasks = await response.Content.ReadFromJsonAsync<List<TaskDto>>();
+			Assert.NotNull(tasks);
+			Assert.Empty(tasks);
+		}
 
-        [Fact]
-        public async System.Threading.Tasks.Task CreateTask_ReturnsCreatedTask()
-        {
-            var newTask = new TaskCreateDto
-            {
-                Title = "Test Task",
-                Description = "Test Description",
-                Priority = "high"
-            };
+		[Fact]
+		public async System.Threading.Tasks.Task CreateTask_ReturnsCreatedTask()
+		{
+			var newTask = new TaskCreateDto
+			{
+				Title = "Test Task",
+				Description = "Test Description",
+				Priority = "high"
+			};
 
-            var response = await _client.PostAsJsonAsync("/api/tasks", newTask);
-            response.EnsureSuccessStatusCode();
-            var task = await response.Content.ReadFromJsonAsync<TaskDto>();
-            Assert.NotNull(task);
+			var response = await _client.PostAsJsonAsync("/api/tasks", newTask);
+			response.EnsureSuccessStatusCode();
+			var task = await response.Content.ReadFromJsonAsync<TaskDto>();
+			Assert.NotNull(task);
 
-            Assert.Equal("Test Task", task.Title);
-            Assert.Equal("Test Description", task.Description);
-            Assert.Equal("high", task.Priority);
-            Assert.Equal("todo", task.Status);
-        }
+			Assert.Equal("Test Task", task.Title);
+			Assert.Equal("Test Description", task.Description);
+			Assert.Equal("high", task.Priority);
+			Assert.Equal("todo", task.Status);
+		}
 
-        [Fact]
-        public async System.Threading.Tasks.Task GetTask_ReturnsTask_WhenExists()
-        {
-            var newTask = new TaskCreateDto { Title = "Get Test", Priority = "medium" };
-            var createResponse = await _client.PostAsJsonAsync("/api/tasks", newTask);
-            var createdTask = await createResponse.Content.ReadFromJsonAsync<TaskDto>();
-            Assert.NotNull(createdTask);
+		[Fact]
+		public async System.Threading.Tasks.Task CreateTask_WithBlockedStatus_ReturnsBlockReason()
+		{
+			var newTask = new TaskCreateDto
+			{
+				Title = "Blocked Task",
+				Description = "Needs access",
+				Priority = "high",
+				Status = "blocked",
+				BlockReason = "Waiting on API key"
+			};
 
-            // Then get it
-            var getResponse = await _client.GetAsync($"/api/tasks/{createdTask.Uid}");
-            getResponse.EnsureSuccessStatusCode();
-            var retrievedTask = await getResponse.Content.ReadFromJsonAsync<TaskDto>();
-            Assert.NotNull(retrievedTask);
+			var response = await _client.PostAsJsonAsync("/api/tasks", newTask);
+			response.EnsureSuccessStatusCode();
+			var task = await response.Content.ReadFromJsonAsync<TaskDto>();
+			Assert.NotNull(task);
 
-            Assert.Equal(createdTask.Uid, retrievedTask.Uid);
-            Assert.Equal("Get Test", retrievedTask.Title);
-        }
+			Assert.Equal("blocked", task.Status);
+			Assert.Equal("Waiting on API key", task.BlockReason);
+		}
 
-        [Fact]
-        public async System.Threading.Tasks.Task UpdateTask_UpdatesExistingTask()
-        {
-            var newTask = new TaskCreateDto { Title = "Original", Priority = "low" };
-            var createResponse = await _client.PostAsJsonAsync("/api/tasks", newTask);
-            var createdTask = await createResponse.Content.ReadFromJsonAsync<TaskDto>();
-            Assert.NotNull(createdTask);
+		[Fact]
+		public async System.Threading.Tasks.Task GetTask_ReturnsTask_WhenExists()
+		{
+			var newTask = new TaskCreateDto { Title = "Get Test", Priority = "medium" };
+			var createResponse = await _client.PostAsJsonAsync("/api/tasks", newTask);
+			var createdTask = await createResponse.Content.ReadFromJsonAsync<TaskDto>();
+			Assert.NotNull(createdTask);
 
-            // Update it
-            var updateDto = new TaskUpdateDto
-            {
-                Title = "Updated",
-                Priority = "high"
-            };
-            var updateResponse = await _client.PutAsJsonAsync($"/api/tasks/{createdTask.Uid}", updateDto);
-            updateResponse.EnsureSuccessStatusCode();
+			var getResponse = await _client.GetAsync($"/api/tasks/{createdTask.Uid}");
+			getResponse.EnsureSuccessStatusCode();
+			var retrievedTask = await getResponse.Content.ReadFromJsonAsync<TaskDto>();
+			Assert.NotNull(retrievedTask);
 
-            // Verify update
-            var getResponse = await _client.GetAsync($"/api/tasks/{createdTask.Uid}");
-            var updatedTask = await getResponse.Content.ReadFromJsonAsync<TaskDto>();
-            Assert.NotNull(updatedTask);
-            Assert.Equal("Updated", updatedTask.Title);
-            Assert.Equal("high", updatedTask.Priority);
-        }
+			Assert.Equal(createdTask.Uid, retrievedTask.Uid);
+			Assert.Equal("Get Test", retrievedTask.Title);
+		}
 
-        [Fact]
-        public async System.Threading.Tasks.Task DeleteTask_RemovesTask()
-        {
-            var newTask = new TaskCreateDto { Title = "To Delete", Priority = "medium" };
-            var createResponse = await _client.PostAsJsonAsync("/api/tasks", newTask);
-            var createdTask = await createResponse.Content.ReadFromJsonAsync<TaskDto>();
-            Assert.NotNull(createdTask);
+		[Fact]
+		public async System.Threading.Tasks.Task UpdateTask_UpdatesExistingTask()
+		{
+			var newTask = new TaskCreateDto { Title = "Original", Priority = "low" };
+			var createResponse = await _client.PostAsJsonAsync("/api/tasks", newTask);
+			var createdTask = await createResponse.Content.ReadFromJsonAsync<TaskDto>();
+			Assert.NotNull(createdTask);
 
-            // Delete it
-            var deleteResponse = await _client.DeleteAsync($"/api/tasks/{createdTask.Uid}");
-            deleteResponse.EnsureSuccessStatusCode();
+			var updateDto = new TaskUpdateDto
+			{
+				Title = "Updated",
+				Priority = "high"
+			};
+			var updateResponse = await _client.PutAsJsonAsync($"/api/tasks/{createdTask.Uid}", updateDto);
+			updateResponse.EnsureSuccessStatusCode();
 
-            // Verify deletion
-            var getResponse = await _client.GetAsync($"/api/tasks/{createdTask.Uid}");
-            Assert.Equal(System.Net.HttpStatusCode.NotFound, getResponse.StatusCode);
-        }
+			var getResponse = await _client.GetAsync($"/api/tasks/{createdTask.Uid}");
+			var updatedTask = await getResponse.Content.ReadFromJsonAsync<TaskDto>();
+			Assert.NotNull(updatedTask);
+			Assert.Equal("Updated", updatedTask.Title);
+			Assert.Equal("high", updatedTask.Priority);
+		}
 
-        [Fact]
-        public async System.Threading.Tasks.Task CompleteTask_SetsStatusToCompleted()
-        {
-            var newTask = new TaskCreateDto { Title = "To Complete", Priority = "medium" };
-            var createResponse = await _client.PostAsJsonAsync("/api/tasks", newTask);
-            var createdTask = await createResponse.Content.ReadFromJsonAsync<TaskDto>();
-            Assert.NotNull(createdTask);
+		[Fact]
+		public async System.Threading.Tasks.Task DeleteTask_RemovesTask()
+		{
+			var newTask = new TaskCreateDto { Title = "To Delete", Priority = "medium" };
+			var createResponse = await _client.PostAsJsonAsync("/api/tasks", newTask);
+			var createdTask = await createResponse.Content.ReadFromJsonAsync<TaskDto>();
+			Assert.NotNull(createdTask);
 
-            // Complete it
-            var completeResponse = await _client.PatchAsync($"/api/tasks/{createdTask.Uid}/complete", null);
-            completeResponse.EnsureSuccessStatusCode();
+			var deleteResponse = await _client.DeleteAsync($"/api/tasks/{createdTask.Uid}");
+			deleteResponse.EnsureSuccessStatusCode();
 
-            // Verify completion
-            var getResponse = await _client.GetAsync($"/api/tasks/{createdTask.Uid}");
-            var completedTask = await getResponse.Content.ReadFromJsonAsync<TaskDto>();
-            Assert.NotNull(completedTask);
-            Assert.Equal("done", completedTask.Status);
-        }
+			var getResponse = await _client.GetAsync($"/api/tasks/{createdTask.Uid}");
+			Assert.Equal(System.Net.HttpStatusCode.NotFound, getResponse.StatusCode);
+		}
 
-        [Fact]
-        public async System.Threading.Tasks.Task SearchTasks_ReturnsMatchingTasks()
-        {
-            await _client.PostAsJsonAsync("/api/tasks", new TaskCreateDto { Title = "Buy groceries", Priority = "medium" });
-            await _client.PostAsJsonAsync("/api/tasks", new TaskCreateDto { Title = "Clean house", Priority = "medium" });
+		[Fact]
+		public async System.Threading.Tasks.Task CompleteTask_SetsStatusToCompleted()
+		{
+			var newTask = new TaskCreateDto { Title = "To Complete", Priority = "medium" };
+			var createResponse = await _client.PostAsJsonAsync("/api/tasks", newTask);
+			var createdTask = await createResponse.Content.ReadFromJsonAsync<TaskDto>();
+			Assert.NotNull(createdTask);
 
-            // Search
-            var searchResponse = await _client.GetAsync("/api/tasks/search?q=groceries");
-            searchResponse.EnsureSuccessStatusCode();
-            var results = await searchResponse.Content.ReadFromJsonAsync<List<TaskDto>>();
-            Assert.NotNull(results);
+			var completeResponse = await _client.PatchAsync($"/api/tasks/{createdTask.Uid}/complete", null);
+			completeResponse.EnsureSuccessStatusCode();
 
-            Assert.Single(results);
-            Assert.Equal("Buy groceries", results[0].Title);
-        }
+			var getResponse = await _client.GetAsync($"/api/tasks/{createdTask.Uid}");
+			var completedTask = await getResponse.Content.ReadFromJsonAsync<TaskDto>();
+			Assert.NotNull(completedTask);
+			Assert.Equal("done", completedTask.Status);
+		}
 
-        [Fact]
-        public async System.Threading.Tasks.Task GetTask_ReturnsNotFound_WhenTaskDoesNotExist()
-        {
-            var response = await _client.GetAsync("/api/tasks/nonexistent");
-            Assert.Equal(System.Net.HttpStatusCode.NotFound, response.StatusCode);
-        }
-    }
+		[Fact]
+		public async System.Threading.Tasks.Task SearchTasks_ReturnsMatchingTasks()
+		{
+			await _client.PostAsJsonAsync("/api/tasks", new TaskCreateDto { Title = "Buy groceries", Priority = "medium" });
+			await _client.PostAsJsonAsync("/api/tasks", new TaskCreateDto { Title = "Clean house", Priority = "medium" });
 
-    public class TestWebApplicationFactory : WebApplicationFactory<Task.Api.Program>
-    {
-        private readonly string _testDbPath;
-        private Database? _database;
+			var searchResponse = await _client.GetAsync("/api/tasks/search?q=groceries");
+			searchResponse.EnsureSuccessStatusCode();
+			var results = await searchResponse.Content.ReadFromJsonAsync<List<TaskDto>>();
+			Assert.NotNull(results);
 
-        public TestWebApplicationFactory()
-        {
-            _testDbPath = Path.Combine(Path.GetTempPath(), $"test_tasks_{Guid.NewGuid()}.db");
-        }
+			Assert.Single(results);
+			Assert.Equal("Buy groceries", results[0].Title);
+		}
 
-        public string TestDbPath => _testDbPath;
+		[Fact]
+		public async System.Threading.Tasks.Task GetTask_ReturnsNotFound_WhenTaskDoesNotExist()
+		{
+			var response = await _client.GetAsync("/api/tasks/nonexistent");
+			Assert.Equal(System.Net.HttpStatusCode.NotFound, response.StatusCode);
+		}
+	}
 
-        public void ClearDatabase()
-        {
-            if (_database != null)
-            {
-                _database.ClearAllTasksAsync().GetAwaiter().GetResult();
-            }
-        }
+	public class TestWebApplicationFactory : WebApplicationFactory<Task.Api.Program>
+	{
+		private readonly string _testDbPath;
+		private Database? _database;
 
-        protected override void ConfigureWebHost(IWebHostBuilder builder)
-        {
-            builder.UseEnvironment("Testing");
-            _database = new Database(_testDbPath);
-            builder.ConfigureServices(services =>
-            {
-                services.AddSingleton<Database>(_database);
-            });
-        }
+		public TestWebApplicationFactory()
+		{
+			_testDbPath = Path.Combine(Path.GetTempPath(), $"test_tasks_{Guid.NewGuid()}.db");
+		}
 
-        protected override void Dispose(bool disposing)
-        {
-            base.Dispose(disposing);
-            if (File.Exists(_testDbPath))
-            {
-                File.Delete(_testDbPath);
-            }
-        }
-    }
+		public string TestDbPath => _testDbPath;
+
+		public void ClearDatabase()
+		{
+			if (_database != null)
+			{
+				_database.ClearAllTasksAsync().GetAwaiter().GetResult();
+			}
+		}
+
+		protected override void ConfigureWebHost(IWebHostBuilder builder)
+		{
+			builder.UseEnvironment("Testing");
+			_database = new Database(_testDbPath);
+			_database.Initialize();
+			builder.ConfigureServices(services =>
+			{
+				services.AddSingleton<Database>(_database);
+			});
+		}
+
+		protected override void Dispose(bool disposing)
+		{
+			base.Dispose(disposing);
+			if (File.Exists(_testDbPath))
+			{
+				File.Delete(_testDbPath);
+			}
+		}
+	}
 }

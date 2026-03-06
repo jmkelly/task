@@ -37,7 +37,7 @@ namespace Task.Cli.Tests
         [Fact]
         public void ValidateStatus_WithValidStatus_ReturnsTrue()
         {
-            var result = ErrorHelper.ValidateStatus("in_progress", out var errorMessage);
+            var result = ErrorHelper.ValidateStatus("blocked", out var errorMessage);
 
             Assert.True(result);
             Assert.Null(errorMessage);
