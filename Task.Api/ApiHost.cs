@@ -210,6 +210,14 @@ namespace Task.Api
 
             builder.Services.Configure<TelegramProviderOptions>(
                 builder.Configuration.GetSection("Telegram"));
+            builder.Services.PostConfigure<TelegramProviderOptions>(options =>
+            {
+                var hasRequiredCredentials =
+                    !string.IsNullOrWhiteSpace(options.BotToken) &&
+                    !string.IsNullOrWhiteSpace(options.ChatId);
+
+                options.Enabled = hasRequiredCredentials;
+            });
             builder.Services.AddHttpClient<ITelegramProvider, TelegramProvider>((sp, client) =>
             {
                 var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<TelegramProviderOptions>>().Value;

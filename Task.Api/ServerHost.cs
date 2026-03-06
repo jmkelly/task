@@ -67,6 +67,14 @@ namespace Task.Api
 
 			builder.Services.Configure<TelegramProviderOptions>(
 				builder.Configuration.GetSection("Telegram"));
+			builder.Services.PostConfigure<TelegramProviderOptions>(options =>
+			{
+				var hasRequiredCredentials =
+					!string.IsNullOrWhiteSpace(options.BotToken) &&
+					!string.IsNullOrWhiteSpace(options.ChatId);
+
+				options.Enabled = hasRequiredCredentials;
+			});
 			builder.Services.AddHttpClient<ITelegramProvider, TelegramProvider>((sp, client) =>
 			{
 				var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<TelegramProviderOptions>>().Value;
@@ -133,6 +141,10 @@ namespace Task.Api
 			var uri = new Uri(address);
 			var reason = uri.Port == 8080 ? "preferred" : "auto-assigned";
 			Console.WriteLine($"Server.Started port={uri.Port} url={address} reason={reason}");
+			if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("Telegram__BotToken")))
+			{
+				Console.WriteLine($"Telegram NOT loaded. Please set Telegram__BotToken and Telegram__ChatId environment variable.");
+			}
 		}
 
 		private static void DisableConfigReloadOnChangeIfUnset()
