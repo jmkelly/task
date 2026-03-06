@@ -47,7 +47,7 @@
 
             <div class="form-group">
                 <label for="status">Status</label>
-                <select id="status" name="status" onchange="toggleEditBlockReason(this)">
+                <select id="status" name="status" onchange="toggleEditBlockReason(this)" aria-controls="edit-block-reason-group" aria-expanded="@(Model.Status == "blocked" ? "true" : "false")">
                     <option value="todo" selected="@(Model.Status == "todo")">Todo</option>
                     <option value="in_progress" selected="@(Model.Status == "in_progress")">In Progress</option>
                     <option value="blocked" selected="@(Model.Status == "blocked")">Blocked</option>
@@ -55,9 +55,9 @@
                 </select>
             </div>
 
-            <div class="form-group" id="edit-block-reason-group" style="display: @(Model.Status == "blocked" ? "block" : "none")">
+            <div class="form-group" id="edit-block-reason-group">
                 <label for="blockReason">Reason for block (optional)</label>
-                <textarea id="blockReason" name="blockReason" rows="2" placeholder="e.g., Waiting on external API access...">@Model.BlockReason</textarea>
+                <textarea id="blockReason" name="blockReason" rows="3" placeholder="e.g., Waiting on external API access...">@Model.BlockReason</textarea>
             </div>
 
             <div class="form-actions">
@@ -75,6 +75,9 @@
             return;
         }
         const isBlocked = selectElement && selectElement.value === 'blocked';
-        group.style.display = isBlocked ? 'block' : 'none';
+        group.style.display = isBlocked ? '' : 'none';
+        if (selectElement) {
+            selectElement.setAttribute('aria-expanded', isBlocked ? 'true' : 'false');
+        }
     }
 </script>
