@@ -506,6 +506,79 @@ namespace Task.Api.Tests.IntegrationTests
 		}
 
 		[Fact]
+		public async SystemTask UpdateTask_SendsTelegramMessage_OnTransitionToBlocked()
+		{
+			_factory.TelegramProvider.Messages.Clear();
+
+			var createdTask = await CreateTaskAsync(new TaskCreateDto
+			{
+				Uid = new Uid().GenerateUid(),
+				Title = "Transition to blocked",
+				Priority = "medium",
+				Status = "todo"
+			});
+
+			var updateResponse = await _client.PutAsJsonAsync($"/api/tasks/{createdTask.Uid}", new TaskUpdateDto
+			{
+				Status = "blocked",
+				BlockReason = "Waiting on dependency"
+			});
+			updateResponse.EnsureSuccessStatusCode();
+
+			Assert.Single(_factory.TelegramProvider.Messages);
+			Assert.Contains(createdTask.Uid, _factory.TelegramProvider.Messages[0]);
+			Assert.Contains(createdTask.Title, _factory.TelegramProvider.Messages[0]);
+		}
+
+		[Fact]
+		public async SystemTask UpdateTask_DoesNotSendTelegramMessage_WhenStatusRemainsBlocked()
+		{
+			_factory.TelegramProvider.Messages.Clear();
+
+			var createdTask = await CreateTaskAsync(new TaskCreateDto
+			{
+				Uid = new Uid().GenerateUid(),
+				Title = "Still blocked",
+				Priority = "medium",
+				Status = "blocked",
+				BlockReason = "Initial reason"
+			});
+
+			_factory.TelegramProvider.Messages.Clear();
+
+			var updateResponse = await _client.PutAsJsonAsync($"/api/tasks/{createdTask.Uid}", new TaskUpdateDto
+			{
+				Status = "blocked",
+				BlockReason = "Updated reason"
+			});
+			updateResponse.EnsureSuccessStatusCode();
+
+			Assert.Empty(_factory.TelegramProvider.Messages);
+		}
+
+		[Fact]
+		public async SystemTask UpdateTask_DoesNotSendTelegramMessage_ForNonBlockedTransition()
+		{
+			_factory.TelegramProvider.Messages.Clear();
+
+			var createdTask = await CreateTaskAsync(new TaskCreateDto
+			{
+				Uid = new Uid().GenerateUid(),
+				Title = "Move to in progress",
+				Priority = "medium",
+				Status = "todo"
+			});
+
+			var updateResponse = await _client.PutAsJsonAsync($"/api/tasks/{createdTask.Uid}", new TaskUpdateDto
+			{
+				Status = "in_progress"
+			});
+			updateResponse.EnsureSuccessStatusCode();
+
+			Assert.Empty(_factory.TelegramProvider.Messages);
+		}
+
+		[Fact]
 		public async SystemTask GetTasks_DoesNotTriggerNotification_WhenFilteredListEmptyButTodoExists()
 		{
 			_factory.TelegramProvider.Messages.Clear();

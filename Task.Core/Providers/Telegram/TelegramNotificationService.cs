@@ -10,8 +10,10 @@ namespace Task.Core.Providers.Telegram;
 
 public sealed class TelegramNotificationService
 {
+    private const string BlockedStatus = "blocked";
+
     private static readonly HashSet<string> TriggerStatuses =
-        new(StringComparer.OrdinalIgnoreCase) { "todo", "in_progress", "blocked" };
+        new(StringComparer.OrdinalIgnoreCase) { "todo", "in_progress", BlockedStatus };
 
     private readonly ITelegramProvider _provider;
     private readonly IOptions<TelegramProviderOptions> _options;
@@ -52,6 +54,41 @@ public sealed class TelegramNotificationService
         }
 
         _logger.LogInformation("Telegram notification triggered. Active tasks count is zero.");
+        await _provider.SendMessageAsync(message, cancellationToken);
+    }
+
+    public async System.Threading.Tasks.Task NotifyWhenTaskTransitionsToBlockedAsync(
+        TaskItem task,
+        string previousStatus,
+        string nextStatus,
+        CancellationToken cancellationToken = default)
+    {
+        if (task == null)
+        {
+            throw new ArgumentNullException(nameof(task));
+        }
+
+        var wasBlocked = string.Equals(previousStatus, BlockedStatus, StringComparison.OrdinalIgnoreCase);
+        var isBlocked = string.Equals(nextStatus, BlockedStatus, StringComparison.OrdinalIgnoreCase);
+
+        if (wasBlocked || !isBlocked)
+        {
+            _logger.LogInformation(
+                "Blocked transition notification skipped for task {TaskUid}. PreviousStatus: {PreviousStatus}. NextStatus: {NextStatus}.",
+                task.Uid,
+                previousStatus,
+                nextStatus);
+            return;
+        }
+
+        var message = $"Task blocked: {task.Title} ({task.Uid})";
+
+        _logger.LogInformation(
+            "Blocked transition notification triggered for task {TaskUid}. PreviousStatus: {PreviousStatus}. NextStatus: {NextStatus}.",
+            task.Uid,
+            previousStatus,
+            nextStatus);
+
         await _provider.SendMessageAsync(message, cancellationToken);
     }
 }

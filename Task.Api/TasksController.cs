@@ -196,6 +196,8 @@ public class TasksController : ControllerBase
 				return NotFound();
 			}
 
+			var previousStatus = existingTask.Status;
+
 			if (!string.IsNullOrEmpty(dto.Title))
 				existingTask.Title = dto.Title;
 			if (dto.Description != null)
@@ -239,6 +241,11 @@ public class TasksController : ControllerBase
 				existingTask.ArchivedAt = dto.ArchivedAt;
 
 			await _database.UpdateTaskAsync(existingTask);
+			await _telegramNotifications.NotifyWhenTaskTransitionsToBlockedAsync(
+				existingTask,
+				previousStatus,
+				existingTask.Status,
+				HttpContext.RequestAborted);
 
 			return Ok(MapToDto(existingTask));
 		}
