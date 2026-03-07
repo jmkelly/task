@@ -1,24 +1,34 @@
 @using TaskItem = Task.Core.TaskItem
 @model IEnumerable<TaskItem>
 
+@{
+    var todoTasks = Model.Where(t => t.Status == "todo").ToList();
+    var inProgressTasks = Model.Where(t => t.Status == "in_progress").ToList();
+    var blockedTasks = Model.Where(t => t.Status == "blocked").ToList();
+    var doneTasks = Model.Where(t => t.Status == "done").ToList();
+}
+
 <div class="kanban-board board-grid">
     <div class="kanban-column board-column" data-status="todo" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
         <div class="column-header">
             <h2>Todo</h2>
         </div>
         <div class="column-body task-list" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
-            @if (Model.Where(t => t.Status == "todo").Any())
+            @if (todoTasks.Any())
             {
-                @foreach (var task in Model.Where(t => t.Status == "todo"))
+                @foreach (var task in todoTasks)
                 {
-                    <div class="task-card card" draggable="true" data-uid="@task.Uid" ondragstart="handleDragStart(event)">
-                        <div class="task-header card-header">
-                            <h3 class="task-title">@task.Title</h3>
+                    <div class="task-card" draggable="true" data-uid="@task.Uid" ondragstart="handleDragStart(event)">
+                        <div class="task-header">
+                            <div class="task-heading">
+                                <h3 class="task-title">@task.Title</h3>
+                                <span class="task-uid" title="UID: @task.Uid">UID: @task.Uid</span>
+                            </div>
                             <div class="task-meta">
                                 <span class="task-priority priority-@task.Priority.ToLower()">@task.Priority</span>
                             </div>
                         </div>
-                        <div class="card-body">
+                        <div class="task-body">
                             @if (!string.IsNullOrEmpty(task.Project) || !string.IsNullOrEmpty(task.Assignee))
                             {
                                 <div class="task-context">
@@ -58,7 +68,7 @@
                                 </div>
                             }
                         </div>
-                        <div class="task-actions card-footer">
+                        <div class="task-actions">
                             <button class="btn-small" hx-get="/Index?handler=EditModal&uid=@task.Uid" hx-target="body" hx-swap="beforeend">
                                 <span class="emoji emoji-leading">✏️</span>Edit
                             </button>
@@ -85,18 +95,21 @@
             <h2>In Progress</h2>
         </div>
         <div class="column-body task-list" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
-            @if (Model.Where(t => t.Status == "in_progress").Any())
+            @if (inProgressTasks.Any())
             {
-                @foreach (var task in Model.Where(t => t.Status == "in_progress"))
+                @foreach (var task in inProgressTasks)
                 {
-                    <div class="task-card card" draggable="true" data-uid="@task.Uid" ondragstart="handleDragStart(event)">
-                        <div class="task-header card-header">
-                            <h3 class="task-title">@task.Title</h3>
+                    <div class="task-card" draggable="true" data-uid="@task.Uid" ondragstart="handleDragStart(event)">
+                        <div class="task-header">
+                            <div class="task-heading">
+                                <h3 class="task-title">@task.Title</h3>
+                                <span class="task-uid" title="UID: @task.Uid">UID: @task.Uid</span>
+                            </div>
                             <div class="task-meta">
                                 <span class="task-priority priority-@task.Priority.ToLower()">@task.Priority</span>
                             </div>
                         </div>
-                        <div class="card-body">
+                        <div class="task-body">
                             @if (!string.IsNullOrEmpty(task.Project) || !string.IsNullOrEmpty(task.Assignee))
                             {
                                 <div class="task-context">
@@ -136,7 +149,7 @@
                                 </div>
                             }
                         </div>
-                        <div class="task-actions card-footer">
+                        <div class="task-actions">
                             <button class="btn-small" hx-get="/Index?handler=EditModal&uid=@task.Uid" hx-target="body" hx-swap="beforeend">
                                 <span class="emoji emoji-leading">✏️</span>Edit
                             </button>
@@ -163,18 +176,21 @@
             <h2>Blocked</h2>
         </div>
         <div class="column-body task-list" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
-            @if (Model.Where(t => t.Status == "blocked").Any())
+            @if (blockedTasks.Any())
             {
-                @foreach (var task in Model.Where(t => t.Status == "blocked"))
+                @foreach (var task in blockedTasks)
                 {
-                    <div class="task-card card" draggable="true" data-uid="@task.Uid" ondragstart="handleDragStart(event)">
-                        <div class="task-header card-header">
-                            <h3 class="task-title">@task.Title</h3>
+                    <div class="task-card" draggable="true" data-uid="@task.Uid" ondragstart="handleDragStart(event)">
+                        <div class="task-header">
+                            <div class="task-heading">
+                                <h3 class="task-title">@task.Title</h3>
+                                <span class="task-uid" title="UID: @task.Uid">UID: @task.Uid</span>
+                            </div>
                             <div class="task-meta">
                                 <span class="task-priority priority-@task.Priority.ToLower()">@task.Priority</span>
                             </div>
                         </div>
-                        <div class="card-body">
+                        <div class="task-body">
                             @if (!string.IsNullOrEmpty(task.Project) || !string.IsNullOrEmpty(task.Assignee))
                             {
                                 <div class="task-context">
@@ -221,7 +237,7 @@
                                 </div>
                             }
                         </div>
-                        <div class="task-actions card-footer">
+                        <div class="task-actions">
                             <button class="btn-small" hx-get="/Index?handler=EditModal&uid=@task.Uid" hx-target="body" hx-swap="beforeend">
                                 <span class="emoji emoji-leading">✏️</span>Edit
                             </button>
@@ -248,18 +264,21 @@
             <h2>Done</h2>
         </div>
         <div class="column-body task-list" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
-            @if (Model.Where(t => t.Status == "done").Any())
+            @if (doneTasks.Any())
             {
-                @foreach (var task in Model.Where(t => t.Status == "done"))
+                @foreach (var task in doneTasks)
                 {
-                    <div class="task-card card" draggable="true" data-uid="@task.Uid" ondragstart="handleDragStart(event)">
-                        <div class="task-header card-header">
-                            <h3 class="task-title">@task.Title</h3>
+                    <div class="task-card" draggable="true" data-uid="@task.Uid" ondragstart="handleDragStart(event)">
+                        <div class="task-header">
+                            <div class="task-heading">
+                                <h3 class="task-title">@task.Title</h3>
+                                <span class="task-uid" title="UID: @task.Uid">UID: @task.Uid</span>
+                            </div>
                             <div class="task-meta">
                                 <span class="task-priority priority-@task.Priority.ToLower()">@task.Priority</span>
                             </div>
                         </div>
-                        <div class="card-body">
+                        <div class="task-body">
                             @if (!string.IsNullOrEmpty(task.Project) || !string.IsNullOrEmpty(task.Assignee))
                             {
                                 <div class="task-context">
@@ -299,7 +318,7 @@
                                 </div>
                             }
                         </div>
-                        <div class="task-actions card-footer">
+                        <div class="task-actions">
                             <button class="btn-small" hx-get="/Index?handler=EditModal&uid=@task.Uid" hx-target="body" hx-swap="beforeend">
                                 <span class="emoji emoji-leading">✏️</span>Edit
                             </button>
