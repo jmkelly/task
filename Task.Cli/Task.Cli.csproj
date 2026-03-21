@@ -15,7 +15,7 @@
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <AssemblyName>Task.Cli</AssemblyName>
     <ValidateExecutableReferencesMatchSelfContained>false</ValidateExecutableReferencesMatchSelfContained>
-    <Version>1.0.0.39</Version>
+    <Version>1.0.0.49</Version>
   </PropertyGroup>
 
   <ItemGroup>

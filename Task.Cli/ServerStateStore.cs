@@ -6,20 +6,17 @@ namespace Task.Cli
 {
     public static class ServerStateStore
     {
-        private static readonly string StateDir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".task");
-        private static readonly string StateFile = Path.Combine(StateDir, "server.json");
-
         public static ServerState? Load()
         {
-            if (!File.Exists(StateFile))
+            var stateFile = GetStateFilePath();
+            if (!File.Exists(stateFile))
             {
                 return null;
             }
 
             try
             {
-                var json = File.ReadAllText(StateFile);
+                var json = File.ReadAllText(stateFile);
                 return JsonSerializer.Deserialize(json, TaskJsonContext.Default.ServerState);
             }
             catch (Exception)
@@ -32,9 +29,9 @@ namespace Task.Cli
         {
             try
             {
-                Directory.CreateDirectory(StateDir);
+                Directory.CreateDirectory(GetStateDirectory());
                 var json = JsonSerializer.Serialize(state, TaskJsonContext.Default.ServerState);
-                File.WriteAllText(StateFile, json);
+                File.WriteAllText(GetStateFilePath(), json);
             }
             catch (Exception ex)
             {
@@ -44,20 +41,54 @@ namespace Task.Cli
 
         public static void Clear()
         {
-            if (!File.Exists(StateFile))
+            var stateFile = GetStateFilePath();
+            if (!File.Exists(stateFile))
             {
                 return;
             }
 
             try
             {
-                File.Delete(StateFile);
+                File.Delete(stateFile);
             }
-
             catch (Exception ex)
             {
                 throw new InvalidOperationException($"Failed to clear server state: {ex.Message}", ex);
             }
+        }
+
+        public static void Clear(ServerState expectedState)
+        {
+            if (expectedState == null)
+            {
+                throw new ArgumentNullException(nameof(expectedState));
+            }
+
+            var currentState = Load();
+            if (currentState == null)
+            {
+                return;
+            }
+
+            var sameProcess = currentState.ProcessId == expectedState.ProcessId;
+            var sameUrl = string.Equals(currentState.Url, expectedState.Url, StringComparison.OrdinalIgnoreCase);
+            if (!sameProcess || !sameUrl)
+            {
+                return;
+            }
+
+            Clear();
+        }
+
+        private static string GetStateDirectory()
+        {
+            var userHome = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            return Path.Combine(userHome, ".task");
+        }
+
+        private static string GetStateFilePath()
+        {
+            return Path.Combine(GetStateDirectory(), "server.json");
         }
     }
 }

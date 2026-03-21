@@ -1,10 +1,12 @@
-using Spectre.Console.Cli;
-using System.ComponentModel;
-using Task.Api;
 using Spectre.Console;
+using Spectre.Console.Cli;
+using System;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Task.Api;
 
 namespace Task.Cli
 {
@@ -42,6 +44,19 @@ namespace Task.Cli
             var args = context.Remaining.Raw.ToArray();
             await using var handle = await ApiHost.StartAsync(args, options, cancellationToken);
 
+            var state = new ServerState
+            {
+                ProcessId = Process.GetCurrentProcess().Id,
+                Url = handle.Result.Url,
+                Port = handle.Result.Port,
+                Reason = handle.Result.Reason,
+                BinaryPath = Environment.ProcessPath,
+                StartedAt = DateTimeOffset.UtcNow
+            };
+
+            ServerStateStore.Save(state);
+            SaveApiUrl(handle.Result.Url);
+
             var readiness = new
             {
                 status = "ready",
@@ -64,8 +79,22 @@ namespace Task.Cli
                 AnsiConsole.MarkupLine($"[green]Server ready[/] url={handle.Result.Url} port={handle.Result.Port} reason={handle.Result.Reason}");
             }
 
-            await handle.WaitForShutdownAsync(cancellationToken);
-            return 0;
+            try
+            {
+                await handle.WaitForShutdownAsync(cancellationToken);
+                return 0;
+            }
+            finally
+            {
+                ServerStateStore.Clear(state);
+            }
+        }
+
+        private static void SaveApiUrl(string url)
+        {
+            var config = Config.Load();
+            config.ApiUrl = url;
+            config.Save();
         }
     }
 }
