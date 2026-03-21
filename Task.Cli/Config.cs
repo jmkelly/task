@@ -4,6 +4,7 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
+using Task.Core;
 
 namespace Task.Cli
 {
@@ -129,22 +130,7 @@ namespace Task.Cli
                 && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
         }
 
-        private static string GetConfigDirectory()
-        {
-            var configHome = Environment.GetEnvironmentVariable("XDG_CONFIG_HOME");
-            if (string.IsNullOrWhiteSpace(configHome))
-            {
-                var userHome = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-                if (string.IsNullOrWhiteSpace(userHome))
-                {
-                    throw new InvalidOperationException("Unable to resolve user home directory for config storage.");
-                }
-
-                configHome = Path.Combine(userHome, ".config");
-            }
-
-            return Path.Combine(configHome, "task");
-        }
+        private static string GetConfigDirectory() => TaskPaths.GetConfigDirectory();
 
         public string? GetValue(string key)
         {

@@ -31,6 +31,7 @@ namespace Task.Core
 
 		private void InitializeDatabase()
 		{
+			EnsureParentDirectoryExists();
 			using var connection = new SqliteConnection($"Data Source={_dbPath}");
 			connection.Open();
 			var sql = @"
@@ -133,6 +134,7 @@ namespace Task.Core
 
 		private async System.Threading.Tasks.Task InitializeDatabaseAsync(CancellationToken cancellationToken = default)
 		{
+			EnsureParentDirectoryExists();
 			using var connection = new SqliteConnection($"Data Source={_dbPath}");
 			await connection.OpenAsync(cancellationToken);
 			var sql = @"
@@ -532,6 +534,17 @@ namespace Task.Core
 			using var command = new SqliteCommand(sql, connection);
 			command.Parameters.AddWithValue("@archivedAt", now);
 			await command.ExecuteNonQueryAsync(cancellationToken);
+		}
+
+		private void EnsureParentDirectoryExists()
+		{
+			var directoryPath = Path.GetDirectoryName(_dbPath);
+			if (string.IsNullOrWhiteSpace(directoryPath))
+			{
+				return;
+			}
+
+			Directory.CreateDirectory(directoryPath);
 		}
 	}
 }

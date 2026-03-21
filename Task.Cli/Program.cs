@@ -118,7 +118,7 @@ config.SetApplicationVersion(version);
                         .WithDescription("Run the Task API server in the foreground.")
                         .WithExample(new[] { "server", "run" })
                         .WithExample(new[] { "server", "run", "--urls", "http://localhost:8080" })
-                        .WithExample(new[] { "server", "run", "--database-path", "tasks.db" })
+                        .WithExample(new[] { "server", "run", "--database-path", "./data/tasks.db" })
                         .WithExample(new[] { "server", "run", "--ready-file", "/tmp/task-ready.json" });
                     branch.AddCommand<ServerStartCommand>("start")
                         .WithDescription("Start the Task API server in the background.");

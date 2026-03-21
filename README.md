@@ -376,6 +376,13 @@ Alternatively, run the server in the foreground:
 task server run --urls http://localhost:8080
 ```
 
+When `--database-path` is omitted, the API stores its SQLite database in the same config directory used for CLI configuration: `~/.config/task/tasks.db` (or the equivalent resolved config directory path, such as `$XDG_CONFIG_HOME/task/tasks.db`).
+
+To override the database location explicitly:
+```
+task server run --database-path ./data/tasks.db
+```
+
 #### Basic Commands
 
 Add a task:

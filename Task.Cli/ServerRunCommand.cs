@@ -20,7 +20,7 @@ namespace Task.Cli
             public string? Urls { get; set; }
 
             [CommandOption("--database-path <PATH>")]
-            [Description("Database path for the API server (default: tasks.db).")]
+            [Description("Database path for the API server (default: config dir tasks.db, e.g. ~/.config/task/tasks.db).")]
             public string? DatabasePath { get; set; }
 
             [CommandOption("--ready-file <PATH>")]

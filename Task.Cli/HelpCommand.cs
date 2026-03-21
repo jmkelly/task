@@ -74,7 +74,7 @@ namespace Task.Cli
 			AnsiConsole.WriteLine("server run          Run the Task API server in the foreground");
 			AnsiConsole.WriteLine("  Options:");
 			AnsiConsole.WriteLine("    --urls <URLS>           Override server URLs (e.g., http://localhost:8080). Disables port auto-selection.");
-			AnsiConsole.WriteLine("    --database-path <PATH>  Database path for the API server (default: tasks.db).");
+			AnsiConsole.WriteLine("    --database-path <PATH>  Database path for the API server (default: config dir tasks.db, e.g. ~/.config/task/tasks.db).");
 			AnsiConsole.WriteLine("    --ready-file <PATH>     Write readiness details to this file once the server is ready.");
 			AnsiConsole.WriteLine();
 			AnsiConsole.WriteLine("server start        Start the Task API server in the background");
@@ -193,6 +193,8 @@ namespace Task.Cli
 			AnsiConsole.WriteLine();
 			AnsiConsole.WriteLine("# Run API server in the foreground with defaults");
 			AnsiConsole.WriteLine("task server run");
+			AnsiConsole.WriteLine("# Default database path resolves to ~/.config/task/tasks.db");
+			AnsiConsole.WriteLine();
 			AnsiConsole.WriteLine();
 			AnsiConsole.WriteLine("# Run with custom URL and DB path, write readiness details to a file");
 			AnsiConsole.WriteLine("task server run --urls http://localhost:9090 --database-path tasks_team.db --ready-file ./api.ready.json");
@@ -271,6 +273,7 @@ namespace Task.Cli
 			// FILES
 			AnsiConsole.MarkupLine("[yellow]FILES[/]");
 			AnsiConsole.WriteLine("~/.config/task/config.json    User configuration file");
+			AnsiConsole.WriteLine("~/.config/task/tasks.db       Default API database file when --database-path is omitted");
 			AnsiConsole.WriteLine();
 
 			// EXIT STATUS
