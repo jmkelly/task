@@ -2,30 +2,26 @@
 @using Task.Api.Pages
 @model IndexModel
 @{
-    ViewData["Title"] = "Kanban Board";
+    ViewData["Title"] = "Task Board";
 }
 
-<!-- Hero-style header with gradient background -->
-<section class="hero-section">
-    <div class="hero-container">
-        <div class="hero-content">
-            <h1><span class="emoji emoji-leading">🚀</span>Task Board</h1>
-            <p class="header-subtitle">Manage your workflow with drag-and-drop simplicity</p>
-        </div>
-        <div class="hero-actions">
-            <button class="btn-primary" hx-get="/Index?handler=CreateModal" hx-target="body" hx-swap="beforeend">
-                <span class="emoji emoji-leading">➕</span>Add Task
-            </button>
-            <button class="btn-secondary" hx-post="/Index?handler=ClearBoard" hx-include="#filter-form" hx-target="#board-container" hx-swap="outerHTML" onclick="return confirm('Are you sure you want to clear all tasks? This action cannot be undone.')">
-                <span class="emoji emoji-leading">🗑️</span>Clear Board
-            </button>
-        </div>
+<section class="page-toolbar" aria-label="Board controls">
+    <div class="page-toolbar-copy">
+        <h1 class="page-title"><span class="emoji emoji-leading">🚀</span>Task Board</h1>
+    </div>
+
+    <div class="page-actions">
+        <button class="btn-primary" hx-get="/Index?handler=CreateModal" hx-target="body" hx-swap="beforeend">
+            <span class="emoji emoji-leading">➕</span>Add Task
+        </button>
+        <button class="btn-secondary" hx-post="/Index?handler=ClearBoard" hx-include="#filter-form" hx-target="#board-container" hx-swap="outerHTML" onclick="return confirm('Are you sure you want to clear all tasks? This action cannot be undone.')">
+            <span class="emoji emoji-leading">🗑️</span>Clear Board
+        </button>
     </div>
 </section>
 
 @await Html.PartialAsync("_BoardContainer", Model)
 
-<!-- Modal container for task creation -->
 <div id="modal-container"></div>
 
 @await Html.PartialAsync("_BlockReasonModal")
@@ -34,10 +30,10 @@
 
 @section Scripts {
     <script>
-        document.addEventListener('htmx:configRequest', function(evt) {
+        document.addEventListener('htmx:configRequest', function (event) {
             const token = document.querySelector('input[name="__RequestVerificationToken"]');
             if (token) {
-                evt.detail.headers['RequestVerificationToken'] = token.value;
+                event.detail.headers['RequestVerificationToken'] = token.value;
             }
         });
 
@@ -50,12 +46,15 @@
         }
 
         function buildStatusUpdatePayload(uid, status, blockReason) {
-            const formData = new FormData(document.getElementById('filter-form'));
+            const filterForm = document.getElementById('filter-form');
+            const formData = filterForm ? new FormData(filterForm) : new FormData();
             formData.append('uid', uid);
             formData.append('status', status);
+
             if (typeof blockReason === 'string') {
                 formData.append('blockReason', blockReason);
             }
+
             return Object.fromEntries(formData);
         }
 
@@ -89,16 +88,16 @@
             const input = modal.querySelector('[data-block-reason-input]');
             const cancelButton = modal.querySelector('[data-block-reason-cancel]');
 
-            const closeModal = () => {
+            function closeModal() {
                 modal.remove();
-            };
+            }
 
             if (cancelButton) {
                 cancelButton.addEventListener('click', closeModal);
             }
 
             if (form) {
-                form.addEventListener('submit', function(event) {
+                form.addEventListener('submit', function (event) {
                     event.preventDefault();
                     const reason = input && typeof input.value === 'string' ? input.value.trim() : '';
                     updateTaskStatus(uid, status, reason);
@@ -116,29 +115,32 @@
         function handleDrop(event) {
             event.preventDefault();
             const uid = event.dataTransfer.getData('text/plain');
-            const status = event.currentTarget.closest('.kanban-column').dataset.status;
+            const column = event.currentTarget.closest('.kanban-column');
+            const status = column ? column.dataset.status : '';
 
-            if (uid && status && draggedElement) {
-                // Remove dragging class
-                draggedElement.classList.remove('dragging');
-
-                if (status === 'blocked') {
-                    openBlockReasonModal(uid, status);
-                    return;
-                }
-
-                updateTaskStatus(uid, status, '');
+            if (!uid || !status || !draggedElement) {
+                return;
             }
+
+            draggedElement.classList.remove('dragging');
+
+            if (status === 'blocked') {
+                openBlockReasonModal(uid, status);
+                return;
+            }
+
+            updateTaskStatus(uid, status, '');
         }
 
         function updateFilterToggleState(toggleButton, advancedFilters, shouldExpand) {
             const isExpanded = shouldExpand ?? toggleButton.getAttribute('aria-expanded') === 'true';
             const nextState = !isExpanded;
             toggleButton.setAttribute('aria-expanded', String(nextState));
+            toggleButton.dataset.manualState = 'true';
             advancedFilters.classList.toggle('is-visible', nextState);
         }
 
-        function setupFilterToggle() {
+        function syncFilterToggleForViewport() {
             const toggleButton = document.querySelector('[data-filter-toggle]');
             const advancedFilters = document.querySelector('[data-filter-advanced]');
 
@@ -146,63 +148,136 @@
                 return;
             }
 
-            toggleButton.addEventListener('click', function() {
-                updateFilterToggleState(toggleButton, advancedFilters);
-            });
+            const isDesktop = window.matchMedia('(min-width: 721px)').matches;
 
-            const mobileQuery = window.matchMedia('(max-width: 768px)');
-            function handleMediaChange(event) {
-                if (!event.matches) {
-                    toggleButton.setAttribute('aria-expanded', 'true');
-                    advancedFilters.classList.add('is-visible');
-                    return;
-                }
+            if (isDesktop) {
+                toggleButton.setAttribute('aria-expanded', 'true');
+                advancedFilters.classList.add('is-visible');
+                delete toggleButton.dataset.manualState;
+                return;
+            }
 
+            const hasManualState = toggleButton.dataset.manualState === 'true';
+            if (!hasManualState) {
                 toggleButton.setAttribute('aria-expanded', 'false');
                 advancedFilters.classList.remove('is-visible');
             }
-
-            handleMediaChange(mobileQuery);
-            if (typeof mobileQuery.addEventListener === 'function') {
-                mobileQuery.addEventListener('change', handleMediaChange);
-            } else if (typeof mobileQuery.addListener === 'function') {
-                mobileQuery.addListener(handleMediaChange);
-            }
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
-            setupFilterToggle();
+        function initTheme() {
+            const stored = localStorage.getItem('theme');
+            const html = document.documentElement;
 
-            // Add drag over effects
-            document.addEventListener('dragover', function(e) {
-                e.preventDefault();
-                const column = e.target.closest('.kanban-column');
+            if (stored === 'light' || stored === 'dark') {
+                html.dataset.theme = stored;
+            } else {
+                html.dataset.theme = 'auto';
+            }
+
+            updateThemeIcon();
+        }
+
+        function getEffectiveTheme() {
+            const theme = document.documentElement.dataset.theme;
+            if (theme === 'light' || theme === 'dark') {
+                return theme;
+            }
+
+            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+
+        function updateThemeIcon() {
+            const icon = document.getElementById('theme-toggle-icon');
+            if (!icon) {
+                return;
+            }
+
+            icon.textContent = getEffectiveTheme() === 'dark' ? '☀️' : '🌙';
+        }
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            const current = getEffectiveTheme();
+            const next = current === 'dark' ? 'light' : 'dark';
+
+            html.dataset.theme = next;
+            localStorage.setItem('theme', next);
+            updateThemeIcon();
+        }
+
+        document.addEventListener('click', function (event) {
+            const toggleButton = event.target.closest('[data-filter-toggle]');
+            if (!toggleButton) {
+                return;
+            }
+
+            const advancedFilters = document.querySelector('[data-filter-advanced]');
+            if (!advancedFilters) {
+                return;
+            }
+
+            updateFilterToggleState(toggleButton, advancedFilters);
+        });
+
+        document.addEventListener('DOMContentLoaded', function () {
+            initTheme();
+
+            const themeToggle = document.getElementById('theme-toggle');
+            if (themeToggle) {
+                themeToggle.addEventListener('click', toggleTheme);
+            }
+
+            const colorSchemeQuery = window.matchMedia('(prefers-color-scheme: dark)');
+            const handleColorSchemeChange = function () {
+                if (localStorage.getItem('theme') !== 'light' && localStorage.getItem('theme') !== 'dark') {
+                    updateThemeIcon();
+                }
+            };
+
+            if (typeof colorSchemeQuery.addEventListener === 'function') {
+                colorSchemeQuery.addEventListener('change', handleColorSchemeChange);
+            } else if (typeof colorSchemeQuery.addListener === 'function') {
+                colorSchemeQuery.addListener(handleColorSchemeChange);
+            }
+
+            syncFilterToggleForViewport();
+            window.addEventListener('resize', syncFilterToggleForViewport);
+
+            document.body.addEventListener('htmx:afterSwap', function (event) {
+                const target = event.detail && event.detail.target;
+                if (target && target.id === 'board-container') {
+                    syncFilterToggleForViewport();
+                }
+            });
+
+            document.addEventListener('dragover', function (event) {
+                event.preventDefault();
+                const column = event.target.closest('.kanban-column');
                 if (column) {
                     column.classList.add('drag-over');
                 }
             });
 
-            document.addEventListener('dragleave', function(e) {
-                const column = e.target.closest('.kanban-column');
-                if (column && !column.contains(e.relatedTarget)) {
+            document.addEventListener('dragleave', function (event) {
+                const column = event.target.closest('.kanban-column');
+                if (column && !column.contains(event.relatedTarget)) {
                     column.classList.remove('drag-over');
                 }
             });
 
-            document.addEventListener('drop', function() {
-                // Remove all drag-over classes
-                document.querySelectorAll('.kanban-column').forEach(col => {
-                    col.classList.remove('drag-over');
+            document.addEventListener('drop', function () {
+                document.querySelectorAll('.kanban-column').forEach(function (column) {
+                    column.classList.remove('drag-over');
                 });
             });
 
-            // Clean up on drag end
-            document.addEventListener('dragend', function() {
-                document.querySelectorAll('.dragging').forEach(el => {
-                    el.classList.remove('dragging');
+            document.addEventListener('dragend', function () {
+                document.querySelectorAll('.dragging').forEach(function (element) {
+                    element.classList.remove('dragging');
                 });
-                document.querySelectorAll('.kanban-column').forEach(col => {
-                    col.classList.remove('drag-over');
+
+                document.querySelectorAll('.kanban-column').forEach(function (column) {
+                    column.classList.remove('drag-over');
                 });
             });
         });

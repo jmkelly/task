@@ -2,341 +2,293 @@
 @model IEnumerable<TaskItem>
 
 @{
-    var todoTasks = Model.Where(t => t.Status == "todo").ToList();
-    var inProgressTasks = Model.Where(t => t.Status == "in_progress").ToList();
-    var blockedTasks = Model.Where(t => t.Status == "blocked").ToList();
-    var doneTasks = Model.Where(t => t.Status == "done").ToList();
+    var todoTasks = Model.Where(task => task.Status == "todo").ToList();
+    var inProgressTasks = Model.Where(task => task.Status == "in_progress").ToList();
+    var blockedTasks = Model.Where(task => task.Status == "blocked").ToList();
+    var doneTasks = Model.Where(task => task.Status == "done").ToList();
+
+    var activeColumns = new[]
+    {
+        new
+        {
+            Status = "todo",
+            Title = "Todo",
+            Caption = string.Empty,
+            EmptyTitle = "Add tasks to your queue.",
+            EmptyHint = string.Empty,
+            EmptyAction = "Add a task or drag ready work into this column.",
+            EmptyBadge = "Next up",
+            EmptyIcon = "📝",
+            ShowCreateAction = true,
+            Tasks = todoTasks
+        },
+        new
+        {
+            Status = "in_progress",
+            Title = "In Progress",
+            Caption = string.Empty,
+            EmptyTitle = "No work is active",
+            EmptyHint = "Use this lane for the tasks getting attention right now.",
+            EmptyAction = "Pull the next ready task from Todo to start moving it forward.",
+            EmptyBadge = "Start here",
+            EmptyIcon = "⚡",
+            ShowCreateAction = false,
+            Tasks = inProgressTasks
+        },
+        new
+        {
+            Status = "blocked",
+            Title = "Blocked",
+            Caption = string.Empty,
+            EmptyTitle = "No blockers right now",
+            EmptyHint = string.Empty,
+            EmptyAction = "Drop a task here and capture the blocker when progress stops.",
+            EmptyBadge = "Ready for work.",
+            EmptyIcon = "⛔",
+            ShowCreateAction = false,
+            Tasks = blockedTasks
+        }
+    };
 }
 
-<div class="kanban-board board-grid">
-    <div class="kanban-column board-column" data-status="todo" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
-        <div class="column-header">
-            <h2>Todo</h2>
-        </div>
-        <div class="column-body task-list" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
-            @if (todoTasks.Any())
-            {
-                @foreach (var task in todoTasks)
-                {
-                    <div class="task-card" draggable="true" data-uid="@task.Uid" ondragstart="handleDragStart(event)">
-                        <div class="task-header">
-                            <div class="task-heading">
-                                <h3 class="task-title">@task.Title</h3>
-                                <span class="task-uid" title="UID: @task.Uid">UID: @task.Uid</span>
-                            </div>
-                            <div class="task-meta">
-                                <span class="task-priority priority-@task.Priority.ToLower()">@task.Priority</span>
-                            </div>
-                        </div>
-                        <div class="task-body">
-                            @if (!string.IsNullOrEmpty(task.Project) || !string.IsNullOrEmpty(task.Assignee))
-                            {
-                                <div class="task-context">
-                                    @if (!string.IsNullOrEmpty(task.Project))
-                                    {
-                                        <div class="task-project">
-                                            <span class="context-icon"><span class="emoji">📁</span></span>
-                                            <span class="context-text">@task.Project</span>
-                                        </div>
-                                    }
-                                    @if (!string.IsNullOrEmpty(task.Assignee))
-                                    {
-                                        <div class="task-assignee">
-                                            <span class="context-icon"><span class="emoji">👤</span></span>
-                                            <span class="context-text">@task.Assignee</span>
-                                        </div>
-                                    }
-                                </div>
-                            }
-                            @if (!string.IsNullOrEmpty(task.Description))
-                            {
-                                <p class="task-description">@task.Description</p>
-                            }
-                            @if (task.Tags.Any())
-                            {
-                                <div class="task-tags">
-                                    @foreach (var tag in task.Tags)
-                                    {
-                                        <span class="tag">@tag</span>
-                                    }
-                                </div>
-                            }
-                            @if (task.DueDate.HasValue)
-                            {
-                                <div class="task-due-date">
-                                    Due: @task.DueDate.Value.ToString("MMM dd, yyyy")
-                                </div>
-                            }
-                        </div>
-                        <div class="task-actions">
-                            <button class="btn-small" hx-get="/Index?handler=EditModal&uid=@task.Uid" hx-target="body" hx-swap="beforeend">
-                                <span class="emoji emoji-leading">✏️</span>Edit
-                            </button>
-                            <button class="btn-small" hx-post="/Index?handler=DeleteTask" hx-include="#filter-form" hx-vals='{"uid": "@task.Uid"}' hx-target="#board-container" hx-swap="outerHTML" onclick="return confirm('Delete this task?')">
-                                <span class="emoji emoji-leading">🗑️</span>Delete
-                            </button>
-                        </div>
+<section class="kanban-board" aria-label="Task board">
+    <div class="workflow-columns" aria-label="Active workflow columns">
+        @foreach (var column in activeColumns)
+        {
+            var isBlockedColumn = column.Status == "blocked";
+
+            <section class="kanban-column board-column board-column-active board-column-@column.Status" data-status="@column.Status" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
+                <div class="column-header">
+                    <div class="column-heading">
+                        <h2>@column.Title</h2>
+                        @if (!string.IsNullOrWhiteSpace(column.Caption))
+                        {
+                            <p class="column-caption">@column.Caption</p>
+                        }
                     </div>
-                }
-            }
-            else
-            {
-                <div class="empty-state">
-                    <div class="empty-icon"><span class="emoji">📝</span></div>
-                    <p>No tasks to do yet</p>
-                    <small>Drag tasks here to get started</small>
+                    <span class="column-count">@column.Tasks.Count</span>
                 </div>
-            }
-        </div>
+
+                <div class="column-body task-list" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
+                    @if (column.Tasks.Any())
+                    {
+                        @foreach (var task in column.Tasks)
+                        {
+                            var tagCount = task.Tags?.Count ?? 0;
+                            var hasSupportingInfo = !string.IsNullOrWhiteSpace(task.Project) ||
+                                                    !string.IsNullOrWhiteSpace(task.Assignee) ||
+                                                    task.DueDate.HasValue;
+                            var dueDateShort = task.DueDate?.ToString("MMM dd");
+                            var dueDateLong = task.DueDate?.ToString("MMM dd, yyyy");
+
+                            <article class="task-card" draggable="true" data-uid="@task.Uid" ondragstart="handleDragStart(event)">
+                                <div class="task-header">
+                                    <div class="task-heading">
+                                        <h3 class="task-title">@task.Title</h3>
+                                    </div>
+                                    <div class="task-meta">
+                                        <span class="task-priority priority-@task.Priority.ToLowerInvariant()">@task.Priority</span>
+                                    </div>
+                                </div>
+
+                                <div class="task-body">
+                                    @if (!string.IsNullOrWhiteSpace(task.Description))
+                                    {
+                                        <p class="task-description">@task.Description</p>
+                                    }
+
+                                    @if (hasSupportingInfo)
+                                    {
+                                        <div class="task-supporting-row" aria-label="Task details">
+                                            @if (!string.IsNullOrWhiteSpace(task.Project))
+                                            {
+                                                <div class="task-supporting-item" title="Project: @task.Project">
+                                                    <span class="context-icon" aria-hidden="true"><span class="emoji">📁</span></span>
+                                                    <span class="task-supporting-value">@task.Project</span>
+                                                </div>
+                                            }
+
+                                            @if (!string.IsNullOrWhiteSpace(task.Assignee))
+                                            {
+                                                <div class="task-supporting-item" title="Assignee: @task.Assignee">
+                                                    <span class="context-icon" aria-hidden="true"><span class="emoji">👤</span></span>
+                                                    <span class="task-supporting-value">@task.Assignee</span>
+                                                </div>
+                                            }
+
+                                            @if (task.DueDate.HasValue)
+                                            {
+                                                <div class="task-supporting-item" title="Due @dueDateLong">
+                                                    <span class="context-icon" aria-hidden="true"><span class="emoji">🗓️</span></span>
+                                                    <span class="task-supporting-value">Due @dueDateShort</span>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+
+                                    @if (isBlockedColumn && !string.IsNullOrWhiteSpace(task.BlockReason))
+                                    {
+                                        <div class="task-block-reason">
+                                            <span class="task-block-icon" aria-hidden="true">⛔</span>
+                                            <span class="task-block-text">@task.BlockReason</span>
+                                        </div>
+                                    }
+                                </div>
+
+                                <div class="task-footer">
+                                    <div class="task-secondary-summary">
+                                        <span class="task-secondary-item task-uid-inline" title="UID: @task.Uid">#@task.Uid</span>
+                                        @if (tagCount > 0)
+                                        {
+                                            <span class="task-secondary-item task-tag-summary">@tagCount @(tagCount == 1 ? "label" : "labels")</span>
+                                        }
+                                    </div>
+
+                                    <div class="task-actions">
+                                        <button class="btn-small btn-quiet" hx-get="/Index?handler=EditModal&uid=@task.Uid" hx-target="body" hx-swap="beforeend">
+                                            <span class="emoji emoji-leading">✏️</span>Edit
+                                        </button>
+                                        <button class="btn-small btn-quiet" hx-post="/Index?handler=DeleteTask" hx-include="#filter-form" hx-vals='{"uid": "@task.Uid"}' hx-target="#board-container" hx-swap="outerHTML" onclick="return confirm('Delete this task?')">
+                                            <span class="emoji emoji-leading">🗑️</span>Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            </article>
+                        }
+                    }
+                    else
+                    {
+                        <div class="empty-state" data-empty-status="@column.Status">
+                            <span class="empty-state-badge">@column.EmptyBadge</span>
+                            <div class="empty-icon"><span class="emoji">@column.EmptyIcon</span></div>
+                            <p>@column.EmptyTitle</p>
+                            @if (!string.IsNullOrWhiteSpace(column.EmptyHint))
+                            {
+                                <small>@column.EmptyHint</small>
+                            }
+                            <div class="empty-state-next">
+                                <span class="empty-state-next-label">Next</span>
+                                <span class="empty-state-next-action">@column.EmptyAction</span>
+                            </div>
+
+                            @if (column.ShowCreateAction)
+                            {
+                                <div class="empty-state-actions">
+                                    <button class="btn-small btn-secondary empty-state-primary-action" hx-get="/Index?handler=CreateModal" hx-target="body" hx-swap="beforeend">
+                                        <span class="emoji emoji-leading">➕</span>Add Task
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </section>
+        }
     </div>
 
-    <div class="kanban-column board-column" data-status="in_progress" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
-        <div class="column-header">
-            <h2>In Progress</h2>
+    <section class="done-region" aria-label="Completed work">
+        <div class="done-region-header">
+            <div class="done-region-copy">
+                <p class="board-kicker">Completed</p>
+                <h2>Done</h2>
+            </div>
+            <span class="column-count column-count-quiet">@doneTasks.Count</span>
         </div>
-        <div class="column-body task-list" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
-            @if (inProgressTasks.Any())
-            {
-                @foreach (var task in inProgressTasks)
-                {
-                    <div class="task-card" draggable="true" data-uid="@task.Uid" ondragstart="handleDragStart(event)">
-                        <div class="task-header">
-                            <div class="task-heading">
-                                <h3 class="task-title">@task.Title</h3>
-                                <span class="task-uid" title="UID: @task.Uid">UID: @task.Uid</span>
-                            </div>
-                            <div class="task-meta">
-                                <span class="task-priority priority-@task.Priority.ToLower()">@task.Priority</span>
-                            </div>
-                        </div>
-                        <div class="task-body">
-                            @if (!string.IsNullOrEmpty(task.Project) || !string.IsNullOrEmpty(task.Assignee))
-                            {
-                                <div class="task-context">
-                                    @if (!string.IsNullOrEmpty(task.Project))
-                                    {
-                                        <div class="task-project">
-                                            <span class="context-icon"><span class="emoji">📁</span></span>
-                                            <span class="context-text">@task.Project</span>
-                                        </div>
-                                    }
-                                    @if (!string.IsNullOrEmpty(task.Assignee))
-                                    {
-                                        <div class="task-assignee">
-                                            <span class="context-icon"><span class="emoji">👤</span></span>
-                                            <span class="context-text">@task.Assignee</span>
-                                        </div>
-                                    }
-                                </div>
-                            }
-                            @if (!string.IsNullOrEmpty(task.Description))
-                            {
-                                <p class="task-description">@task.Description</p>
-                            }
-                            @if (task.Tags.Any())
-                            {
-                                <div class="task-tags">
-                                    @foreach (var tag in task.Tags)
-                                    {
-                                        <span class="tag">@tag</span>
-                                    }
-                                </div>
-                            }
-                            @if (task.DueDate.HasValue)
-                            {
-                                <div class="task-due-date">
-                                    Due: @task.DueDate.Value.ToString("MMM dd, yyyy")
-                                </div>
-                            }
-                        </div>
-                        <div class="task-actions">
-                            <button class="btn-small" hx-get="/Index?handler=EditModal&uid=@task.Uid" hx-target="body" hx-swap="beforeend">
-                                <span class="emoji emoji-leading">✏️</span>Edit
-                            </button>
-                            <button class="btn-small" hx-post="/Index?handler=DeleteTask" hx-include="#filter-form" hx-vals='{"uid": "@task.Uid"}' hx-target="#board-container" hx-swap="outerHTML" onclick="return confirm('Delete this task?')">
-                                <span class="emoji emoji-leading">🗑️</span>Delete
-                            </button>
-                        </div>
-                    </div>
-                }
-            }
-            else
-            {
-                <div class="empty-state">
-                    <div class="empty-icon"><span class="emoji">⚡</span></div>
-                    <p>Ready for work?</p>
-                    <small>Move tasks here when you start them</small>
-                </div>
-            }
-        </div>
-    </div>
 
-    <div class="kanban-column board-column" data-status="blocked" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
-        <div class="column-header">
-            <h2>Blocked</h2>
-        </div>
-        <div class="column-body task-list" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
-            @if (blockedTasks.Any())
-            {
-                @foreach (var task in blockedTasks)
+        <div class="kanban-column board-column board-column-done" data-status="done" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
+            <div class="column-body task-list task-list-done" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
+                @if (doneTasks.Any())
                 {
-                    <div class="task-card" draggable="true" data-uid="@task.Uid" ondragstart="handleDragStart(event)">
-                        <div class="task-header">
-                            <div class="task-heading">
-                                <h3 class="task-title">@task.Title</h3>
-                                <span class="task-uid" title="UID: @task.Uid">UID: @task.Uid</span>
-                            </div>
-                            <div class="task-meta">
-                                <span class="task-priority priority-@task.Priority.ToLower()">@task.Priority</span>
-                            </div>
-                        </div>
-                        <div class="task-body">
-                            @if (!string.IsNullOrEmpty(task.Project) || !string.IsNullOrEmpty(task.Assignee))
-                            {
-                                <div class="task-context">
-                                    @if (!string.IsNullOrEmpty(task.Project))
-                                    {
-                                        <div class="task-project">
-                                            <span class="context-icon"><span class="emoji">📁</span></span>
-                                            <span class="context-text">@task.Project</span>
-                                        </div>
-                                    }
-                                    @if (!string.IsNullOrEmpty(task.Assignee))
-                                    {
-                                        <div class="task-assignee">
-                                            <span class="context-icon"><span class="emoji">👤</span></span>
-                                            <span class="context-text">@task.Assignee</span>
-                                        </div>
-                                    }
-                                </div>
-                            }
-                            @if (!string.IsNullOrEmpty(task.Description))
-                            {
-                                <p class="task-description">@task.Description</p>
-                            }
-                            @if (task.Tags.Any())
-                            {
-                                <div class="task-tags">
-                                    @foreach (var tag in task.Tags)
-                                    {
-                                        <span class="tag">@tag</span>
-                                    }
-                                </div>
-                            }
-                            @if (!string.IsNullOrEmpty(task.BlockReason))
-                            {
-                                <div class="task-block-reason">
-                                    <span class="task-block-icon" aria-hidden="true">⛔</span>
-                                    <span class="task-block-text">@task.BlockReason</span>
-                                </div>
-                            }
-                            @if (task.DueDate.HasValue)
-                            {
-                                <div class="task-due-date">
-                                    Due: @task.DueDate.Value.ToString("MMM dd, yyyy")
-                                </div>
-                            }
-                        </div>
-                        <div class="task-actions">
-                            <button class="btn-small" hx-get="/Index?handler=EditModal&uid=@task.Uid" hx-target="body" hx-swap="beforeend">
-                                <span class="emoji emoji-leading">✏️</span>Edit
-                            </button>
-                            <button class="btn-small" hx-post="/Index?handler=DeleteTask" hx-include="#filter-form" hx-vals='{"uid": "@task.Uid"}' hx-target="#board-container" hx-swap="outerHTML" onclick="return confirm('Delete this task?')">
-                                <span class="emoji emoji-leading">🗑️</span>Delete
-                            </button>
-                        </div>
-                    </div>
-                }
-            }
-            else
-            {
-                <div class="empty-state">
-                    <div class="empty-icon"><span class="emoji">⛔</span></div>
-                    <p>No blocked tasks</p>
-                    <small>Move blocked work here</small>
-                </div>
-            }
-        </div>
-    </div>
+                    @foreach (var task in doneTasks)
+                    {
+                        var tagCount = task.Tags?.Count ?? 0;
+                        var hasSupportingInfo = !string.IsNullOrWhiteSpace(task.Project) ||
+                                                !string.IsNullOrWhiteSpace(task.Assignee) ||
+                                                task.DueDate.HasValue;
+                        var dueDateShort = task.DueDate?.ToString("MMM dd");
+                        var dueDateLong = task.DueDate?.ToString("MMM dd, yyyy");
 
-    <div class="kanban-column board-column" data-status="done" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
-        <div class="column-header">
-            <h2>Done</h2>
-        </div>
-        <div class="column-body task-list" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
-            @if (doneTasks.Any())
-            {
-                @foreach (var task in doneTasks)
+                        <article class="task-card" draggable="true" data-uid="@task.Uid" ondragstart="handleDragStart(event)">
+                            <div class="task-header">
+                                <div class="task-heading">
+                                    <h3 class="task-title">@task.Title</h3>
+                                </div>
+                                <div class="task-meta">
+                                    <span class="task-priority priority-@task.Priority.ToLowerInvariant()">@task.Priority</span>
+                                </div>
+                            </div>
+
+                            <div class="task-body">
+                                @if (!string.IsNullOrWhiteSpace(task.Description))
+                                {
+                                    <p class="task-description">@task.Description</p>
+                                }
+
+                                @if (hasSupportingInfo)
+                                {
+                                    <div class="task-supporting-row" aria-label="Task details">
+                                        @if (!string.IsNullOrWhiteSpace(task.Project))
+                                        {
+                                            <div class="task-supporting-item" title="Project: @task.Project">
+                                                <span class="context-icon" aria-hidden="true"><span class="emoji">📁</span></span>
+                                                <span class="task-supporting-value">@task.Project</span>
+                                            </div>
+                                        }
+
+                                        @if (!string.IsNullOrWhiteSpace(task.Assignee))
+                                        {
+                                            <div class="task-supporting-item" title="Assignee: @task.Assignee">
+                                                <span class="context-icon" aria-hidden="true"><span class="emoji">👤</span></span>
+                                                <span class="task-supporting-value">@task.Assignee</span>
+                                            </div>
+                                        }
+
+                                        @if (task.DueDate.HasValue)
+                                        {
+                                            <div class="task-supporting-item" title="Due @dueDateLong">
+                                                <span class="context-icon" aria-hidden="true"><span class="emoji">🗓️</span></span>
+                                                <span class="task-supporting-value">Due @dueDateShort</span>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+
+                            <div class="task-footer">
+                                <div class="task-secondary-summary">
+                                    <span class="task-secondary-item task-uid-inline" title="UID: @task.Uid">#@task.Uid</span>
+                                    @if (tagCount > 0)
+                                    {
+                                        <span class="task-secondary-item task-tag-summary">@tagCount @(tagCount == 1 ? "label" : "labels")</span>
+                                    }
+                                </div>
+
+                                <div class="task-actions">
+                                    <button class="btn-small btn-quiet" hx-get="/Index?handler=EditModal&uid=@task.Uid" hx-target="body" hx-swap="beforeend">
+                                        <span class="emoji emoji-leading">✏️</span>Edit
+                                    </button>
+                                    <button class="btn-small btn-quiet" hx-post="/Index?handler=DeleteTask" hx-include="#filter-form" hx-vals='{"uid": "@task.Uid"}' hx-target="#board-container" hx-swap="outerHTML" onclick="return confirm('Delete this task?')">
+                                        <span class="emoji emoji-leading">🗑️</span>Delete
+                                    </button>
+                                </div>
+                            </div>
+                        </article>
+                    }
+                }
+                else
                 {
-                    <div class="task-card" draggable="true" data-uid="@task.Uid" ondragstart="handleDragStart(event)">
-                        <div class="task-header">
-                            <div class="task-heading">
-                                <h3 class="task-title">@task.Title</h3>
-                                <span class="task-uid" title="UID: @task.Uid">UID: @task.Uid</span>
-                            </div>
-                            <div class="task-meta">
-                                <span class="task-priority priority-@task.Priority.ToLower()">@task.Priority</span>
-                            </div>
-                        </div>
-                        <div class="task-body">
-                            @if (!string.IsNullOrEmpty(task.Project) || !string.IsNullOrEmpty(task.Assignee))
-                            {
-                                <div class="task-context">
-                                    @if (!string.IsNullOrEmpty(task.Project))
-                                    {
-                                        <div class="task-project">
-                                            <span class="context-icon"><span class="emoji">📁</span></span>
-                                            <span class="context-text">@task.Project</span>
-                                        </div>
-                                    }
-                                    @if (!string.IsNullOrEmpty(task.Assignee))
-                                    {
-                                        <div class="task-assignee">
-                                            <span class="context-icon"><span class="emoji">👤</span></span>
-                                            <span class="context-text">@task.Assignee</span>
-                                        </div>
-                                    }
-                                </div>
-                            }
-                            @if (!string.IsNullOrEmpty(task.Description))
-                            {
-                                <p class="task-description">@task.Description</p>
-                            }
-                            @if (task.Tags.Any())
-                            {
-                                <div class="task-tags">
-                                    @foreach (var tag in task.Tags)
-                                    {
-                                        <span class="tag">@tag</span>
-                                    }
-                                </div>
-                            }
-                            @if (task.DueDate.HasValue)
-                            {
-                                <div class="task-due-date">
-                                    Due: @task.DueDate.Value.ToString("MMM dd, yyyy")
-                                </div>
-                            }
-                        </div>
-                        <div class="task-actions">
-                            <button class="btn-small" hx-get="/Index?handler=EditModal&uid=@task.Uid" hx-target="body" hx-swap="beforeend">
-                                <span class="emoji emoji-leading">✏️</span>Edit
-                            </button>
-                            <button class="btn-small" hx-post="/Index?handler=DeleteTask" hx-include="#filter-form" hx-vals='{"uid": "@task.Uid"}' hx-target="#board-container" hx-swap="outerHTML" onclick="return confirm('Delete this task?')">
-                                <span class="emoji emoji-leading">🗑️</span>Delete
-                            </button>
+                    <div class="empty-state empty-state-quiet empty-state-done">
+                        <span class="empty-state-badge">Clear finish line</span>
+                        <div class="empty-icon"><span class="emoji">🎉</span></div>
+                        <p>Nothing completed yet</p>
+                        <small>Finished tasks will collect here for quick reference without crowding active work.</small>
+                        <div class="empty-state-next">
+                            <span class="empty-state-next-label">Next</span>
+                            <span class="empty-state-next-action">Move a task to Done when the work is fully complete.</span>
                         </div>
                     </div>
                 }
-            }
-            else
-            {
-                <div class="empty-state">
-                    <div class="empty-icon"><span class="emoji">🎉</span></div>
-                    <p>All caught up!</p>
-                    <small>Completed tasks will appear here</small>
-                </div>
-            }
+            </div>
         </div>
-    </div>
-</div>
+    </section>
+</section>
