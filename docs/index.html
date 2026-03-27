@@ -13,41 +13,41 @@
         /* Install section extras */
         .install-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
         .tab-btn {
-            padding: 6px 18px; border-radius: 6px; border: 1.5px solid var(--border-color);
-            background: transparent; color: var(--text-secondary); font-size: 0.9rem;
+            padding: 6px 18px; border-radius: 9px; border: 1px solid var(--border-color);
+            background: var(--bg-secondary); color: var(--text-secondary); font-size: 0.9rem;
             cursor: pointer; font-family: inherit; transition: all 0.2s;
         }
         .tab-btn.active, .tab-btn:hover {
-            border-color: var(--text-accent); color: var(--text-accent); background: rgba(0,212,255,0.07);
+            border-color: var(--border-color-strong); color: var(--text-primary); background: var(--accent-soft);
         }
         .tab-panel { display: none; }
         .tab-panel.active { display: block; }
         .oneliner-box {
             display: flex; align-items: center; gap: 10px;
-            background: var(--bg-tertiary); border: 1px solid var(--border-color);
-            border-radius: 8px; padding: 14px 18px; margin-bottom: 12px;
+            background: var(--bg-secondary); border: 1px solid var(--border-color);
+            border-radius: 10px; padding: 14px 18px; margin-bottom: 12px;
             font-family: 'Fira Code', monospace; font-size: 0.93rem;
-            color: var(--text-primary); word-break: break-all;
+            color: var(--text-primary); word-break: break-all; box-shadow: 0 1px 0 rgba(15, 23, 42, 0.03);
         }
         .copy-btn {
             margin-left: auto; flex-shrink: 0;
-            padding: 5px 12px; border-radius: 5px; border: 1px solid var(--border-color);
-            background: var(--bg-secondary); color: var(--text-secondary);
+            padding: 5px 12px; border-radius: 9px; border: 1px solid var(--border-color);
+            background: var(--bg-tertiary); color: var(--text-secondary);
             font-size: 0.8rem; cursor: pointer; font-family: inherit;
             transition: all 0.2s;
         }
-        .copy-btn:hover { border-color: var(--text-accent); color: var(--text-accent); }
+        .copy-btn:hover { border-color: var(--border-color-strong); color: var(--text-primary); background: var(--accent-soft); }
         .platform-download-grid {
             display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;
             margin-top: 12px;
         }
         .dl-btn {
             display: flex; flex-direction: column; align-items: center; gap: 4px;
-            padding: 14px 10px; border-radius: 10px; border: 1.5px solid var(--border-color);
+            padding: 14px 10px; border-radius: 14px; border: 1px solid var(--border-color);
             background: var(--bg-secondary); color: var(--text-primary); text-decoration: none;
-            font-size: 0.88rem; transition: all 0.2s; text-align: center;
+            font-size: 0.88rem; transition: all 0.2s; text-align: center; box-shadow: 0 1px 0 rgba(15, 23, 42, 0.03);
         }
-        .dl-btn:hover { border-color: var(--text-accent); color: var(--text-accent); transform: translateY(-2px); }
+        .dl-btn:hover { border-color: var(--border-color-strong); color: var(--text-primary); transform: translateY(-1px); box-shadow: var(--shadow); }
         .dl-btn .dl-icon { font-size: 1.6rem; }
         .dl-btn .dl-label { font-weight: 600; }
         .dl-btn .dl-sub { font-size: 0.78rem; color: var(--text-secondary); }
