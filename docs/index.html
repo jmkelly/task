@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task CLI - Cross-Platform Task Management Tool</title>
+    <meta name="description" content="A self-contained, cross-platform CLI application for managing tasks. No installation hassles — one command and you're ready to go.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="marketing.css">
+    <style>
+        /* Install section extras */
+        .install-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+        .tab-btn {
+            padding: 6px 18px; border-radius: 6px; border: 1.5px solid var(--border-color);
+            background: transparent; color: var(--text-secondary); font-size: 0.9rem;
+            cursor: pointer; font-family: inherit; transition: all 0.2s;
+        }
+        .tab-btn.active, .tab-btn:hover {
+            border-color: var(--text-accent); color: var(--text-accent); background: rgba(0,212,255,0.07);
+        }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+        .oneliner-box {
+            display: flex; align-items: center; gap: 10px;
+            background: var(--bg-tertiary); border: 1px solid var(--border-color);
+            border-radius: 8px; padding: 14px 18px; margin-bottom: 12px;
+            font-family: 'Fira Code', monospace; font-size: 0.93rem;
+            color: var(--text-primary); word-break: break-all;
+        }
+        .copy-btn {
+            margin-left: auto; flex-shrink: 0;
+            padding: 5px 12px; border-radius: 5px; border: 1px solid var(--border-color);
+            background: var(--bg-secondary); color: var(--text-secondary);
+            font-size: 0.8rem; cursor: pointer; font-family: inherit;
+            transition: all 0.2s;
+        }
+        .copy-btn:hover { border-color: var(--text-accent); color: var(--text-accent); }
+        .platform-download-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;
+            margin-top: 12px;
+        }
+        .dl-btn {
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
+            padding: 14px 10px; border-radius: 10px; border: 1.5px solid var(--border-color);
+            background: var(--bg-secondary); color: var(--text-primary); text-decoration: none;
+            font-size: 0.88rem; transition: all 0.2s; text-align: center;
+        }
+        .dl-btn:hover { border-color: var(--text-accent); color: var(--text-accent); transform: translateY(-2px); }
+        .dl-btn .dl-icon { font-size: 1.6rem; }
+        .dl-btn .dl-label { font-weight: 600; }
+        .dl-btn .dl-sub { font-size: 0.78rem; color: var(--text-secondary); }
+        .releases-link { text-align: center; margin-top: 14px; font-size: 0.9rem; color: var(--text-secondary); }
+        .releases-link a { color: var(--accent); }
+    </style>
+</head>
+<body>
+    <header class="hero">
+        <nav class="nav">
+            <div class="nav-content">
+                <h1 class="nav-title">Task CLI</h1>
+                <div class="nav-links">
+                    <a href="#features">Features</a>
+                    <a href="#installation">Install</a>
+                    <a href="#usage">Usage</a>
+                    <a href="https://github.com/jmkelly/task" class="cta-btn">GitHub</a>
+                </div>
+            </div>
+        </nav>
+
+        <div class="hero-content">
+            <div class="hero-text">
+                <h1 class="hero-title">
+                    Master Your Tasks with
+                    <span class="accent">Task CLI</span>
+                </h1>
+                <p class="hero-subtitle">
+                    A lightning-fast, self-contained task management tool for developers, automations, and AI agents.
+                    Cross-platform, API-powered, zero dependencies.
+                </p>
+                <div class="hero-actions">
+                    <a href="#installation" class="primary-btn">Install Now</a>
+                    <a href="https://github.com/jmkelly/task/releases/latest" class="secondary-btn">Latest Release</a>
+                </div>
+                <div class="hero-stats">
+                    <div class="stat">
+                        <span class="stat-number">~17MB</span>
+                        <span class="stat-label">Self-Contained</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number">4</span>
+                        <span class="stat-label">Platforms</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number">REST API</span>
+                        <span class="stat-label">Powered</span>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <div class="terminal">
+                    <div class="terminal-header">
+                        <div class="terminal-dots">
+                            <span class="dot red"></span>
+                            <span class="dot yellow"></span>
+                            <span class="dot green"></span>
+                        </div>
+                        <span class="terminal-title">Terminal</span>
+                    </div>
+                    <div class="terminal-content">
+                        <div class="terminal-line">$ <span class="command">task add "Ship the feature"</span></div>
+                        <div class="terminal-line">Task added successfully! (ID: a2b3k9)</div>
+                        <div class="terminal-line">$ <span class="command">task list</span></div>
+                        <div class="terminal-line">a2b3k9  [ ] Ship the feature  <span style="color:#f59e0b">high</span></div>
+                        <div class="terminal-line">$ <span class="command">task complete a2b3k9</span></div>
+                        <div class="terminal-line">✓ Task marked as complete!</div>
+                        <div class="terminal-line">$ <span class="cursor">_</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- INSTALLATION -->
+    <section id="installation" class="installation">
+        <div class="container">
+            <h2 class="section-title">Install in Seconds</h2>
+
+            <div class="install-tabs">
+                <button class="tab-btn active" onclick="switchTab('linux', this)">🐧 Linux</button>
+                <button class="tab-btn" onclick="switchTab('mac', this)">🍎 macOS</button>
+                <button class="tab-btn" onclick="switchTab('windows', this)">🪟 Windows</button>
+                <button class="tab-btn" onclick="switchTab('manual', this)">📦 Manual</button>
+            </div>
+
+            <!-- Linux -->
+            <div id="tab-linux" class="tab-panel active">
+                <p style="margin-bottom:12px;color:var(--text-secondary)">Run this in your terminal to download and install the latest release:</p>
+                <div class="oneliner-box">
+                    <span>curl -fsSL https://jmkelly.github.io/task/install.sh | bash</span>
+                    <button class="copy-btn" onclick="copyText(this,'curl -fsSL https://jmkelly.github.io/task/install.sh | bash')">Copy</button>
+                </div>
+                <p style="font-size:0.85rem;color:var(--text-secondary)">
+                    Installs to <code>/usr/local/bin/task</code> (or <code>~/bin/task</code> if sudo is unavailable).
+                    Supports Linux x86_64.
+                </p>
+            </div>
+
+            <!-- macOS -->
+            <div id="tab-mac" class="tab-panel">
+                <p style="margin-bottom:12px;color:var(--text-secondary)">Run this in your terminal — works on Intel and Apple Silicon:</p>
+                <div class="oneliner-box">
+                    <span>curl -fsSL https://jmkelly.github.io/task/install.sh | bash</span>
+                    <button class="copy-btn" onclick="copyText(this,'curl -fsSL https://jmkelly.github.io/task/install.sh | bash')">Copy</button>
+                </div>
+                <p style="font-size:0.85rem;color:var(--text-secondary)">
+                    Auto-detects Intel (x86_64) or Apple Silicon (arm64). Installs to <code>/usr/local/bin/task</code>.
+                </p>
+            </div>
+
+            <!-- Windows -->
+            <div id="tab-windows" class="tab-panel">
+                <p style="margin-bottom:12px;color:var(--text-secondary)">Open PowerShell and run:</p>
+                <div class="oneliner-box">
+                    <span>irm https://jmkelly.github.io/task/install.ps1 | iex</span>
+                    <button class="copy-btn" onclick="copyText(this,'irm https://jmkelly.github.io/task/install.ps1 | iex')">Copy</button>
+                </div>
+                <p style="font-size:0.85rem;color:var(--text-secondary)">
+                    Downloads to <code>%LOCALAPPDATA%\Programs\task\task.exe</code> and adds it to your user PATH automatically.
+                    Restart your terminal after installing.
+                </p>
+            </div>
+
+            <!-- Manual -->
+            <div id="tab-manual" class="tab-panel">
+                <p style="margin-bottom:12px;color:var(--text-secondary)">Download the binary for your platform directly from the latest release:</p>
+                <div class="platform-download-grid">
+                    <a class="dl-btn" href="https://github.com/jmkelly/task/releases/latest/download/task-linux-x64">
+                        <span class="dl-icon">🐧</span>
+                        <span class="dl-label">Linux</span>
+                        <span class="dl-sub">x86_64</span>
+                    </a>
+                    <a class="dl-btn" href="https://github.com/jmkelly/task/releases/latest/download/task-osx-x64">
+                        <span class="dl-icon">🍎</span>
+                        <span class="dl-label">macOS</span>
+                        <span class="dl-sub">Intel (x86_64)</span>
+                    </a>
+                    <a class="dl-btn" href="https://github.com/jmkelly/task/releases/latest/download/task-osx-arm64">
+                        <span class="dl-icon">🍎</span>
+                        <span class="dl-label">macOS</span>
+                        <span class="dl-sub">Apple Silicon (arm64)</span>
+                    </a>
+                    <a class="dl-btn" href="https://github.com/jmkelly/task/releases/latest/download/task-win-x64.exe">
+                        <span class="dl-icon">🪟</span>
+                        <span class="dl-label">Windows</span>
+                        <span class="dl-sub">x86_64 (.exe)</span>
+                    </a>
+                </div>
+                <div class="releases-link">
+                    All versions: <a href="https://github.com/jmkelly/task/releases">github.com/jmkelly/task/releases</a>
+                </div>
+                <p style="font-size:0.85rem;color:var(--text-secondary);margin-top:14px">
+                    After downloading on Linux/macOS, make it executable and move to your PATH:<br>
+                    <code>chmod +x task-linux-x64 &amp;&amp; sudo mv task-linux-x64 /usr/local/bin/task</code>
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section id="features" class="features">
+        <div class="container">
+            <h2 class="section-title">Why Choose Task CLI?</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🚀</div>
+                    <h3>Self-Contained</h3>
+                    <p>Single executable includes the .NET runtime and all dependencies. No installation, no prerequisites, no hassle.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🌐</div>
+                    <h3>Cross-Platform</h3>
+                    <p>Works on Linux, macOS (Intel &amp; Apple Silicon), and Windows. One tool for every machine on your team.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🤖</div>
+                    <h3>Agent-Friendly</h3>
+                    <p>JSON output, machine-readable errors, and a REST API make Task CLI ideal for LLM agents, automations, and scripts.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Lightning Fast</h3>
+                    <p>Compiled to native code for instant startup. Powered by SQLite with full-text and semantic search.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🖥️</div>
+                    <h3>Kanban Web UI</h3>
+                    <p>Built-in Kanban board served by the API backend — drag &amp; drop tasks, filter by assignee or tag.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔍</div>
+                    <h3>Powerful Search</h3>
+                    <p>Full-text search and semantic (vector) search via the API. Never lose track of your work again.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- USAGE -->
+    <section id="usage" class="usage">
+        <div class="container">
+            <h2 class="section-title">Simple Yet Powerful</h2>
+            <div class="usage-content">
+                <div class="usage-examples">
+                    <h3>Basic Commands</h3>
+                    <div class="command-example">
+                        <div class="command-desc">Start the background server</div>
+                        <div class="code-block"><code>task server start</code></div>
+                    </div>
+                    <div class="command-example">
+                        <div class="command-desc">Add a new task</div>
+                        <div class="code-block"><code>task add "Review pull requests" --priority high</code></div>
+                    </div>
+                    <div class="command-example">
+                        <div class="command-desc">List all tasks</div>
+                        <div class="code-block"><code>task list</code></div>
+                    </div>
+                    <div class="command-example">
+                        <div class="command-desc">Mark a task as complete</div>
+                        <div class="code-block"><code>task complete a2b3k9</code></div>
+                    </div>
+                    <div class="command-example">
+                        <div class="command-desc">Search tasks</div>
+                        <div class="code-block"><code>task search "pull request"</code></div>
+                    </div>
+                </div>
+                <div class="usage-features">
+                    <h3>Advanced Features</h3>
+                    <ul class="feature-list">
+                        <li><strong>JSON Output:</strong> Perfect for scripting and agent integrations</li>
+                        <li><strong>Kanban Board:</strong> Web UI at <code>http://localhost:8080</code></li>
+                        <li><strong>REST API:</strong> OpenAPI docs at <code>/scalar</code></li>
+                        <li><strong>Semantic Search:</strong> Vector similarity via sqlite-vss</li>
+                        <li><strong>Telegram Notifications:</strong> Alerts when your task queue empties</li>
+                        <li><strong>Import/Export:</strong> Migrate tasks from JSON or CSV</li>
+                    </ul>
+                    <div class="code-block json">
+                        <code>task list --json</code><br>
+                        <code>[{"uid":"a2b3k9","title":"Review PRs","priority":"high","status":"todo"}]</code>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>Task CLI</h3>
+                    <p>Open-source task management for developers, teams, and AI agents.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Links</h4>
+                    <a href="#features">Features</a>
+                    <a href="#installation">Install</a>
+                    <a href="#usage">Usage</a>
+                    <a href="https://github.com/jmkelly/task">GitHub</a>
+                    <a href="https://github.com/jmkelly/task/releases">Releases</a>
+                </div>
+                <div class="footer-section">
+                    <h4>Built with</h4>
+                    <div class="tech-stack">
+                        <span class="tech">C#</span>
+                        <span class="tech">.NET 10</span>
+                        <span class="tech">SQLite</span>
+                        <span class="tech">Spectre.Console</span>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Task CLI. Open source — <a href="https://github.com/jmkelly/task/blob/main/LICENSE" style="color:var(--accent)">view license</a>.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="marketing.js"></script>
+    <script>
+        function switchTab(name, btn) {
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab-' + name).classList.add('active');
+            btn.classList.add('active');
+        }
+        function copyText(btn, text) {
+            navigator.clipboard.writeText(text).then(() => {
+                const orig = btn.textContent;
+                btn.textContent = 'Copied!';
+                setTimeout(() => { btn.textContent = orig; }, 2000);
+            }).catch(() => {
+                // fallback: select text
+            });
+        }
+    </script>
+</body>
+</html>
