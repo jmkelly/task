@@ -1,0 +1,68 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Extract version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Set version in csproj
+        run: |
+          sed -i -E "s|<Version>[^<]+</Version>|<Version>${{ steps.version.outputs.VERSION }}</Version>|" Task.Cli/Task.Cli.csproj
+
+      - name: Restore dependencies
+        run: dotnet restore Task.Cli/Task.Cli.csproj
+
+      - name: Build Linux x64
+        run: |
+          dotnet publish Task.Cli -c Release -r linux-x64 --self-contained \
+            -p:PublishSingleFile=true -o publish/linux-x64
+          mv publish/linux-x64/Task.Cli publish/linux-x64/task-linux-x64
+
+      - name: Build Windows x64
+        run: |
+          dotnet publish Task.Cli -c Release -r win-x64 --self-contained \
+            -p:PublishSingleFile=true -o publish/win-x64
+          mv publish/win-x64/Task.Cli.exe publish/win-x64/task-win-x64.exe
+
+      - name: Build macOS x64
+        run: |
+          dotnet publish Task.Cli -c Release -r osx-x64 --self-contained \
+            -p:PublishSingleFile=true -o publish/osx-x64
+          mv publish/osx-x64/Task.Cli publish/osx-x64/task-osx-x64
+
+      - name: Build macOS ARM64
+        run: |
+          dotnet publish Task.Cli -c Release -r osx-arm64 --self-contained \
+            -p:PublishSingleFile=true -o publish/osx-arm64
+          mv publish/osx-arm64/Task.Cli publish/osx-arm64/task-osx-arm64
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Task CLI ${{ github.ref_name }}"
+          generate_release_notes: true
+          files: |
+            publish/linux-x64/task-linux-x64
+            publish/win-x64/task-win-x64.exe
+            publish/osx-x64/task-osx-x64
+            publish/osx-arm64/task-osx-arm64

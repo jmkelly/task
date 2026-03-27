@@ -15,6 +15,9 @@
 > **Let your team—and your AI agents—manage work together in the terminal, browser, or with code. Get started below!**
 
 [![License](https://img.shields.io/badge/License-See%20LICENSE-blue)](LICENSE)
+[![GitHub release](https://img.shields.io/github/v/release/jmkelly/task)](https://github.com/jmkelly/task/releases/latest)
+
+**🌐 Website & install instructions: [jmkelly.github.io/task](https://jmkelly.github.io/task)**
 
 A cross-platform task management system with a robust CLI client (API-only), REST API backend, and persistent storage for advanced task management.
 
@@ -153,6 +156,18 @@ that the notification was skipped.
 
 ### CLI Installation
 
+#### Quick Install (Recommended)
+
+**Linux / macOS:**
+```bash
+curl -fsSL https://jmkelly.github.io/task/install.sh | bash
+```
+
+**Windows (PowerShell):**
+```powershell
+irm https://jmkelly.github.io/task/install.ps1 | iex
+```
+
 #### Self-Contained Single File Executables
 
 Download the appropriate single executable for your platform from the releases page. Each executable is self-contained, including the .NET runtime and all dependencies, making it easy to distribute and run without additional setup.
@@ -164,7 +179,7 @@ Download the appropriate single executable for your platform from the releases p
 
 ##### Installation Steps
 
-1. **Download**: Download the executable for your platform from the [releases page](link-to-releases).
+1. **Download**: Download the executable for your platform from the [releases page](https://github.com/jmkelly/task/releases/latest).
 
 2. **Make Executable (Linux/macOS only)**: After downloading, make the file executable:
    ```bash
