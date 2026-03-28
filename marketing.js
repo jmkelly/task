@@ -1,154 +1,196 @@
-// Marketing page JavaScript
-document.addEventListener('DOMContentLoaded', function() {
-    // Smooth scrolling for navigation links
-    const navLinks = document.querySelectorAll('.nav-links a[href^="#"]');
-    navLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            const targetId = this.getAttribute('href');
-            const targetElement = document.querySelector(targetId);
-            if (targetElement) {
-                const headerHeight = document.querySelector('.nav').offsetHeight;
-                const targetPosition = targetElement.offsetTop - headerHeight - 20;
-                window.scrollTo({
-                    top: targetPosition,
-                    behavior: 'smooth'
-                });
-            }
+document.addEventListener('DOMContentLoaded', () => {
+    const root = document.documentElement;
+    const themeToggle = document.getElementById('theme-toggle');
+    const themeIcon = document.getElementById('theme-toggle-icon');
+    const footerYear = document.getElementById('footer-year');
+    const storedTheme = localStorage.getItem('task-marketing-theme');
+    const installTabGroups = document.querySelectorAll('[data-install-tabs]');
+    const sourceVersionNodes = document.querySelectorAll('[data-source-version]');
+
+    function getEffectiveTheme() {
+        const theme = root.dataset.theme;
+
+        if (theme === 'light' || theme === 'dark') {
+            return theme;
+        }
+
+        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+
+    function updateThemeToggleLabel() {
+        if (!themeToggle || !themeIcon) {
+            return;
+        }
+
+        const effectiveTheme = getEffectiveTheme();
+        const nextTheme = effectiveTheme === 'dark' ? 'light' : 'dark';
+
+        themeIcon.textContent = effectiveTheme === 'dark' ? '☀️' : '🌙';
+        themeToggle.setAttribute('aria-label', `Switch to ${nextTheme} theme`);
+        themeToggle.setAttribute('title', `Switch to ${nextTheme} theme`);
+    }
+
+    function setTheme(theme) {
+        root.dataset.theme = theme;
+
+        if (theme === 'light' || theme === 'dark') {
+            localStorage.setItem('task-marketing-theme', theme);
+        } else {
+            localStorage.removeItem('task-marketing-theme');
+        }
+
+        updateThemeToggleLabel();
+    }
+
+    function activateInstallTab(group, nextTab, moveFocus) {
+        const tabs = Array.from(group.querySelectorAll('[data-install-tab]'));
+        const panels = Array.from(group.querySelectorAll('[data-install-panel]'));
+        const selectedPanelId = nextTab.getAttribute('aria-controls');
+
+        tabs.forEach((tab) => {
+            const isSelected = tab === nextTab;
+            tab.setAttribute('aria-selected', String(isSelected));
+            tab.tabIndex = isSelected ? 0 : -1;
         });
-    });
 
-    // Intersection Observer for animations
-    const observerOptions = {
-        threshold: 0.1,
-        rootMargin: '0px 0px -50px 0px'
-    };
-
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.style.opacity = '1';
-                entry.target.style.transform = 'translateY(0)';
-            }
+        panels.forEach((panel) => {
+            panel.hidden = panel.id !== selectedPanelId;
         });
-    }, observerOptions);
 
-    // Observe elements for animation
-    const animatedElements = document.querySelectorAll('.feature-card, .install-step, .command-example');
-    animatedElements.forEach(el => {
-        el.style.opacity = '0';
-        el.style.transform = 'translateY(30px)';
-        observer.observe(el);
-    });
+        if (moveFocus) {
+            nextTab.focus();
+        }
+    }
 
-    // Terminal typing animation
-    const terminalLines = document.querySelectorAll('.terminal-line');
-    let currentLine = 0;
-    let currentChar = 0;
+    function handleInstallTabKeydown(group, event) {
+        const tabs = Array.from(group.querySelectorAll('[data-install-tab]'));
+        const currentIndex = tabs.indexOf(event.currentTarget);
 
-    function typeWriter() {
-        if (currentLine < terminalLines.length) {
-            const line = terminalLines[currentLine];
-            const text = line.textContent;
-            line.textContent = '';
+        if (currentIndex === -1) {
+            return;
+        }
 
-            function typeChar() {
-                if (currentChar < text.length) {
-                    line.textContent += text.charAt(currentChar);
-                    currentChar++;
-                    setTimeout(typeChar, 50);
-                } else {
-                    currentLine++;
-                    currentChar = 0;
-                    setTimeout(typeWriter, 500);
+        let nextIndex = currentIndex;
+
+        switch (event.key) {
+            case 'ArrowRight':
+            case 'ArrowDown':
+                nextIndex = (currentIndex + 1) % tabs.length;
+                break;
+            case 'ArrowLeft':
+            case 'ArrowUp':
+                nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+                break;
+            case 'Home':
+                nextIndex = 0;
+                break;
+            case 'End':
+                nextIndex = tabs.length - 1;
+                break;
+            default:
+                return;
+        }
+
+        event.preventDefault();
+        activateInstallTab(group, tabs[nextIndex], true);
+    }
+
+    async function loadSourceVersion() {
+        try {
+            const csprojResponse = await fetch('Task.Cli/Task.Cli.csproj', { cache: 'no-store' });
+
+            if (csprojResponse.ok) {
+                const csprojText = await csprojResponse.text();
+                const versionMatch = csprojText.match(/<Version>([^<]+)<\/Version>/i);
+
+                if (versionMatch && versionMatch[1]) {
+                    return versionMatch[1].trim();
                 }
             }
+        } catch (error) {
+            console.error('Failed to load version from csproj', error);
+        }
 
-            typeChar();
+        try {
+            const manifestResponse = await fetch('installers/installer-manifest.json', { cache: 'no-store' });
+
+            if (!manifestResponse.ok) {
+                throw new Error(`Unexpected response status ${manifestResponse.status}`);
+            }
+
+            const manifest = await manifestResponse.json();
+            return typeof manifest.sourceVersion === 'string' ? manifest.sourceVersion.trim() : '';
+        } catch (error) {
+            console.error('Failed to load installer metadata fallback', error);
+            return '';
         }
     }
 
-    // Start typing animation after a delay
-    setTimeout(typeWriter, 1000);
-
-    // Add scroll effect to navigation
-    let lastScrollTop = 0;
-    const nav = document.querySelector('.nav');
-
-    window.addEventListener('scroll', () => {
-        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-
-        if (scrollTop > lastScrollTop && scrollTop > 100) {
-            // Scrolling down
-            nav.style.transform = 'translateY(-100%)';
-        } else {
-            // Scrolling up
-            nav.style.transform = 'translateY(0)';
+    async function hydrateInstallerMetadata() {
+        if (!sourceVersionNodes.length) {
+            return;
         }
 
-        // Add background blur on scroll
-        if (scrollTop > 50) {
-            nav.style.background = 'rgba(10, 10, 10, 0.98)';
-            nav.style.backdropFilter = 'blur(20px)';
-        } else {
-            nav.style.background = 'rgba(10, 10, 10, 0.95)';
-            nav.style.backdropFilter = 'blur(10px)';
+        try {
+            const version = await loadSourceVersion();
+
+            if (!version) {
+                throw new Error('Unable to resolve source version metadata.');
+            }
+
+            sourceVersionNodes.forEach((node) => {
+                node.textContent = `Source version ${version}`;
+            });
+        } catch (error) {
+            console.error('Failed to load installer metadata', error);
+        }
+    }
+
+    setTheme(storedTheme === 'light' || storedTheme === 'dark' ? storedTheme : 'auto');
+
+    if (themeToggle) {
+        themeToggle.addEventListener('click', () => {
+            setTheme(getEffectiveTheme() === 'dark' ? 'light' : 'dark');
+        });
+    }
+
+    const colorSchemeQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleColorSchemeChange = () => {
+        if (root.dataset.theme !== 'light' && root.dataset.theme !== 'dark') {
+            updateThemeToggleLabel();
+        }
+    };
+
+    if (typeof colorSchemeQuery.addEventListener === 'function') {
+        colorSchemeQuery.addEventListener('change', handleColorSchemeChange);
+    } else if (typeof colorSchemeQuery.addListener === 'function') {
+        colorSchemeQuery.addListener(handleColorSchemeChange);
+    }
+
+    if (footerYear) {
+        footerYear.textContent = String(new Date().getFullYear());
+    }
+
+    installTabGroups.forEach((group) => {
+        const tabs = Array.from(group.querySelectorAll('[data-install-tab]'));
+        const selectedTab = tabs.find((tab) => tab.getAttribute('aria-selected') === 'true') || tabs[0];
+
+        if (!selectedTab) {
+            return;
         }
 
-        lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
-    });
+        activateInstallTab(group, selectedTab, false);
 
-    // Platform download buttons - add click handlers
-    const platformBtns = document.querySelectorAll('.platform-btn');
-    platformBtns.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            // In a real implementation, these would link to actual download URLs
-            alert(`Download link for ${btn.textContent} would be here!`);
+        tabs.forEach((tab) => {
+            tab.addEventListener('click', () => {
+                activateInstallTab(group, tab, false);
+            });
+
+            tab.addEventListener('keydown', (event) => {
+                handleInstallTabKeydown(group, event);
+            });
         });
     });
 
-    // Add particle effect to hero background (subtle)
-    const hero = document.querySelector('.hero');
-    for (let i = 0; i < 20; i++) {
-        const particle = document.createElement('div');
-        particle.className = 'particle';
-        particle.style.left = Math.random() * 100 + '%';
-        particle.style.top = Math.random() * 100 + '%';
-        particle.style.animationDelay = Math.random() * 10 + 's';
-        particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
-        hero.appendChild(particle);
-    }
+    hydrateInstallerMetadata();
 });
-
-// Add CSS for particles
-const style = document.createElement('style');
-style.textContent = `
-    .particle {
-        position: absolute;
-        width: 2px;
-        height: 2px;
-        background: rgba(0, 212, 255, 0.3);
-        border-radius: 50%;
-        pointer-events: none;
-        animation: float 20s linear infinite;
-    }
-
-    @keyframes float {
-        0% {
-            transform: translateY(100vh) rotate(0deg);
-            opacity: 0;
-        }
-        10% {
-            opacity: 1;
-        }
-        90% {
-            opacity: 1;
-        }
-        100% {
-            transform: translateY(-100vh) rotate(360deg);
-            opacity: 0;
-        }
-    }
-`;
-document.head.appendChild(style);

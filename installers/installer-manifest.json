@@ -1,0 +1,27 @@
+{
+  "project": "Task",
+  "jobId": "job-installers-release-20260328",
+  "repository": "jmkelly/task",
+  "versionSourcePath": "Task.Cli/Task.Cli.csproj",
+  "sourceVersion": "1.0.0.51",
+  "releaseLookup": {
+    "latest": "https://api.github.com/repos/jmkelly/task/releases/latest"
+  },
+  "platforms": {
+    "linux": {
+      "rid": "linux-x64",
+      "script": "task-install-linux.sh",
+      "defaultInstallPath": "~/.local/bin/task"
+    },
+    "macos": {
+      "rid": "osx-x64 or osx-arm64",
+      "script": "task-install-macos.sh",
+      "defaultInstallPath": "~/.local/bin/task"
+    },
+    "windows": {
+      "rid": "win-x64",
+      "script": "task-install-windows.ps1",
+      "defaultInstallPath": "%LOCALAPPDATA%\\Task\\bin\\task.exe"
+    }
+  }
+}
