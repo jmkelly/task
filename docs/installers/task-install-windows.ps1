@@ -9,8 +9,7 @@ $ErrorActionPreference = 'Stop'
 $Project = 'Task'
 $JobId = 'job-installers-release-20260328'
 $Repository = 'jmkelly/task'
-$SourceVersion = '1.0.0.52'
-$ReleaseApiUrl = "https://api.github.com/repos/$Repository/releases?per_page=10"
+$ReleaseApiUrl = "https://api.github.com/repos/$Repository/releases/latest"
 
 function Write-InstallerLog {
     param(
@@ -118,7 +117,7 @@ $downloadPath = $null
 try {
     New-Item -ItemType Directory -Path $temporaryDirectory -Force | Out-Null
 
-    Write-InstallerLog -Level 'info' -Step 'release_lookup' -Message "Fetching release metadata from $ReleaseApiUrl. Source version reference: $SourceVersion."
+    Write-InstallerLog -Level 'info' -Step 'release_lookup' -Message "Fetching latest release metadata from $ReleaseApiUrl."
     $releases = Invoke-RestMethod -Uri $ReleaseApiUrl -Headers @{ 'User-Agent' = 'task-installer' }
 
     $asset = Get-BestWindowsAsset -Releases $releases -RuntimeIdentifier $runtimeIdentifier
