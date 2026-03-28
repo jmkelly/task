@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Task — Developer-first task management for humans and agents</title>
-    <meta name="description" content="Task combines a developer-first CLI, automation-ready API, and focused Kanban board so humans and AI agents can manage work together.">
+    <title>Task — Terminal task management for humans and agents</title>
+    <meta name="description" content="CLI-first task management with REST API and Kanban board. Let your team and your AI agents manage work together.">
     <meta name="color-scheme" content="light dark">
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="marketing.css">
@@ -24,8 +24,8 @@
             </a>
 
             <nav class="site-nav" aria-label="Primary">
-                <a href="#overview">Overview</a>
                 <a href="#quick-start">Quick start</a>
+                <a href="#features">Features</a>
                 <a href="#integrations">Integrations</a>
                 <a href="#docs">Docs</a>
             </nav>
@@ -44,15 +44,15 @@
             <div class="shell hero-grid">
                 <div class="hero-copy">
                     <p class="eyebrow">Open source · self-hosted · agent-friendly</p>
-                    <h1>Task keeps human workflows and automation workflows on the same board.</h1>
+                    <h1>Manage work from your terminal — or let your agents do it.</h1>
                     <p class="hero-lede">
-                        Use the CLI for scripts, the API for integrations, and the Kanban UI for fast visual coordination.
-                        Built for developers who want clear ownership, durable automation, and a workflow they can actually extend.
+                        A task management CLI with a REST API backend and Kanban board.
+                        JSON output makes it scriptable. Structured statuses make it agent-ready.
                     </p>
 
                     <div class="hero-actions">
                         <a class="btn btn-primary" href="https://github.com/jmkelly/task">GitHub</a>
-                        <a class="btn btn-secondary" href="https://github.com/jmkelly/task/releases">View releases</a>
+                        <a class="btn btn-secondary" href="https://github.com/jmkelly/task/releases">Releases</a>
                     </div>
 
                     <div class="hero-install" data-install-tabs>
@@ -83,12 +83,12 @@
                             <dd>CLI, API, Kanban</dd>
                         </div>
                         <div class="metric-card surface-card">
-                            <dt>Ownership</dt>
-                            <dd>SQLite-backed, self-hosted</dd>
+                            <dt>Storage</dt>
+                            <dd>SQLite, self-hosted</dd>
                         </div>
                         <div class="metric-card surface-card">
                             <dt>Automation</dt>
-                            <dd>JSON output, search, notifications</dd>
+                            <dd>JSON, search, webhooks</dd>
                         </div>
                     </dl>
                 </div>
@@ -102,7 +102,7 @@
                         <pre class="terminal-window"><code>$ task server start
 Task.Ready
 
-$ task add --title "Ship GitHub Pages site" \
+$ task add "Ship GitHub Pages site" \
   --project marketing \
   --tags website,launch
 
@@ -118,8 +118,8 @@ $ task list --json
 
                     <article class="surface-card preview-card">
                         <div class="panel-header">
-                            <span class="panel-title">Focused board UI</span>
-                            <span class="panel-badge">Kanban</span>
+                            <span class="panel-title">Kanban board</span>
+                            <span class="panel-badge">Web UI</span>
                         </div>
                         <img src="assets/images/board.png" alt="Task Kanban board screenshot showing Todo, In Progress, Blocked, and Done columns.">
                     </article>
@@ -127,66 +127,7 @@ $ task list --json
             </div>
         </section>
 
-        <section id="overview" class="section">
-            <div class="shell section-stack">
-                <div class="section-heading">
-                    <p class="eyebrow">Why Task</p>
-                    <h2>One workflow surface for developers, teams, and AI agents.</h2>
-                    <p>
-                        Task is designed around explicit workflows instead of opaque SaaS behavior.
-                        The UX mirrors the current Kanban board: calm surfaces, strong hierarchy, practical states, and minimal visual noise.
-                    </p>
-                </div>
-
-                <div class="card-grid card-grid-three">
-                    <article class="surface-card feature-card">
-                        <span class="card-kicker">Developer-first</span>
-                        <h3>CLI that fits automation and daily terminal work</h3>
-                        <p>Use plain text for people, JSON for scripts, and consistent commands for local or remote environments.</p>
-                    </article>
-                    <article class="surface-card feature-card">
-                        <span class="card-kicker">Visual clarity</span>
-                        <h3>Kanban board with explicit task states</h3>
-                        <p>Move from todo to in progress, blocked, and done with UI patterns built for focus rather than decoration.</p>
-                    </article>
-                    <article class="surface-card feature-card">
-                        <span class="card-kicker">Integration-ready</span>
-                        <h3>API surface for bots, agents, and custom tooling</h3>
-                        <p>Connect automations, notifications, or AI workflows without giving up ownership of your task data.</p>
-                    </article>
-                </div>
-            </div>
-        </section>
-
-        <section class="section section-tinted">
-            <div class="shell section-stack">
-                <div class="section-heading narrow-heading">
-                    <p class="eyebrow">Core value</p>
-                    <h2>Built for practical task operations, not a marketing demo.</h2>
-                </div>
-
-                <div class="card-grid card-grid-four">
-                    <article class="surface-card mini-card">
-                        <h3>Self-hosted storage</h3>
-                        <p>SQLite persistence, schema migration support, and no vendor lock-in.</p>
-                    </article>
-                    <article class="surface-card mini-card">
-                        <h3>Searchable work</h3>
-                        <p>Full-text and semantic search help humans and agents recover context fast.</p>
-                    </article>
-                    <article class="surface-card mini-card">
-                        <h3>Structured outputs</h3>
-                        <p>Machine-readable JSON and explicit error handling make automations resilient.</p>
-                    </article>
-                    <article class="surface-card mini-card">
-                        <h3>Modern workflow states</h3>
-                        <p>Track blocked work, assignees, due dates, tags, and project context without clutter.</p>
-                    </article>
-                </div>
-            </div>
-        </section>
-
-        <section id="quick-start" class="section">
+        <section id="quick-start" class="section section-tinted">
             <div class="shell section-stack">
                 <div class="section-heading">
                     <p class="eyebrow">Quick start</p>
@@ -196,44 +137,67 @@ $ task list --json
                 <div class="quick-start-grid">
                     <article class="surface-card step-card code-card">
                         <span class="step-index">01</span>
-                        <h3>Start the local API</h3>
-                        <pre><code>task server start
-task server status</code></pre>
+                        <h3>Start the server</h3>
+                        <pre><code>task server start</code></pre>
                     </article>
 
                     <article class="surface-card step-card code-card">
                         <span class="step-index">02</span>
-                        <h3>Point the CLI at your API</h3>
-                        <pre><code>task config set api-url http://localhost:8080
-task --help</code></pre>
+                        <h3>Add a task</h3>
+                        <pre><code>task add "Review pull request"</code></pre>
                     </article>
 
                     <article class="surface-card step-card code-card">
                         <span class="step-index">03</span>
-                        <h3>Start capturing work</h3>
-                        <pre><code>task add "Review pull request"
-task list --status todo
+                        <h3>List and search</h3>
+                        <pre><code>task list --status todo
 task search "review"</code></pre>
                     </article>
                 </div>
+            </div>
+        </section>
 
-                <div class="card-grid card-grid-two">
-                    <article class="surface-card code-card">
-                        <div class="panel-header">
-                            <span class="panel-title">Run from source</span>
-                            <span class="panel-badge">.NET</span>
-                        </div>
-                        <pre><code>dotnet build Task.Cli/Task.Cli.csproj -c Release
-dotnet run --project Task.Api</code></pre>
+        <section id="features" class="section">
+            <div class="shell section-stack">
+                <div class="section-heading">
+                    <p class="eyebrow">Features</p>
+                    <h2>Terminal-first. Agent-ready. Your data.</h2>
+                </div>
+
+                <div class="card-grid card-grid-three">
+                    <article class="surface-card feature-card">
+                        <span class="card-kicker">CLI</span>
+                        <h3>Works in your terminal</h3>
+                        <p>Plain text for humans, JSON for scripts. Add, list, search, complete — without leaving your workflow.</p>
                     </article>
+                    <article class="surface-card feature-card">
+                        <span class="card-kicker">Kanban</span>
+                        <h3>Visual board when you need it</h3>
+                        <p>Todo, In Progress, Blocked, Done. Spin up the web UI for a quick overview or stakeholder alignment.</p>
+                    </article>
+                    <article class="surface-card feature-card">
+                        <span class="card-kicker">API</span>
+                        <h3>REST endpoints for automation</h3>
+                        <p>Full CRUD, filtering, search, and OpenAPI docs. Plug it into bots, agents, or internal tools.</p>
+                    </article>
+                </div>
 
-                    <article class="surface-card code-card">
-                        <div class="panel-header">
-                            <span class="panel-title">Publish your own binary</span>
-                            <span class="panel-badge">Release</span>
-                        </div>
-                        <pre><code>dotnet publish Task.Cli -c Release -r linux-x64 --self-contained -p:PublishSingleFile=true
-dotnet publish Task.Cli -c Release -r win-x64 --self-contained -p:PublishSingleFile=true</code></pre>
+                <div class="card-grid card-grid-four">
+                    <article class="surface-card mini-card">
+                        <h3>Self-hosted</h3>
+                        <p>SQLite storage, no vendor lock-in. Your data stays with you.</p>
+                    </article>
+                    <article class="surface-card mini-card">
+                        <h3>Searchable</h3>
+                        <p>Full-text and semantic search across tasks, descriptions, and tags.</p>
+                    </article>
+                    <article class="surface-card mini-card">
+                        <h3>Structured output</h3>
+                        <p>JSON output with explicit error handling for reliable automations.</p>
+                    </article>
+                    <article class="surface-card mini-card">
+                        <h3>Task states</h3>
+                        <p>Blocked work, assignees, due dates, tags, and project context.</p>
                     </article>
                 </div>
             </div>
@@ -242,39 +206,26 @@ dotnet publish Task.Cli -c Release -r win-x64 --self-contained -p:PublishSingleF
         <section id="integrations" class="section section-tinted">
             <div class="shell section-stack">
                 <div class="section-heading">
-                    <p class="eyebrow">Integrations and advanced usage</p>
-                    <h2>Task is strongest when it becomes part of your toolchain.</h2>
-                    <p>Use the same task model across scripts, internal services, automation jobs, and browser workflows.</p>
+                    <p class="eyebrow">Integrations</p>
+                    <h2>Plug it into your toolchain.</h2>
                 </div>
 
                 <div class="card-grid card-grid-three">
                     <article class="surface-card feature-card">
-                        <span class="card-kicker">API workflows</span>
-                        <h3>Automate task creation, filtering, and completion</h3>
-                        <p>REST endpoints and OpenAPI documentation make it straightforward to plug Task into services and internal dashboards.</p>
+                        <span class="card-kicker">AI agents</span>
+                        <h3>Give agents a task backend</h3>
+                        <p>JSON I/O, explicit statuses, and tags work well for orchestrator/sub-agent workflows. Your Planner, Coder, and Reviewer can create, assign, and complete tasks programmatically.</p>
                     </article>
                     <article class="surface-card feature-card">
-                        <span class="card-kicker">Agent operations</span>
-                        <h3>Give coding agents a durable place to read and update work</h3>
-                        <p>Task’s explicit statuses, tags, project fields, and JSON output are well suited to LLM-driven execution loops.</p>
+                        <span class="card-kicker">Scripts</span>
+                        <h3>Automate with shell and cron</h3>
+                        <p>Chain commands, pipe JSON to jq, set up overdue alerts. Task fits into existing automation without ceremony.</p>
                     </article>
                     <article class="surface-card feature-card">
                         <span class="card-kicker">Notifications</span>
-                        <h3>Extend with providers like Telegram and custom hooks</h3>
-                        <p>Build lightweight operational awareness without adding another closed workflow system to your stack.</p>
+                        <h3>Telegram and custom hooks</h3>
+                        <p>Get notified when all tasks clear. Extend with your own providers for Slack, email, or webhooks.</p>
                     </article>
-                </div>
-
-                <div class="callout surface-card">
-                    <div>
-                        <p class="eyebrow">Typical use cases</p>
-                        <h3>Coordinate work across local development, API consumers, and visual planning.</h3>
-                    </div>
-                    <ul class="check-list" aria-label="Typical Task use cases">
-                        <li>Track implementation work from the CLI while keeping stakeholders aligned in the board view.</li>
-                        <li>Drive background jobs or AI agents with structured task metadata and predictable status transitions.</li>
-                        <li>Keep private, portable task data in your own environment instead of a hosted black box.</li>
-                    </ul>
                 </div>
             </div>
         </section>
@@ -282,25 +233,25 @@ dotnet publish Task.Cli -c Release -r win-x64 --self-contained -p:PublishSingleF
         <section id="docs" class="section">
             <div class="shell section-stack">
                 <div class="section-heading">
-                    <p class="eyebrow">Explore further</p>
-                    <h2>Everything you need to evaluate or adopt the project.</h2>
+                    <p class="eyebrow">Docs</p>
+                    <h2>Everything you need to get started.</h2>
                 </div>
 
                 <div class="card-grid card-grid-three">
                     <a class="surface-card link-card" href="https://github.com/jmkelly/task/blob/main/README.md">
                         <span class="card-kicker">Project guide</span>
-                        <h3>Read the README</h3>
-                        <p>Architecture, installation, usage, and screenshots in one place.</p>
-                    </a>
-                    <a class="surface-card link-card" href="https://github.com/jmkelly/task/blob/main/docs/style-guide.md">
-                        <span class="card-kicker">Design reference</span>
-                        <h3>Review the style guide</h3>
-                        <p>See the visual principles behind the current UI language.</p>
+                        <h3>README</h3>
+                        <p>Architecture, installation, usage, and screenshots.</p>
                     </a>
                     <a class="surface-card link-card" href="https://github.com/jmkelly/task">
                         <span class="card-kicker">Source</span>
-                        <h3>Inspect the repository</h3>
+                        <h3>Repository</h3>
                         <p>Browse code, issues, releases, and contribution guidance.</p>
+                    </a>
+                    <a class="surface-card link-card" href="https://github.com/jmkelly/task/blob/main/CONTRIBUTING.md">
+                        <span class="card-kicker">Contribute</span>
+                        <h3>Contributing guide</h3>
+                        <p>Development setup, build instructions, and PR process.</p>
                     </a>
                 </div>
             </div>
@@ -309,7 +260,7 @@ dotnet publish Task.Cli -c Release -r win-x64 --self-contained -p:PublishSingleF
 
     <footer class="site-footer">
         <div class="shell footer-inner">
-            <p>Task — explicit task management for developers, teams, and agents.</p>
+            <p>Task — terminal task management for developers and agents.</p>
             <p>MIT-licensed · <span id="footer-year"></span></p>
         </div>
     </footer>

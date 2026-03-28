@@ -245,7 +245,6 @@ ul {
 .card-grid,
 .quick-start-grid,
 .footer-inner,
-.callout,
 .hero-panels,
 .hero-copy,
 .section-stack,
@@ -270,7 +269,6 @@ ul {
 .card-grid > *,
 .quick-start-grid > *,
 .section-stack > *,
-.callout > *,
 .footer-inner > *,
 .hero-copy > *,
 .hero-panels > *,
@@ -316,7 +314,6 @@ ul {
 .hero-lede,
 .section-heading p,
 .surface-card p,
-.check-list li,
 .site-footer p {
     color: var(--color-text-secondary);
 }
@@ -368,8 +365,7 @@ ul {
 .mini-card,
 .step-card,
 .metric-card,
-.link-card,
-.callout {
+.link-card {
     transition: border-color var(--transition-snap), background var(--transition-snap), box-shadow var(--transition-snap);
 }
 
@@ -380,8 +376,7 @@ ul {
 .step-card:hover,
 .step-card:focus-within,
 .link-card:hover,
-.link-card:focus-visible,
-.callout:hover {
+.link-card:focus-visible {
     border-color: var(--color-border-strong);
     background: var(--color-surface-strong);
     box-shadow: var(--shadow-md);
@@ -571,17 +566,6 @@ ul {
     padding-inline: 0.65rem;
 }
 
-.check-list {
-    display: grid;
-    gap: 0.75rem;
-    padding-left: 1.1rem;
-}
-
-.callout {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
-    align-items: start;
-}
-
 .link-card {
     color: inherit;
 }
@@ -625,7 +609,6 @@ ul {
 @media (max-width: 860px) {
     .header-inner,
     .footer-inner,
-    .callout,
     .hero-metrics,
     .hero-panels,
     .card-grid-two,
