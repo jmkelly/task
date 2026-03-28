@@ -51,8 +51,30 @@
                     </p>
 
                     <div class="hero-actions">
-                        <a class="btn btn-primary" href="#quick-start">Get started</a>
+                        <a class="btn btn-primary" href="https://github.com/jmkelly/task">GitHub</a>
                         <a class="btn btn-secondary" href="https://github.com/jmkelly/task/releases">View releases</a>
+                    </div>
+
+                    <div class="hero-install" data-install-tabs>
+                        <div class="install-tablist" role="tablist" aria-label="Choose your operating system">
+                            <button id="hero-tab-macos" class="install-tab" type="button" role="tab" aria-selected="true" aria-controls="hero-panel-macos" tabindex="0" data-install-tab>macOS</button>
+                            <button id="hero-tab-linux" class="install-tab" type="button" role="tab" aria-selected="false" aria-controls="hero-panel-linux" tabindex="-1" data-install-tab>Linux</button>
+                            <button id="hero-tab-windows" class="install-tab" type="button" role="tab" aria-selected="false" aria-controls="hero-panel-windows" tabindex="-1" data-install-tab>Windows</button>
+                        </div>
+                        <div class="install-panels">
+                            <div id="hero-panel-macos" class="hero-command-block" role="tabpanel" aria-labelledby="hero-tab-macos" data-install-panel>
+                                <pre class="hero-command"><code>curl -fsSL https://jmkelly.github.io/task/installers/task-install-macos.sh | bash</code></pre>
+                                <button class="btn btn-secondary icon-button copy-btn" type="button" data-copy-text="curl -fsSL https://jmkelly.github.io/task/installers/task-install-macos.sh | bash" aria-label="Copy install command">Copy</button>
+                            </div>
+                            <div id="hero-panel-linux" class="hero-command-block" role="tabpanel" aria-labelledby="hero-tab-linux" data-install-panel hidden>
+                                <pre class="hero-command"><code>curl -fsSL https://jmkelly.github.io/task/installers/task-install-linux.sh | bash</code></pre>
+                                <button class="btn btn-secondary icon-button copy-btn" type="button" data-copy-text="curl -fsSL https://jmkelly.github.io/task/installers/task-install-linux.sh | bash" aria-label="Copy install command">Copy</button>
+                            </div>
+                            <div id="hero-panel-windows" class="hero-command-block" role="tabpanel" aria-labelledby="hero-tab-windows" data-install-panel hidden>
+                                <pre class="hero-command"><code>irm https://jmkelly.github.io/task/installers/task-install-windows.ps1 | iex</code></pre>
+                                <button class="btn btn-secondary icon-button copy-btn" type="button" data-copy-text="irm https://jmkelly.github.io/task/installers/task-install-windows.ps1 | iex" aria-label="Copy install command">Copy</button>
+                            </div>
+                        </div>
                     </div>
 
                     <dl class="hero-metrics" aria-label="Project highlights">
@@ -168,154 +190,8 @@ $ task list --json
             <div class="shell section-stack">
                 <div class="section-heading">
                     <p class="eyebrow">Quick start</p>
-                    <h2>Get a local workflow running in a few commands.</h2>
-                    <p>Task ships as a developer-friendly system: start the API, point the CLI at it, and begin managing work immediately.</p>
+                    <h2>Start managing work in seconds.</h2>
                 </div>
-
-                <article class="surface-card install-card" data-install-tabs>
-                    <div class="install-card-header">
-                        <div class="install-card-copy">
-                            <span class="card-kicker">Install Task CLI</span>
-                            <h3>Open the installer script for your platform and let it resolve the latest matching release.</h3>
-                            <p>These hosted installers give GitHub Pages a stable link target, while the scripts themselves look up the latest Task release asset for your runtime.</p>
-                        </div>
-                        <div class="install-header-meta">
-                            <span class="install-chip" data-source-version>Source version</span>
-                            <a class="btn btn-secondary install-header-link" href="https://github.com/jmkelly/task/releases">All release artifacts</a>
-                        </div>
-                    </div>
-
-                    <div class="install-tablist" role="tablist" aria-label="Choose your operating system">
-                        <button id="install-tab-macos" class="install-tab" type="button" role="tab" aria-selected="true" aria-controls="install-panel-macos" tabindex="0" data-install-tab>
-                            macOS
-                        </button>
-                        <button id="install-tab-linux" class="install-tab" type="button" role="tab" aria-selected="false" aria-controls="install-panel-linux" tabindex="-1" data-install-tab>
-                            Linux
-                        </button>
-                        <button id="install-tab-windows" class="install-tab" type="button" role="tab" aria-selected="false" aria-controls="install-panel-windows" tabindex="-1" data-install-tab>
-                            Windows
-                        </button>
-                    </div>
-
-                    <div class="install-panels">
-                        <section id="install-panel-macos" class="install-panel" role="tabpanel" tabindex="0" aria-labelledby="install-tab-macos" data-install-panel>
-                            <div class="install-panel-grid">
-                                <div class="install-script-card surface-card">
-                                    <div class="install-platform-row">
-                                        <span class="panel-badge">macOS</span>
-                                        <span class="install-chip">Intel + Apple Silicon</span>
-                                    </div>
-                                    <h3>Hosted macOS installer</h3>
-                                    <p class="install-panel-lede">Use the site-hosted macOS installer script. It detects <code>osx-x64</code> vs <code>osx-arm64</code>, fetches the latest compatible release asset, and installs <code>task</code> to <code>~/.local/bin</code> by default.</p>
-                                    <div class="install-script-actions">
-                                        <a class="btn btn-primary" href="installers/task-install-macos.sh">Open installer script</a>
-                                        <a class="btn btn-secondary" href="installers/task-install-macos.sh" download="task-install-macos.sh">Download .sh</a>
-                                    </div>
-                                </div>
-
-                                <div class="install-actions">
-                                    <div class="install-meta-list" aria-label="macOS installer details">
-                                        <div class="install-meta-item">
-                                            <span class="install-meta-label">Install target</span>
-                                            <strong>~/.local/bin/task</strong>
-                                        </div>
-                                        <div class="install-meta-item">
-                                            <span class="install-meta-label">Release lookup</span>
-                                            <strong>Latest GitHub release</strong>
-                                        </div>
-                                        <div class="install-meta-item">
-                                            <span class="install-meta-label">Stable page link</span>
-                                            <strong>/installers/task-install-macos.sh</strong>
-                                        </div>
-                                    </div>
-                                    <div class="install-link-list" aria-label="macOS install links">
-                                        <a class="install-link" href="https://github.com/jmkelly/task/releases">Release downloads</a>
-                                        <a class="install-link" href="https://github.com/jmkelly/task/blob/main/README.md#building-cli-from-source">Source build</a>
-                                    </div>
-                                    <a class="text-link" href="https://github.com/jmkelly/task/blob/main/installers/task-install-macos.sh">Review installer source</a>
-                                </div>
-                            </div>
-                        </section>
-
-                        <section id="install-panel-linux" class="install-panel" role="tabpanel" tabindex="0" aria-labelledby="install-tab-linux" data-install-panel hidden>
-                            <div class="install-panel-grid">
-                                <div class="install-script-card surface-card">
-                                    <div class="install-platform-row">
-                                        <span class="panel-badge">Linux</span>
-                                        <span class="install-chip">x64 release asset</span>
-                                    </div>
-                                    <h3>Hosted Linux installer</h3>
-                                    <p class="install-panel-lede">Use the Linux installer script hosted with the site. It resolves the latest <code>linux-x64</code> release artifact, extracts it if needed, and installs <code>task</code> to <code>~/.local/bin</code>.</p>
-                                    <div class="install-script-actions">
-                                        <a class="btn btn-primary" href="installers/task-install-linux.sh">Open installer script</a>
-                                        <a class="btn btn-secondary" href="installers/task-install-linux.sh" download="task-install-linux.sh">Download .sh</a>
-                                    </div>
-                                </div>
-
-                                <div class="install-actions">
-                                    <div class="install-meta-list" aria-label="Linux installer details">
-                                        <div class="install-meta-item">
-                                            <span class="install-meta-label">Install target</span>
-                                            <strong>~/.local/bin/task</strong>
-                                        </div>
-                                        <div class="install-meta-item">
-                                            <span class="install-meta-label">Release lookup</span>
-                                            <strong>Latest GitHub release</strong>
-                                        </div>
-                                        <div class="install-meta-item">
-                                            <span class="install-meta-label">Stable page link</span>
-                                            <strong>/installers/task-install-linux.sh</strong>
-                                        </div>
-                                    </div>
-                                    <div class="install-link-list" aria-label="Linux install links">
-                                        <a class="install-link" href="https://github.com/jmkelly/task/releases">Release downloads</a>
-                                        <a class="install-link" href="https://github.com/jmkelly/task/blob/main/README.md#building-cli-from-source">Source build</a>
-                                    </div>
-                                    <a class="text-link" href="https://github.com/jmkelly/task/blob/main/installers/task-install-linux.sh">Review installer source</a>
-                                </div>
-                            </div>
-                        </section>
-
-                        <section id="install-panel-windows" class="install-panel" role="tabpanel" tabindex="0" aria-labelledby="install-tab-windows" data-install-panel hidden>
-                            <div class="install-panel-grid">
-                                <div class="install-script-card surface-card">
-                                    <div class="install-platform-row">
-                                        <span class="panel-badge">Windows</span>
-                                        <span class="install-chip">x64 release asset</span>
-                                    </div>
-                                    <h3>Hosted Windows installer</h3>
-                                    <p class="install-panel-lede">Use the PowerShell installer script. It resolves the latest <code>win-x64</code> release artifact, installs <code>task.exe</code> under <code>%LOCALAPPDATA%\Task\bin</code>, and updates the current user PATH when needed.</p>
-                                    <div class="install-script-actions">
-                                        <a class="btn btn-primary" href="installers/task-install-windows.ps1">Open installer script</a>
-                                        <a class="btn btn-secondary" href="installers/task-install-windows.ps1" download="task-install-windows.ps1">Download .ps1</a>
-                                    </div>
-                                </div>
-
-                                <div class="install-actions">
-                                    <div class="install-meta-list" aria-label="Windows installer details">
-                                        <div class="install-meta-item">
-                                            <span class="install-meta-label">Install target</span>
-                                            <strong>%LOCALAPPDATA%\Task\bin\task.exe</strong>
-                                        </div>
-                                        <div class="install-meta-item">
-                                            <span class="install-meta-label">Release lookup</span>
-                                            <strong>Latest GitHub release</strong>
-                                        </div>
-                                        <div class="install-meta-item">
-                                            <span class="install-meta-label">Stable page link</span>
-                                            <strong>/installers/task-install-windows.ps1</strong>
-                                        </div>
-                                    </div>
-                                    <div class="install-link-list" aria-label="Windows install links">
-                                        <a class="install-link" href="https://github.com/jmkelly/task/releases">Release downloads</a>
-                                        <a class="install-link" href="https://github.com/jmkelly/task/blob/main/README.md#building-cli-from-source">Source build</a>
-                                    </div>
-                                    <a class="text-link" href="https://github.com/jmkelly/task/blob/main/installers/task-install-windows.ps1">Review installer source</a>
-                                </div>
-                            </div>
-                        </section>
-                    </div>
-                </article>
 
                 <div class="quick-start-grid">
                     <article class="surface-card step-card code-card">
