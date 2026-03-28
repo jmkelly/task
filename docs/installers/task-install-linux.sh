@@ -193,7 +193,7 @@ main() {
 
     local temporary_dir
     temporary_dir="$(mktemp -d)"
-    trap 'rm -rf -- '"'"$temporary_dir"'"'' EXIT
+    trap "rm -rf -- \"$temporary_dir\"" EXIT
 
     local release_json_path="$temporary_dir/release.json"
     log "info" "release_lookup" "Fetching release metadata from ${RELEASE_API_URL}. Source version reference: ${SOURCE_VERSION}."
