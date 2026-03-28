@@ -8,13 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const sourceVersionNodes = document.querySelectorAll('[data-source-version]');
 
     function getEffectiveTheme() {
-        const theme = root.dataset.theme;
-
-        if (theme === 'light' || theme === 'dark') {
-            return theme;
-        }
-
-        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        return root.dataset.theme === 'light' ? 'light' : 'dark';
     }
 
     function updateThemeToggleLabel() {
@@ -25,20 +19,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const effectiveTheme = getEffectiveTheme();
         const nextTheme = effectiveTheme === 'dark' ? 'light' : 'dark';
 
-        themeIcon.textContent = effectiveTheme === 'dark' ? '☀️' : '🌙';
+        themeIcon.textContent = effectiveTheme === 'dark' ? '☀' : '☾';
         themeToggle.setAttribute('aria-label', `Switch to ${nextTheme} theme`);
         themeToggle.setAttribute('title', `Switch to ${nextTheme} theme`);
     }
 
     function setTheme(theme) {
-        root.dataset.theme = theme;
-
-        if (theme === 'light' || theme === 'dark') {
-            localStorage.setItem('task-marketing-theme', theme);
-        } else {
-            localStorage.removeItem('task-marketing-theme');
-        }
-
+        root.dataset.theme = theme === 'light' ? 'light' : 'dark';
+        localStorage.setItem('task-marketing-theme', root.dataset.theme);
         updateThemeToggleLabel();
     }
 
@@ -147,59 +135,46 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function initCopyButtons() {
-        document.querySelectorAll('.copy-btn[data-copy-text]').forEach((btn) => {
-            btn.addEventListener('click', async () => {
-                const text = btn.getAttribute('data-copy-text');
-                const original = btn.textContent;
+        document.querySelectorAll('.copy-btn[data-copy-text]').forEach((button) => {
+            button.addEventListener('click', async () => {
+                const text = button.getAttribute('data-copy-text');
+                const original = button.textContent;
 
                 try {
                     if (navigator.clipboard && window.isSecureContext) {
                         await navigator.clipboard.writeText(text);
                     } else {
-                        const ta = document.createElement('textarea');
-                        ta.value = text;
-                        ta.style.position = 'absolute';
-                        ta.style.opacity = '0';
-                        document.body.appendChild(ta);
-                        ta.select();
+                        const input = document.createElement('textarea');
+                        input.value = text;
+                        input.style.position = 'absolute';
+                        input.style.opacity = '0';
+                        document.body.appendChild(input);
+                        input.select();
                         document.execCommand('copy');
-                        document.body.removeChild(ta);
+                        document.body.removeChild(input);
                     }
 
-                    btn.textContent = 'Copied!';
+                    button.textContent = 'Copied';
                     setTimeout(() => {
-                        btn.textContent = original;
+                        button.textContent = original;
                     }, 1500);
-                } catch (err) {
-                    btn.textContent = 'Failed';
+                } catch (error) {
+                    button.textContent = 'Failed';
                     setTimeout(() => {
-                        btn.textContent = original;
+                        button.textContent = original;
                     }, 1500);
-                    console.error('Failed to copy text', err);
+                    console.error('Failed to copy text', error);
                 }
             });
         });
     }
 
-    setTheme(storedTheme === 'light' || storedTheme === 'dark' ? storedTheme : 'auto');
+    setTheme(storedTheme === 'light' || storedTheme === 'dark' ? storedTheme : 'dark');
 
     if (themeToggle) {
         themeToggle.addEventListener('click', () => {
             setTheme(getEffectiveTheme() === 'dark' ? 'light' : 'dark');
         });
-    }
-
-    const colorSchemeQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleColorSchemeChange = () => {
-        if (root.dataset.theme !== 'light' && root.dataset.theme !== 'dark') {
-            updateThemeToggleLabel();
-        }
-    };
-
-    if (typeof colorSchemeQuery.addEventListener === 'function') {
-        colorSchemeQuery.addEventListener('change', handleColorSchemeChange);
-    } else if (typeof colorSchemeQuery.addListener === 'function') {
-        colorSchemeQuery.addListener(handleColorSchemeChange);
     }
 
     if (footerYear) {
