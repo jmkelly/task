@@ -59,13 +59,7 @@ jobs:
           elif [ "${{ github.ref_type }}" = "tag" ]; then
             echo "tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
           else
-            VERSION=$(python3 -c "
-import xml.etree.ElementTree as ET, sys
-version = ET.parse('Task.Cli/Task.Cli.csproj').getroot().findtext('.//Version')
-if not version:
-    sys.exit('Task.Cli/Task.Cli.csproj is missing a <Version> element.')
-print(version.strip())
-")
+            VERSION=$(python3 -c "import xml.etree.ElementTree as ET, sys; v = ET.parse('Task.Cli/Task.Cli.csproj').getroot().findtext('.//Version'); sys.exit('Task.Cli/Task.Cli.csproj is missing a <Version> element.') if not v else print(v.strip())")
             if [ -z "$VERSION" ]; then
               echo "Failed to resolve release tag: no version found in Task.Cli.csproj" >&2
               exit 1
