@@ -146,6 +146,41 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function initCopyButtons() {
+        document.querySelectorAll('.copy-btn[data-copy-text]').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+                const text = btn.getAttribute('data-copy-text');
+                const original = btn.textContent;
+
+                try {
+                    if (navigator.clipboard && window.isSecureContext) {
+                        await navigator.clipboard.writeText(text);
+                    } else {
+                        const ta = document.createElement('textarea');
+                        ta.value = text;
+                        ta.style.position = 'absolute';
+                        ta.style.opacity = '0';
+                        document.body.appendChild(ta);
+                        ta.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(ta);
+                    }
+
+                    btn.textContent = 'Copied!';
+                    setTimeout(() => {
+                        btn.textContent = original;
+                    }, 1500);
+                } catch (err) {
+                    btn.textContent = 'Failed';
+                    setTimeout(() => {
+                        btn.textContent = original;
+                    }, 1500);
+                    console.error('Failed to copy text', err);
+                }
+            });
+        });
+    }
+
     setTheme(storedTheme === 'light' || storedTheme === 'dark' ? storedTheme : 'auto');
 
     if (themeToggle) {
@@ -193,4 +228,5 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     hydrateInstallerMetadata();
+    initCopyButtons();
 });

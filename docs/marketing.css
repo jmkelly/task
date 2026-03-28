@@ -473,6 +473,41 @@ ul {
     gap: 1rem;
 }
 
+.hero-install {
+    display: grid;
+    gap: 0.6rem;
+}
+
+.hero-command-block {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 0.75rem 0.6rem 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: color-mix(in srgb, var(--color-surface-muted) 70%, var(--color-surface-strong));
+}
+
+.hero-command {
+    flex: 1;
+    overflow-x: auto;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    line-height: 1.5;
+    white-space: nowrap;
+    color: var(--color-ink);
+}
+
+.copy-btn {
+    flex-shrink: 0;
+    font-size: 0.78rem;
+}
+
 .install-card {
     padding: 1.5rem;
     background: linear-gradient(180deg, color-mix(in srgb, var(--color-accent-faint) 55%, var(--color-surface-strong)) 0%, var(--color-surface-strong) 100%);
