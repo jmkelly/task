@@ -268,8 +268,8 @@ namespace Task.Core
 				{
 					command.Parameters.AddWithValue("@blockReason", blockReason);
 				}
-				command.Parameters.AddWithValue("@createdAt", createdAt.ToString("yyyy-MM-dd HH:mm:ss"));
-				command.Parameters.AddWithValue("@updatedAt", updatedAt.ToString("yyyy-MM-dd HH:mm:ss"));
+				command.Parameters.AddWithValue("@createdAt", FormatStoredDateTime(createdAt));
+				command.Parameters.AddWithValue("@updatedAt", FormatStoredDateTime(updatedAt));
 				await command.ExecuteNonQueryAsync(cancellationToken);
 
 				var sqlId = "SELECT last_insert_rowid()";
@@ -321,16 +321,16 @@ namespace Task.Core
 					Title = reader.GetString(2),
 					Description = reader.IsDBNull(3) ? null : reader.GetString(3),
 					Priority = reader.GetString(4),
-					DueDate = reader.IsDBNull(5) || string.IsNullOrEmpty(reader.GetString(5)) ? null : DateTime.Parse(reader.GetString(5), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
+					DueDate = ParseOptionalStoredDateTime(reader, 5),
 					Tags = reader.IsDBNull(6) ? new List<string>() : reader.GetString(6).Split(",").Where(t => !string.IsNullOrEmpty(t)).ToList(),
 					Project = reader.IsDBNull(7) ? null : reader.GetString(7),
 					Assignee = reader.IsDBNull(8) ? null : reader.GetString(8),
 					Status = reader.GetString(9),
 					BlockReason = reader.IsDBNull(10) ? null : reader.GetString(10),
-					CreatedAt = DateTime.Parse(reader.GetString(11), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
-					UpdatedAt = DateTime.Parse(reader.GetString(12), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
+					CreatedAt = ParseRequiredStoredDateTime(reader, 11),
+					UpdatedAt = ParseRequiredStoredDateTime(reader, 12),
 					Archived = !reader.IsDBNull(13) && reader.GetInt32(13) != 0,
-					ArchivedAt = reader.IsDBNull(14) || string.IsNullOrEmpty(reader.GetString(14)) ? (DateTime?)null : DateTime.Parse(reader.GetString(14), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal)
+					ArchivedAt = ParseOptionalStoredDateTime(reader, 14)
 				};
 			}
 			return null;
@@ -366,9 +366,9 @@ namespace Task.Core
 				{
 					command.Parameters.AddWithValue("@blockReason", task.BlockReason);
 				}
-				command.Parameters.AddWithValue("@updatedAt", DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"));
+				command.Parameters.AddWithValue("@updatedAt", FormatStoredDateTime(DateTime.UtcNow));
 				command.Parameters.AddWithValue("@archived", task.Archived ? 1 : 0);
-				command.Parameters.AddWithValue("@archivedAt", task.ArchivedAt?.ToString("yyyy-MM-dd HH:mm:ss") ?? (object)DBNull.Value);
+				command.Parameters.AddWithValue("@archivedAt", task.ArchivedAt.HasValue ? FormatStoredDateTime(task.ArchivedAt.Value) : (object)DBNull.Value);
 				await command.ExecuteNonQueryAsync(cancellationToken);
 				await transaction.CommitAsync(cancellationToken);
 			}
@@ -398,7 +398,7 @@ namespace Task.Core
 			var sql = "UPDATE tasks SET status = 'done', updated_at = @updatedAt WHERE uid = @uid";
 			using var command = new SqliteCommand(sql, connection);
 			command.Parameters.AddWithValue("@uid", uid);
-			command.Parameters.AddWithValue("@updatedAt", DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"));
+			command.Parameters.AddWithValue("@updatedAt", FormatStoredDateTime(DateTime.UtcNow));
 			await command.ExecuteNonQueryAsync(cancellationToken);
 		}
 
@@ -419,16 +419,16 @@ namespace Task.Core
 					Title = reader.GetString(2),
 					Description = reader.IsDBNull(3) ? null : reader.GetString(3),
 					Priority = reader.GetString(4),
-					DueDate = reader.IsDBNull(5) || string.IsNullOrEmpty(reader.GetString(5)) ? null : DateTime.Parse(reader.GetString(5), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
+					DueDate = ParseOptionalStoredDateTime(reader, 5),
 					Tags = reader.IsDBNull(6) ? new List<string>() : reader.GetString(6).Split(",").Where(t => !string.IsNullOrEmpty(t)).ToList(),
 					Project = reader.IsDBNull(7) ? null : reader.GetString(7),
 					Assignee = reader.IsDBNull(8) ? null : reader.GetString(8),
 					Status = reader.GetString(9),
 					BlockReason = reader.IsDBNull(10) ? null : reader.GetString(10),
-					CreatedAt = DateTime.Parse(reader.GetString(11), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
-					UpdatedAt = DateTime.Parse(reader.GetString(12), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
+					CreatedAt = ParseRequiredStoredDateTime(reader, 11),
+					UpdatedAt = ParseRequiredStoredDateTime(reader, 12),
 					Archived = !reader.IsDBNull(13) && reader.GetInt32(13) != 0,
-					ArchivedAt = reader.IsDBNull(14) || string.IsNullOrEmpty(reader.GetString(14)) ? (DateTime?)null : DateTime.Parse(reader.GetString(14), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal)
+					ArchivedAt = ParseOptionalStoredDateTime(reader, 14)
 				};
 				tasks.Add(task);
 			}
@@ -480,16 +480,16 @@ namespace Task.Core
 					Title = reader.GetString(2),
 					Description = reader.IsDBNull(3) ? null : reader.GetString(3),
 					Priority = reader.GetString(4),
-					DueDate = reader.IsDBNull(5) || string.IsNullOrEmpty(reader.GetString(5)) ? null : DateTime.Parse(reader.GetString(5), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
+					DueDate = ParseOptionalStoredDateTime(reader, 5),
 					Tags = reader.IsDBNull(6) ? new List<string>() : reader.GetString(6).Split(",").Where(t => !string.IsNullOrEmpty(t)).ToList(),
 					Project = reader.IsDBNull(7) ? null : reader.GetString(7),
 					Assignee = reader.IsDBNull(8) ? null : reader.GetString(8),
 					Status = reader.GetString(9),
 					BlockReason = reader.IsDBNull(10) ? null : reader.GetString(10),
-					CreatedAt = DateTime.Parse(reader.GetString(11), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
-					UpdatedAt = DateTime.Parse(reader.GetString(12), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
+					CreatedAt = ParseRequiredStoredDateTime(reader, 11),
+					UpdatedAt = ParseRequiredStoredDateTime(reader, 12),
 					Archived = !reader.IsDBNull(13) && reader.GetInt32(13) != 0,
-					ArchivedAt = reader.IsDBNull(14) || string.IsNullOrEmpty(reader.GetString(14)) ? (DateTime?)null : DateTime.Parse(reader.GetString(14), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal)
+					ArchivedAt = ParseOptionalStoredDateTime(reader, 14)
 				};
 				tasks.Add(task);
 			}
@@ -529,7 +529,7 @@ namespace Task.Core
 		{
 			using var connection = new SqliteConnection($"Data Source={_dbPath}");
 			await connection.OpenAsync(cancellationToken);
-			var now = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss");
+			var now = FormatStoredDateTime(DateTime.UtcNow);
 			var sql = "UPDATE tasks SET archived = 1, archived_at = @archivedAt WHERE archived = 0";
 			using var command = new SqliteCommand(sql, connection);
 			command.Parameters.AddWithValue("@archivedAt", now);
@@ -545,6 +545,39 @@ namespace Task.Core
 			}
 
 			Directory.CreateDirectory(directoryPath);
+		}
+
+		private static DateTime ParseRequiredStoredDateTime(SqliteDataReader reader, int ordinal)
+		{
+			var parsed = ParseOptionalStoredDateTime(reader, ordinal);
+			return parsed ?? DateTime.MinValue;
+		}
+
+		private static string FormatStoredDateTime(DateTime value)
+		{
+			return value.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture);
+		}
+
+		private static DateTime? ParseOptionalStoredDateTime(SqliteDataReader reader, int ordinal)
+		{
+			if (reader.IsDBNull(ordinal))
+			{
+				return null;
+			}
+
+			var value = reader.GetString(ordinal);
+			if (string.IsNullOrWhiteSpace(value))
+			{
+				return null;
+			}
+
+			return DateTime.TryParse(
+				value,
+				CultureInfo.InvariantCulture,
+				DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+				out var parsed)
+				? parsed
+				: null;
 		}
 	}
 }

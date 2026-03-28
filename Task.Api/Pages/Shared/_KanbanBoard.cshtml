@@ -5,7 +5,10 @@
     var todoTasks = Model.Where(task => task.Status == "todo").ToList();
     var inProgressTasks = Model.Where(task => task.Status == "in_progress").ToList();
     var blockedTasks = Model.Where(task => task.Status == "blocked").ToList();
-    var doneTasks = Model.Where(task => task.Status == "done").ToList();
+    var doneTasks = Model
+        .Where(task => task.Status == "done")
+        .OrderByDescending(task => task.UpdatedAt)
+        .ToList();
 
     var activeColumns = new[]
     {
