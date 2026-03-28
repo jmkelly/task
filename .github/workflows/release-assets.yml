@@ -113,7 +113,7 @@ jobs:
             binary_name: Task.Cli.exe
             asset_kind: exe
           - rid: osx-x64
-            runner: macos-13
+            runner: macos-15-intel
             binary_name: Task.Cli
             asset_kind: zip
           - rid: osx-arm64
