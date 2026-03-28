@@ -1,23 +1,36 @@
 # Task Management System
 
-> **Build workflows for both humans and LLM/AI agents—without SaaS limits.**
->
-> Modern teams (and their coding agents or LLMs) need a task platform that’s open, and agent-friendly.
->
-> Tired of apps that lock you in and don’t talk to your automations or agents? This system gives you:
->
-> - A developer-first CLI—ideal for scripts, automations, and LLM agents
-> - A human-friendly Kanban web UI for drag-and-drop workflow
-> - A robust API for LLM agents and bots to create, search, assign, and complete tasks automatically
-> - Full data ownership, privacy by default, and no vendor lock-in
-> - Machine-readable outputs and clear error handling—built for agent resilience
->
 > **Let your team—and your AI agents—manage work together in the terminal, browser, or with code. Get started below!**
 
 [![License](https://img.shields.io/badge/License-See%20LICENSE-blue)](LICENSE)
 [![GitHub Pages](https://img.shields.io/badge/Website-jmkelly.github.io%2Ftask-blue)](https://jmkelly.github.io/task/)
 
 A cross-platform task management system with a robust CLI client (API-only), REST API backend, and persistent storage for advanced task management.
+
+
+## Quick Installation
+#### Using the Installer Script (Recommended)
+
+The fastest way to install the Task CLI is with the one-line installer. Open a terminal and run the command for your platform:
+
+**macOS:**
+```bash
+curl -fsSL https://jmkelly.github.io/task/installers/task-install-macos.sh | bash
+```
+
+**Linux:**
+```bash
+curl -fsSL https://jmkelly.github.io/task/installers/task-install-linux.sh | bash
+```
+
+**Windows (PowerShell):**
+```powershell
+irm https://jmkelly.github.io/task/installers/task-install-windows.ps1 | iex
+```
+
+The installer automatically downloads the latest release for your platform and places the `task` binary in `~/.local/bin` (macOS/Linux) or `%LOCALAPPDATA%\Task\bin` (Windows). After installation, open a new terminal and run `task --help` to verify.
+
+
 
 ## Demo Video
 
@@ -150,30 +163,9 @@ that the notification was skipped.
 - [CODE_OF_CONDUCT](CODE_OF_CONDUCT.md)
 - [CHANGELOG](CHANGELOG.md)
 
-## Installation
+## Manual Installation
 
 ### CLI Installation
-
-#### Using the Installer Script (Recommended)
-
-The fastest way to install the Task CLI is with the one-line installer. Open a terminal and run the command for your platform:
-
-**macOS:**
-```bash
-curl -fsSL https://jmkelly.github.io/task/installers/task-install-macos.sh | bash
-```
-
-**Linux:**
-```bash
-curl -fsSL https://jmkelly.github.io/task/installers/task-install-linux.sh | bash
-```
-
-**Windows (PowerShell):**
-```powershell
-irm https://jmkelly.github.io/task/installers/task-install-windows.ps1 | iex
-```
-
-The installer automatically downloads the latest release for your platform and places the `task` binary in `~/.local/bin` (macOS/Linux) or `%LOCALAPPDATA%\Task\bin` (Windows). After installation, open a new terminal and run `task --help` to verify.
 
 #### Manual Download
 
