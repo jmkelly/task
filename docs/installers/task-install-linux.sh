@@ -5,9 +5,8 @@ set -euo pipefail
 PROJECT="Task"
 JOB_ID="job-installers-release-20260328"
 REPOSITORY="jmkelly/task"
-SOURCE_VERSION="1.0.0.52"
 DEFAULT_INSTALL_DIR="${HOME}/.local/bin"
-RELEASE_API_URL="https://api.github.com/repos/${REPOSITORY}/releases?per_page=10"
+RELEASE_API_URL="https://api.github.com/repos/${REPOSITORY}/releases/latest"
 
 log() {
     local level="$1"
@@ -196,7 +195,7 @@ main() {
     trap "rm -rf -- \"$temporary_dir\"" EXIT
 
     local release_json_path="$temporary_dir/release.json"
-    log "info" "release_lookup" "Fetching release metadata from ${RELEASE_API_URL}. Source version reference: ${SOURCE_VERSION}."
+    log "info" "release_lookup" "Fetching latest release metadata from ${RELEASE_API_URL}."
     download_to_file "$RELEASE_API_URL" "$release_json_path"
 
     local asset_selection
