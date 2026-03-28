@@ -9,7 +9,7 @@ $ErrorActionPreference = 'Stop'
 $Project = 'Task'
 $JobId = 'job-installers-release-20260328'
 $Repository = 'jmkelly/task'
-$SourceVersion = '1.0.0.51'
+$SourceVersion = '1.0.0.52'
 $ReleaseApiUrl = "https://api.github.com/repos/$Repository/releases/latest"
 
 function Write-InstallerLog {

@@ -3,7 +3,7 @@
   "jobId": "job-installers-release-20260328",
   "repository": "jmkelly/task",
   "versionSourcePath": "Task.Cli/Task.Cli.csproj",
-  "sourceVersion": "1.0.0.51",
+  "sourceVersion": "1.0.0.52",
   "releaseLookup": {
     "latest": "https://api.github.com/repos/jmkelly/task/releases/latest"
   },

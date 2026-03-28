@@ -5,7 +5,7 @@ set -euo pipefail
 PROJECT="Task"
 JOB_ID="job-installers-release-20260328"
 REPOSITORY="jmkelly/task"
-SOURCE_VERSION="1.0.0.51"
+SOURCE_VERSION="1.0.0.52"
 DEFAULT_INSTALL_DIR="${HOME}/.local/bin"
 RELEASE_API_URL="https://api.github.com/repos/${REPOSITORY}/releases/latest"
 
