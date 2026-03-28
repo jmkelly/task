@@ -10,7 +10,7 @@ $Project = 'Task'
 $JobId = 'job-installers-release-20260328'
 $Repository = 'jmkelly/task'
 $SourceVersion = '1.0.0.52'
-$ReleaseApiUrl = "https://api.github.com/repos/$Repository/releases/latest"
+$ReleaseApiUrl = "https://api.github.com/repos/$Repository/releases?per_page=10"
 
 function Write-InstallerLog {
     param(
@@ -46,36 +46,48 @@ function Get-WindowsRuntimeIdentifier {
 
 function Get-BestWindowsAsset {
     param(
-        [Parameter(Mandatory = $true)]$Release,
+        [Parameter(Mandatory = $true)]$Releases,
         [Parameter(Mandatory = $true)][string]$RuntimeIdentifier
     )
 
-    $candidates = foreach ($asset in $Release.assets) {
-        $name = [string]$asset.name
-        $lowerName = $name.ToLowerInvariant()
-
-        if (-not $lowerName.Contains($RuntimeIdentifier.ToLowerInvariant())) {
+    foreach ($release in @($Releases)) {
+        if ($release.draft -or $release.prerelease) {
             continue
         }
 
-        $score = if ($lowerName.EndsWith('.exe')) {
-            0
-        }
-        elseif ($lowerName.EndsWith('.zip')) {
-            1
-        }
-        else {
-            2
+        $candidates = foreach ($asset in @($release.assets)) {
+            $name = [string]$asset.name
+            $lowerName = $name.ToLowerInvariant()
+
+            if (-not $lowerName.Contains($RuntimeIdentifier.ToLowerInvariant())) {
+                continue
+            }
+
+            $score = if ($lowerName.EndsWith('.exe')) {
+                0
+            }
+            elseif ($lowerName.EndsWith('.zip')) {
+                1
+            }
+            else {
+                2
+            }
+
+            [pscustomobject]@{
+                Score = $score
+                Name = $name
+                Url = [string]$asset.browser_download_url
+                ReleaseTag = [string]$release.tag_name
+            }
         }
 
-        [pscustomobject]@{
-            Score = $score
-            Name = $name
-            Url = [string]$asset.browser_download_url
+        $best = $candidates | Sort-Object Score, Name | Select-Object -First 1
+        if ($null -ne $best) {
+            return $best
         }
     }
 
-    return $candidates | Sort-Object Score, Name | Select-Object -First 1
+    return $null
 }
 
 function Get-TaskExecutablePath {
@@ -107,11 +119,29 @@ try {
     New-Item -ItemType Directory -Path $temporaryDirectory -Force | Out-Null
 
     Write-InstallerLog -Level 'info' -Step 'release_lookup' -Message "Fetching release metadata from $ReleaseApiUrl. Source version reference: $SourceVersion."
-    $release = Invoke-RestMethod -Uri $ReleaseApiUrl -Headers @{ 'User-Agent' = 'task-installer' }
+    $releases = Invoke-RestMethod -Uri $ReleaseApiUrl -Headers @{ 'User-Agent' = 'task-installer' }
 
-    $asset = Get-BestWindowsAsset -Release $release -RuntimeIdentifier $runtimeIdentifier
+    $asset = Get-BestWindowsAsset -Releases $releases -RuntimeIdentifier $runtimeIdentifier
     if ($null -eq $asset) {
-        $availableAssets = ($release.assets | ForEach-Object { $_.name }) -join ', '
+        $availableAssets = (@(
+                foreach ($release in @($releases)) {
+                    if ($release.draft -or $release.prerelease) {
+                        continue
+                    }
+
+                    foreach ($releaseAsset in @($release.assets)) {
+                        if ($release.tag_name) {
+                            "$($release.tag_name):$($releaseAsset.name)"
+                        }
+                        else {
+                            [string]$releaseAsset.name
+                        }
+                    }
+                }
+            ) -join ', ')
+        if (-not $availableAssets) {
+            $availableAssets = 'none'
+        }
         Fail-Installer -Step 'release_lookup' -Message "No Windows release asset matched runtime $runtimeIdentifier. Available assets: $availableAssets."
     }
 
@@ -119,7 +149,7 @@ try {
     $extractPath = Join-Path $temporaryDirectory 'extracted'
     New-Item -ItemType Directory -Path $extractPath -Force | Out-Null
 
-    Write-InstallerLog -Level 'info' -Step 'download' -Message "Downloading $($asset.Name) from $($release.tag_name)."
+    Write-InstallerLog -Level 'info' -Step 'download' -Message "Downloading $($asset.Name) from $($asset.ReleaseTag)."
     Invoke-WebRequest -Uri $asset.Url -OutFile $downloadPath -Headers @{ 'User-Agent' = 'task-installer' }
 
     if ($asset.Name.ToLowerInvariant().EndsWith('.zip')) {
