@@ -5,9 +5,9 @@ set -euo pipefail
 PROJECT="Task"
 JOB_ID="job-installers-release-20260328"
 REPOSITORY="jmkelly/task"
-SOURCE_VERSION="1.0.0.51"
+SOURCE_VERSION="1.0.0.52"
 DEFAULT_INSTALL_DIR="${HOME}/.local/bin"
-RELEASE_API_URL="https://api.github.com/repos/${REPOSITORY}/releases/latest"
+RELEASE_API_URL="https://api.github.com/repos/${REPOSITORY}/releases?per_page=10"
 
 log() {
     local level="$1"
@@ -83,38 +83,53 @@ import sys
 release_json_path, runtime_identifier = sys.argv[1:3]
 
 with open(release_json_path, "r", encoding="utf-8") as handle:
-    release = json.load(handle)
+    payload = json.load(handle)
 
-assets = release.get("assets", [])
-candidates = []
+releases = payload if isinstance(payload, list) else [payload]
 
-for asset in assets:
-    name = str(asset.get("name", ""))
-    lower_name = name.lower()
-
-    if runtime_identifier not in lower_name:
+for release in releases:
+    if release.get("draft") or release.get("prerelease"):
         continue
 
-    if lower_name.endswith((".tar.gz", ".tgz")):
-        score = 0
-    elif lower_name.endswith(".zip"):
-        score = 1
-    else:
-        score = 2
+    assets = release.get("assets", [])
+    candidates = []
 
-    candidates.append((score, name, str(asset.get("browser_download_url", "")), str(release.get("tag_name", ""))))
+    for asset in assets:
+        name = str(asset.get("name", ""))
+        lower_name = name.lower()
 
-if candidates:
-    candidates.sort(key=lambda item: (item[0], item[1]))
-    best = candidates[0]
-    print(best[1])
-    print(best[2])
-    print(best[3])
-    sys.exit(0)
+        if runtime_identifier not in lower_name:
+            continue
+
+        if lower_name.endswith((".tar.gz", ".tgz")):
+            score = 0
+        elif lower_name.endswith(".zip"):
+            score = 1
+        else:
+            score = 2
+
+        candidates.append((score, name, str(asset.get("browser_download_url", "")), str(release.get("tag_name", ""))))
+
+    if candidates:
+        candidates.sort(key=lambda item: (item[0], item[1]))
+        best = candidates[0]
+        print(best[1])
+        print(best[2])
+        print(best[3])
+        sys.exit(0)
 
 print("__NO_MATCH__")
-for asset in assets:
-    print(str(asset.get("name", "")))
+for release in releases:
+    if release.get("draft") or release.get("prerelease"):
+        continue
+
+    release_tag = str(release.get("tag_name", ""))
+    for asset in release.get("assets", []):
+        asset_name = str(asset.get("name", ""))
+        if release_tag and asset_name:
+            print(f"{release_tag}:{asset_name}")
+        elif asset_name:
+            print(asset_name)
 PY
 }
 
@@ -181,7 +196,7 @@ main() {
 
     local temporary_dir
     temporary_dir="$(mktemp -d)"
-    trap 'rm -rf "$temporary_dir"' EXIT
+    trap 'rm -rf -- '"'"$temporary_dir"'"'' EXIT
 
     local release_json_path="$temporary_dir/release.json"
     log "info" "release_lookup" "Fetching release metadata from ${RELEASE_API_URL}. Source version reference: ${SOURCE_VERSION}."
@@ -194,7 +209,7 @@ main() {
     asset_name="$(printf '%s\n' "$asset_selection" | python3 -c 'import sys; print(sys.stdin.readline().strip())')"
     if [ "$asset_name" = "__NO_MATCH__" ]; then
         local available_assets
-        available_assets="$(printf '%s\n' "$asset_selection" | python3 -c 'import sys; lines=sys.stdin.read().splitlines(); print(", ".join([line for line in lines if line]))')"
+        available_assets="$(printf '%s\n' "$asset_selection" | python3 -c 'import sys; lines=sys.stdin.read().splitlines(); available=[line for line in lines if line and line != "__NO_MATCH__"]; print(", ".join(available) if available else "none")')"
         fail "release_lookup" "No macOS release asset matched runtime ${runtime_identifier}. Available assets: ${available_assets}."
     fi
 
