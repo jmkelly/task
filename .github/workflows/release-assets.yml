@@ -1,0 +1,203 @@
+name: Release Assets
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Release tag to create or refresh. Defaults to v<Version> from Task.Cli.csproj.
+        required: false
+        type: string
+      source_ref:
+        description: Git ref or commit SHA to build from. Defaults to the workflow commit SHA.
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  prepare-release:
+    name: Resolve release metadata
+    runs-on: ubuntu-latest
+    outputs:
+      release_tag: ${{ steps.resolve.outputs.release_tag }}
+      source_ref: ${{ steps.resolve.outputs.source_ref }}
+      version: ${{ steps.resolve.outputs.version }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.inputs.source_ref || github.ref }}
+          fetch-depth: 0
+
+      - name: Resolve version, tag, and source ref
+        id: resolve
+        shell: bash
+        env:
+          INPUT_RELEASE_TAG: ${{ github.event.inputs.release_tag || '' }}
+          INPUT_SOURCE_REF: ${{ github.event.inputs.source_ref || '' }}
+          PUSH_TAG_NAME: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+        run: |
+          set -euo pipefail
+
+          version="$(python3 - <<'PY'
+          import xml.etree.ElementTree as ET
+
+          project = ET.parse('Task.Cli/Task.Cli.csproj').getroot()
+          version = project.findtext('.//Version')
+          if not version:
+              raise SystemExit('Task.Cli/Task.Cli.csproj is missing a <Version> element.')
+
+          print(version.strip())
+          PY
+          )"
+
+          source_ref="${INPUT_SOURCE_REF:-${GITHUB_SHA}}"
+
+          if [ -n "$PUSH_TAG_NAME" ]; then
+            release_tag="$PUSH_TAG_NAME"
+          elif [ -n "$INPUT_RELEASE_TAG" ]; then
+            release_tag="$INPUT_RELEASE_TAG"
+          else
+            release_tag="v${version}"
+          fi
+
+          expected_tag="v${version}"
+          if [ "$release_tag" != "$expected_tag" ]; then
+            printf 'Release tag %s does not match Task.Cli version %s. Expected %s.\n' "$release_tag" "$version" "$expected_tag" >&2
+            exit 1
+          fi
+
+          printf '[release-assets] level=info project=Task job_id=job-release-actions-20260328 step=resolve version=%s release_tag=%s source_ref=%s\n' "$version" "$release_tag" "$source_ref"
+
+          {
+            printf 'version=%s\n' "$version"
+            printf 'release_tag=%s\n' "$release_tag"
+            printf 'source_ref=%s\n' "$source_ref"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Ensure GitHub release exists
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.resolve.outputs.release_tag }}
+          SOURCE_REF: ${{ steps.resolve.outputs.source_ref }}
+        run: |
+          set -euo pipefail
+
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            printf '[release-assets] level=info project=Task job_id=job-release-actions-20260328 step=release status=existing release_tag=%s\n' "$RELEASE_TAG"
+            exit 0
+          fi
+
+          gh release create "$RELEASE_TAG" --target "$SOURCE_REF" --title "$RELEASE_TAG" --notes ""
+          printf '[release-assets] level=info project=Task job_id=job-release-actions-20260328 step=release status=created release_tag=%s source_ref=%s\n' "$RELEASE_TAG" "$SOURCE_REF"
+
+  build-release-assets:
+    name: Build ${{ matrix.rid }} asset
+    needs: prepare-release
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - rid: linux-x64
+            runner: ubuntu-latest
+            binary_name: Task.Cli
+            asset_kind: zip
+          - rid: win-x64
+            runner: windows-latest
+            binary_name: Task.Cli.exe
+            asset_kind: exe
+          - rid: osx-x64
+            runner: macos-13
+            binary_name: Task.Cli
+            asset_kind: zip
+          - rid: osx-arm64
+            runner: macos-14
+            binary_name: Task.Cli
+            asset_kind: zip
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.prepare-release.outputs.source_ref }}
+
+      - name: Set up .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore CLI dependencies
+        shell: pwsh
+        run: dotnet restore Task.Cli/Task.Cli.csproj
+
+      - name: Build and package ${{ matrix.rid }} asset
+        id: package
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ needs.prepare-release.outputs.release_tag }}
+          RELEASE_VERSION: ${{ needs.prepare-release.outputs.version }}
+        run: |
+          $project = 'Task'
+          $jobId = 'job-release-actions-20260328'
+          $rid = '${{ matrix.rid }}'
+          $binaryName = '${{ matrix.binary_name }}'
+          $assetKind = '${{ matrix.asset_kind }}'
+          $publishDir = Join-Path $env:RUNNER_TEMP "publish-$rid"
+          $archiveDir = Join-Path $env:RUNNER_TEMP "archive-$rid"
+
+          Remove-Item -LiteralPath $publishDir -Recurse -Force -ErrorAction SilentlyContinue
+          Remove-Item -LiteralPath $archiveDir -Recurse -Force -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Path $publishDir -Force | Out-Null
+          New-Item -ItemType Directory -Path $archiveDir -Force | Out-Null
+
+          Write-Host "[release-assets] level=info project=$project job_id=$jobId step=publish rid=$rid release_tag=$env:RELEASE_TAG"
+          dotnet publish Task.Cli/Task.Cli.csproj -c Release -r $rid --self-contained -p:PublishSingleFile=true -p:PublishTrimmed=false -p:IncludeNativeLibrariesForSelfExtract=true -p:IncludeAllContentForSelfExtract=true -o $publishDir
+
+          $publishedBinary = Join-Path $publishDir $binaryName
+          if (-not (Test-Path -LiteralPath $publishedBinary)) {
+            throw "Expected published binary '$publishedBinary' was not created for RID $rid."
+          }
+
+          if ($assetKind -eq 'zip') {
+            $stagedBinary = Join-Path $archiveDir $binaryName
+            Copy-Item -LiteralPath $publishedBinary -Destination $stagedBinary -Force
+            $assetPath = Join-Path $env:RUNNER_TEMP "task-$env:RELEASE_VERSION-$rid.zip"
+            if (Test-Path -LiteralPath $assetPath) {
+              Remove-Item -LiteralPath $assetPath -Force
+            }
+
+            Compress-Archive -Path $stagedBinary -DestinationPath $assetPath
+          }
+          elseif ($assetKind -eq 'exe') {
+            $assetPath = Join-Path $env:RUNNER_TEMP "task-$env:RELEASE_VERSION-$rid.exe"
+            Copy-Item -LiteralPath $publishedBinary -Destination $assetPath -Force
+          }
+          else {
+            throw "Unsupported asset kind '$assetKind'."
+          }
+
+          $assetName = [System.IO.Path]::GetFileName($assetPath)
+          Write-Host "[release-assets] level=info project=$project job_id=$jobId step=package rid=$rid asset=$assetName"
+
+          "asset_path=$assetPath" >> $env:GITHUB_OUTPUT
+          "asset_name=$assetName" >> $env:GITHUB_OUTPUT
+
+      - name: Upload ${{ matrix.rid }} asset to release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.prepare-release.outputs.release_tag }}
+        run: |
+          $project = 'Task'
+          $jobId = 'job-release-actions-20260328'
+          $rid = '${{ matrix.rid }}'
+          $assetPath = '${{ steps.package.outputs.asset_path }}'
+          $assetName = '${{ steps.package.outputs.asset_name }}'
+
+          Write-Host "[release-assets] level=info project=$project job_id=$jobId step=upload rid=$rid release_tag=$env:RELEASE_TAG asset=$assetName"
+          gh release upload $env:RELEASE_TAG $assetPath --clobber
