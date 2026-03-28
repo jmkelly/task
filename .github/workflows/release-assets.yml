@@ -4,6 +4,10 @@ on:
   push:
     tags:
       - 'v*'
+  release:
+    types:
+      - published
+      - edited
   workflow_dispatch:
     inputs:
       release_tag:
@@ -30,7 +34,7 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v5
         with:
-          ref: ${{ github.event.inputs.source_ref || github.ref }}
+          ref: ${{ github.event.inputs.source_ref || github.event.release.target_commitish || github.ref }}
           fetch-depth: 0
 
       - name: Resolve version, tag, and source ref
@@ -40,25 +44,29 @@ jobs:
           INPUT_RELEASE_TAG: ${{ github.event.inputs.release_tag || '' }}
           INPUT_SOURCE_REF: ${{ github.event.inputs.source_ref || '' }}
           PUSH_TAG_NAME: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+          RELEASE_TAG_NAME: ${{ github.event.release.tag_name || '' }}
+          RELEASE_TARGET_COMMITISH: ${{ github.event.release.target_commitish || '' }}
+          REPOSITORY_DEFAULT_BRANCH: ${{ github.event.repository.default_branch || 'main' }}
         run: |
           set -euo pipefail
 
-          version="$(python3 - <<'PY'
-          import xml.etree.ElementTree as ET
+          read_version_from_stdin() {
+            python3 -c 'import sys, xml.etree.ElementTree as ET
+project = ET.fromstring(sys.stdin.read())
+version = project.findtext(".//Version")
+if not version:
+    raise SystemExit("Task.Cli/Task.Cli.csproj is missing a <Version> element.")
+print(version.strip())'
+          }
 
-          project = ET.parse('Task.Cli/Task.Cli.csproj').getroot()
-          version = project.findtext('.//Version')
-          if not version:
-              raise SystemExit('Task.Cli/Task.Cli.csproj is missing a <Version> element.')
+          version="$(read_version_from_stdin < Task.Cli/Task.Cli.csproj)"
 
-          print(version.strip())
-          PY
-          )"
-
-          source_ref="${INPUT_SOURCE_REF:-${GITHUB_SHA}}"
+          source_ref="${INPUT_SOURCE_REF:-${RELEASE_TARGET_COMMITISH:-${GITHUB_SHA}}}"
 
           if [ -n "$PUSH_TAG_NAME" ]; then
             release_tag="$PUSH_TAG_NAME"
+          elif [ -n "$RELEASE_TAG_NAME" ]; then
+            release_tag="$RELEASE_TAG_NAME"
           elif [ -n "$INPUT_RELEASE_TAG" ]; then
             release_tag="$INPUT_RELEASE_TAG"
           else
@@ -67,8 +75,18 @@ jobs:
 
           expected_tag="v${version}"
           if [ "$release_tag" != "$expected_tag" ]; then
-            printf 'Release tag %s does not match Task.Cli version %s. Expected %s.\n' "$release_tag" "$version" "$expected_tag" >&2
-            exit 1
+            fallback_ref="origin/${REPOSITORY_DEFAULT_BRANCH}"
+            fallback_version="$(git show "$fallback_ref:Task.Cli/Task.Cli.csproj" | read_version_from_stdin)"
+
+            if [ -z "$INPUT_SOURCE_REF" ] && [ "$release_tag" = "v${fallback_version}" ]; then
+              source_ref="$(git rev-parse "$fallback_ref")"
+              version="$fallback_version"
+              expected_tag="$release_tag"
+              printf '[release-assets] level=warn project=Task job_id=job-release-actions-20260328 step=resolve fallback_ref=%s release_tag=%s source_ref=%s\n' "$fallback_ref" "$release_tag" "$source_ref"
+            else
+              printf 'Release tag %s does not match Task.Cli version %s. Expected %s.\n' "$release_tag" "$version" "$expected_tag" >&2
+              exit 1
+            fi
           fi
 
           printf '[release-assets] level=info project=Task job_id=job-release-actions-20260328 step=resolve version=%s release_tag=%s source_ref=%s\n' "$version" "$release_tag" "$source_ref"
