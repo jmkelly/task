@@ -10,26 +10,26 @@
       hx-push-url="true">
     <div class="filter-bar">
         <label class="search-group" for="SearchQuery">
-            <span class="search-icon emoji" aria-hidden="true">🔍</span>
-            <input type="text" id="SearchQuery" name="SearchQuery" placeholder="Search tasks, people, or tags" value="@Model.SearchQuery" class="form-control search-input" autocomplete="off" />
+            <span class="search-icon" aria-hidden="true">⌕</span>
+            <input type="text" id="SearchQuery" name="SearchQuery" placeholder="Search tasks, people, or labels" value="@Model.SearchQuery" class="form-control search-input" autocomplete="off" />
         </label>
 
         <button type="button" class="btn-secondary filter-toggle" data-filter-toggle aria-expanded="false" aria-controls="filter-advanced">
-            <span class="filter-toggle-label">More filters</span>
-            <span class="filter-toggle-icon" aria-hidden="true">⚙️</span>
+            <span class="filter-toggle-label">Filters</span>
+            <span class="filter-toggle-icon" aria-hidden="true">+</span>
         </button>
 
         <div class="filter-group is-visible" id="filter-advanced" data-filter-advanced>
             <select name="FilterStatus" id="FilterStatus" class="form-select" aria-label="Filter by status">
-                <option value="">All Statuses</option>
+                <option value="">All statuses</option>
                 <option value="todo" selected="@(Model.FilterStatus == "todo")">Todo</option>
-                <option value="in_progress" selected="@(Model.FilterStatus == "in_progress")">In Progress</option>
+                <option value="in_progress" selected="@(Model.FilterStatus == "in_progress")">In progress</option>
                 <option value="blocked" selected="@(Model.FilterStatus == "blocked")">Blocked</option>
                 <option value="done" selected="@(Model.FilterStatus == "done")">Done</option>
             </select>
 
             <select name="FilterAssignee" id="FilterAssignee" class="form-select" aria-label="Filter by assignee">
-                <option value="">All Assignees</option>
+                <option value="">All assignees</option>
                 @foreach (var assignee in Model.AllAssignees)
                 {
                     if (Model.FilterAssignee == assignee)
@@ -44,7 +44,7 @@
             </select>
 
             <select name="FilterLabel" id="FilterLabel" class="form-select" aria-label="Filter by label">
-                <option value="">All Labels</option>
+                <option value="">All labels</option>
                 @foreach (var label in Model.AllLabels)
                 {
                     if (Model.FilterLabel == label)

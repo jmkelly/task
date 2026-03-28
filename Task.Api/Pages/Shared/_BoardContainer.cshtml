@@ -4,7 +4,11 @@
     <section class="board-section" aria-label="Kanban board layout">
         <div class="board-shell">
             <div class="board-toolbar">
-                <div class="board-focus-copy"></div>
+                <div class="board-focus-copy">
+                    <p class="board-kicker">Workspace</p>
+                    <h2 class="board-focus-title">Kanban board</h2>
+                    <p class="board-focus-subtitle">Live board refresh, inline filtering, and drag-and-drop status changes.</p>
+                </div>
 
                 @await Html.PartialAsync("_BoardFilters", Model)
             </div>

@@ -7,15 +7,17 @@
 
 <section class="page-toolbar" aria-label="Board controls">
     <div class="page-toolbar-copy">
-        <h1 class="page-title"><span class="emoji emoji-leading">🚀</span>Task Board</h1>
+        <p class="page-eyebrow">Task workspace</p>
+        <h1 class="page-title">Task Board</h1>
+        <p class="page-subtitle">A focused Kanban surface for tracking active work, blockers, and completed tasks.</p>
     </div>
 
     <div class="page-actions">
         <button class="btn-primary" hx-get="/Index?handler=CreateModal" hx-target="body" hx-swap="beforeend">
-            <span class="emoji emoji-leading">➕</span>Add Task
+            Add task
         </button>
         <button class="btn-secondary" hx-post="/Index?handler=ClearBoard" hx-include="#filter-form" hx-target="#board-container" hx-swap="outerHTML" onclick="return confirm('Are you sure you want to clear all tasks? This action cannot be undone.')">
-            <span class="emoji emoji-leading">🗑️</span>Clear Board
+            Clear board
         </button>
     </div>
 </section>
@@ -40,9 +42,9 @@
         let draggedElement = null;
 
         function handleDragStart(event) {
-            draggedElement = event.target;
-            event.target.classList.add('dragging');
-            event.dataTransfer.setData('text/plain', event.target.dataset.uid);
+            draggedElement = event.currentTarget;
+            event.currentTarget.classList.add('dragging');
+            event.dataTransfer.setData('text/plain', event.currentTarget.dataset.uid);
         }
 
         function buildStatusUpdatePayload(uid, status, blockReason) {
@@ -164,45 +166,42 @@
             }
         }
 
+        function getEffectiveTheme() {
+            const theme = document.documentElement.dataset.theme;
+            return theme === 'light' ? 'light' : 'dark';
+        }
+
+        function updateThemeToggleLabel() {
+            const button = document.getElementById('theme-toggle');
+            const icon = document.getElementById('theme-toggle-icon');
+            const effectiveTheme = getEffectiveTheme();
+            const nextTheme = effectiveTheme === 'dark' ? 'light' : 'dark';
+
+            if (icon) {
+                icon.textContent = effectiveTheme === 'dark' ? '☀' : '☾';
+            }
+
+            if (button) {
+                button.setAttribute('aria-label', `Switch to ${nextTheme} theme`);
+                button.setAttribute('title', `Switch to ${nextTheme} theme`);
+            }
+        }
+
         function initTheme() {
             const stored = localStorage.getItem('theme');
             const html = document.documentElement;
 
-            if (stored === 'light' || stored === 'dark') {
-                html.dataset.theme = stored;
-            } else {
-                html.dataset.theme = 'auto';
-            }
-
-            updateThemeIcon();
-        }
-
-        function getEffectiveTheme() {
-            const theme = document.documentElement.dataset.theme;
-            if (theme === 'light' || theme === 'dark') {
-                return theme;
-            }
-
-            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-        }
-
-        function updateThemeIcon() {
-            const icon = document.getElementById('theme-toggle-icon');
-            if (!icon) {
-                return;
-            }
-
-            icon.textContent = getEffectiveTheme() === 'dark' ? '☀️' : '🌙';
+            html.dataset.theme = stored === 'light' || stored === 'dark' ? stored : 'dark';
+            updateThemeToggleLabel();
         }
 
         function toggleTheme() {
             const html = document.documentElement;
-            const current = getEffectiveTheme();
-            const next = current === 'dark' ? 'light' : 'dark';
+            const next = getEffectiveTheme() === 'dark' ? 'light' : 'dark';
 
             html.dataset.theme = next;
             localStorage.setItem('theme', next);
-            updateThemeIcon();
+            updateThemeToggleLabel();
         }
 
         document.addEventListener('click', function (event) {
@@ -225,19 +224,6 @@
             const themeToggle = document.getElementById('theme-toggle');
             if (themeToggle) {
                 themeToggle.addEventListener('click', toggleTheme);
-            }
-
-            const colorSchemeQuery = window.matchMedia('(prefers-color-scheme: dark)');
-            const handleColorSchemeChange = function () {
-                if (localStorage.getItem('theme') !== 'light' && localStorage.getItem('theme') !== 'dark') {
-                    updateThemeIcon();
-                }
-            };
-
-            if (typeof colorSchemeQuery.addEventListener === 'function') {
-                colorSchemeQuery.addEventListener('change', handleColorSchemeChange);
-            } else if (typeof colorSchemeQuery.addListener === 'function') {
-                colorSchemeQuery.addListener(handleColorSchemeChange);
             }
 
             syncFilterToggleForViewport();

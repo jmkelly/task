@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="auto">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -12,8 +12,16 @@
 <body>
     <header>
         <div class="header-inner">
-            <button class="btn-secondary theme-toggle" id="theme-toggle" aria-label="Toggle theme">
-                <span class="theme-toggle-icon" id="theme-toggle-icon">🌙</span>
+            <div class="header-brand" aria-label="Task board home">
+                <span class="header-brand-mark">T</span>
+                <span class="header-brand-copy">
+                    <strong>Task</strong>
+                    <span>Kanban board</span>
+                </span>
+            </div>
+
+            <button class="btn-secondary theme-toggle" id="theme-toggle" aria-label="Switch to light theme" title="Switch to light theme">
+                <span class="theme-toggle-icon" id="theme-toggle-icon">☀</span>
             </button>
         </div>
     </header>
@@ -23,7 +31,7 @@
     </main>
 
     <footer>
-        © @DateTime.Now.Year Task Board
+        © @DateTime.Now.Year Task · Focused task management for local teams and agents.
     </footer>
 
     @await RenderSectionAsync("Scripts", required: false)

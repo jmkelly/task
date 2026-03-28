@@ -13,12 +13,11 @@
         {
             Status = "todo",
             Title = "Todo",
-            Caption = string.Empty,
-            EmptyTitle = "Add tasks to your queue.",
-            EmptyHint = string.Empty,
-            EmptyAction = "Add a task or drag ready work into this column.",
-            EmptyBadge = "Next up",
-            EmptyIcon = "📝",
+            Caption = "Queued",
+            EmptyTitle = "No queued work",
+            EmptyHint = "Add tasks here before pulling them into active work.",
+            EmptyAction = "Create a task or drag ready work into this lane.",
+            EmptyBadge = "Queue",
             ShowCreateAction = true,
             Tasks = todoTasks
         },
@@ -26,12 +25,11 @@
         {
             Status = "in_progress",
             Title = "In Progress",
-            Caption = string.Empty,
-            EmptyTitle = "No work is active",
-            EmptyHint = "Use this lane for the tasks getting attention right now.",
-            EmptyAction = "Pull the next ready task from Todo to start moving it forward.",
-            EmptyBadge = "Start here",
-            EmptyIcon = "⚡",
+            Caption = "Active now",
+            EmptyTitle = "No task is currently active",
+            EmptyHint = "Use this lane for the work getting attention right now.",
+            EmptyAction = "Move the next ready task out of Todo to start it.",
+            EmptyBadge = "Focus",
             ShowCreateAction = false,
             Tasks = inProgressTasks
         },
@@ -39,12 +37,11 @@
         {
             Status = "blocked",
             Title = "Blocked",
-            Caption = string.Empty,
+            Caption = "Needs unblock",
             EmptyTitle = "No blockers right now",
-            EmptyHint = string.Empty,
-            EmptyAction = "Drop a task here and capture the blocker when progress stops.",
-            EmptyBadge = "Ready for work.",
-            EmptyIcon = "⛔",
+            EmptyHint = "Blocked tasks stay visible here until the next dependency clears.",
+            EmptyAction = "Drop a task here when progress stops and capture the blocker.",
+            EmptyBadge = "Attention",
             ShowCreateAction = false,
             Tasks = blockedTasks
         }
@@ -60,11 +57,8 @@
             <section class="kanban-column board-column board-column-active board-column-@column.Status" data-status="@column.Status" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
                 <div class="column-header">
                     <div class="column-heading">
+                        <p class="column-caption">@column.Caption</p>
                         <h2>@column.Title</h2>
-                        @if (!string.IsNullOrWhiteSpace(column.Caption))
-                        {
-                            <p class="column-caption">@column.Caption</p>
-                        }
                     </div>
                     <span class="column-count">@column.Tasks.Count</span>
                 </div>
@@ -103,7 +97,7 @@
                                             @if (!string.IsNullOrWhiteSpace(task.Project))
                                             {
                                                 <div class="task-supporting-item" title="Project: @task.Project">
-                                                    <span class="context-icon" aria-hidden="true"><span class="emoji">📁</span></span>
+                                                    <span class="context-icon" aria-hidden="true">PR</span>
                                                     <span class="task-supporting-value">@task.Project</span>
                                                 </div>
                                             }
@@ -111,7 +105,7 @@
                                             @if (!string.IsNullOrWhiteSpace(task.Assignee))
                                             {
                                                 <div class="task-supporting-item" title="Assignee: @task.Assignee">
-                                                    <span class="context-icon" aria-hidden="true"><span class="emoji">👤</span></span>
+                                                    <span class="context-icon" aria-hidden="true">AS</span>
                                                     <span class="task-supporting-value">@task.Assignee</span>
                                                 </div>
                                             }
@@ -119,7 +113,7 @@
                                             @if (task.DueDate.HasValue)
                                             {
                                                 <div class="task-supporting-item" title="Due @dueDateLong">
-                                                    <span class="context-icon" aria-hidden="true"><span class="emoji">🗓️</span></span>
+                                                    <span class="context-icon" aria-hidden="true">DU</span>
                                                     <span class="task-supporting-value">Due @dueDateShort</span>
                                                 </div>
                                             }
@@ -129,7 +123,7 @@
                                     @if (isBlockedColumn && !string.IsNullOrWhiteSpace(task.BlockReason))
                                     {
                                         <div class="task-block-reason">
-                                            <span class="task-block-icon" aria-hidden="true">⛔</span>
+                                            <span class="task-block-icon" aria-hidden="true">!</span>
                                             <span class="task-block-text">@task.BlockReason</span>
                                         </div>
                                     }
@@ -146,10 +140,10 @@
 
                                     <div class="task-actions">
                                         <button class="btn-small btn-quiet" hx-get="/Index?handler=EditModal&uid=@task.Uid" hx-target="body" hx-swap="beforeend">
-                                            <span class="emoji emoji-leading">✏️</span>Edit
+                                            Edit
                                         </button>
                                         <button class="btn-small btn-quiet" hx-post="/Index?handler=DeleteTask" hx-include="#filter-form" hx-vals='{"uid": "@task.Uid"}' hx-target="#board-container" hx-swap="outerHTML" onclick="return confirm('Delete this task?')">
-                                            <span class="emoji emoji-leading">🗑️</span>Delete
+                                            Delete
                                         </button>
                                     </div>
                                 </div>
@@ -160,12 +154,8 @@
                     {
                         <div class="empty-state" data-empty-status="@column.Status">
                             <span class="empty-state-badge">@column.EmptyBadge</span>
-                            <div class="empty-icon"><span class="emoji">@column.EmptyIcon</span></div>
                             <p>@column.EmptyTitle</p>
-                            @if (!string.IsNullOrWhiteSpace(column.EmptyHint))
-                            {
-                                <small>@column.EmptyHint</small>
-                            }
+                            <small>@column.EmptyHint</small>
                             <div class="empty-state-next">
                                 <span class="empty-state-next-label">Next</span>
                                 <span class="empty-state-next-action">@column.EmptyAction</span>
@@ -175,7 +165,7 @@
                             {
                                 <div class="empty-state-actions">
                                     <button class="btn-small btn-secondary empty-state-primary-action" hx-get="/Index?handler=CreateModal" hx-target="body" hx-swap="beforeend">
-                                        <span class="emoji emoji-leading">➕</span>Add Task
+                                        Add task
                                     </button>
                                 </div>
                             }
@@ -189,7 +179,7 @@
     <section class="done-region" aria-label="Completed work">
         <div class="done-region-header">
             <div class="done-region-copy">
-                <p class="board-kicker">Completed</p>
+                <p class="board-kicker">Archive</p>
                 <h2>Done</h2>
             </div>
             <span class="column-count column-count-quiet">@doneTasks.Count</span>
@@ -230,7 +220,7 @@
                                         @if (!string.IsNullOrWhiteSpace(task.Project))
                                         {
                                             <div class="task-supporting-item" title="Project: @task.Project">
-                                                <span class="context-icon" aria-hidden="true"><span class="emoji">📁</span></span>
+                                                <span class="context-icon" aria-hidden="true">PR</span>
                                                 <span class="task-supporting-value">@task.Project</span>
                                             </div>
                                         }
@@ -238,7 +228,7 @@
                                         @if (!string.IsNullOrWhiteSpace(task.Assignee))
                                         {
                                             <div class="task-supporting-item" title="Assignee: @task.Assignee">
-                                                <span class="context-icon" aria-hidden="true"><span class="emoji">👤</span></span>
+                                                <span class="context-icon" aria-hidden="true">AS</span>
                                                 <span class="task-supporting-value">@task.Assignee</span>
                                             </div>
                                         }
@@ -246,7 +236,7 @@
                                         @if (task.DueDate.HasValue)
                                         {
                                             <div class="task-supporting-item" title="Due @dueDateLong">
-                                                <span class="context-icon" aria-hidden="true"><span class="emoji">🗓️</span></span>
+                                                <span class="context-icon" aria-hidden="true">DU</span>
                                                 <span class="task-supporting-value">Due @dueDateShort</span>
                                             </div>
                                         }
@@ -265,10 +255,10 @@
 
                                 <div class="task-actions">
                                     <button class="btn-small btn-quiet" hx-get="/Index?handler=EditModal&uid=@task.Uid" hx-target="body" hx-swap="beforeend">
-                                        <span class="emoji emoji-leading">✏️</span>Edit
+                                        Edit
                                     </button>
                                     <button class="btn-small btn-quiet" hx-post="/Index?handler=DeleteTask" hx-include="#filter-form" hx-vals='{"uid": "@task.Uid"}' hx-target="#board-container" hx-swap="outerHTML" onclick="return confirm('Delete this task?')">
-                                        <span class="emoji emoji-leading">🗑️</span>Delete
+                                        Delete
                                     </button>
                                 </div>
                             </div>
@@ -278,10 +268,9 @@
                 else
                 {
                     <div class="empty-state empty-state-quiet empty-state-done">
-                        <span class="empty-state-badge">Clear finish line</span>
-                        <div class="empty-icon"><span class="emoji">🎉</span></div>
-                        <p>Nothing completed yet</p>
-                        <small>Finished tasks will collect here for quick reference without crowding active work.</small>
+                        <span class="empty-state-badge">Complete</span>
+                        <p>No completed tasks yet</p>
+                        <small>Finished work collects here without crowding the active lanes.</small>
                         <div class="empty-state-next">
                             <span class="empty-state-next-label">Next</span>
                             <span class="empty-state-next-action">Move a task to Done when the work is fully complete.</span>
