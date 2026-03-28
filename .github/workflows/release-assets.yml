@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release tag to upload binaries to (e.g. v1.0.0.52). Defaults to v<Version> from Task.Cli.csproj.'
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -43,11 +49,35 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Resolve release tag
+        id: resolve_tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -n "${{ inputs.release_tag }}" ]; then
+            echo "tag=${{ inputs.release_tag }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.ref_type }}" = "tag" ]; then
+            echo "tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          else
+            VERSION=$(python3 -c "
+import xml.etree.ElementTree as ET, sys
+version = ET.parse('Task.Cli/Task.Cli.csproj').getroot().findtext('.//Version')
+if not version:
+    sys.exit('Task.Cli/Task.Cli.csproj is missing a <Version> element.')
+print(version.strip())
+")
+            if [ -z "$VERSION" ]; then
+              echo "Failed to resolve release tag: no version found in Task.Cli.csproj" >&2
+              exit 1
+            fi
+            echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Create GitHub release if needed
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
+          TAG: ${{ steps.resolve_tag.outputs.tag }}
         run: |
           set -euo pipefail
 
@@ -118,7 +148,7 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
+          TAG: ${{ steps.resolve_tag.outputs.tag }}
           ASSET_PATH: ${{ runner.temp }}/${{ matrix.asset_name }}
         run: |
           set -euo pipefail
