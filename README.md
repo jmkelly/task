@@ -9,7 +9,10 @@ A cross-platform task management system with a robust CLI client (API-only), RES
 
 
 ## Quick Installation
+
 #### Using the Installer Script (Recommended)
+
+---
 
 The fastest way to install the Task CLI is with the one-line installer. Open a terminal and run the command for your platform:
 
@@ -49,6 +52,44 @@ Check out a demo of the Task Management System in action:
 
 ### API Overview
 ![API](docs/assets/images/api.png)
+
+
+## Tool use with AI Agents
+
+Task works best with an orchestrator agent setup, where the orchestrator delegates work to other agents.
+
+Within my orchestrator I add the following to the orchestrator.md agent file:
+
+```
+    Assign each phase or task to the correct subagent (Planner, Coder, Designer, Reviewer) according to the nature of the work; only delegate to agents with scope/skills that match the requirements of the task.
+    Attach explicit project context/identification.
+    Include a unique "job_id" value (or ticket/batch identifier) that is consistent for all subtasks originated from the same parent job/request/goal, so all phases and tasks can be programmatically related.
+    Always include this job/ticket identifier as a tag when delegating tasks, using the CLI's comma-separated tags option (e.g., --tags job-xyz123,shopping,urgent), so all related tasks can be grouped and filtered easily.
+    Supply enough task detail and context for correct, unambiguous execution.
+    Explicitly define acceptance criteria for each delegated task, so it's clear how completion/success will be determined.
+    When you require user input, transition the task to blocked
+
+    For tasks and their management, always use the task cli tool. Use the task help command for guidance.
+    Ensure every task and phase, when delegated or reported, includes both project identification and the consistent job_id for traceability across the job's full lifecycle.
+    The job_id/ticket_id must always be included as a tag in the CLI's comma-separated tag list (e.g., --tags job-xyz123,someotherlabel) for all tasks, for consistent grouping/filtering.
+
+    Each task is new agent session
+    Only mark tasks done or complete once the reviewer has reviewed and approved the task.
+```
+
+Then within the subagents md files I add the following:
+
+```
+Rules
+    For task and their management, always use the task cli tool. Use the task help command for guidance.
+    For every assigned task, ensure project details and the job_id are included in the input; use and propagate them for any outputs or sub-delegations.
+
+```
+
+for my exact setup for opencode (could easily be adapted to other tools) see [my opencode agents](https://github.com/jmkelly/dotfiles/tree/main/.config/opencode/agents)
+
+---
+
 
 ## Architecture Overview
 
@@ -156,16 +197,9 @@ fetching tasks. The notification triggers only when there are zero tasks whose
 status is `todo` or `in_progress`. If any active task exists, the service logs
 that the notification was skipped.
 
-## Project Links
 
-- [LICENSE](LICENSE)
-- [CONTRIBUTING](CONTRIBUTING.md)
-- [CODE_OF_CONDUCT](CODE_OF_CONDUCT.md)
-- [CHANGELOG](CHANGELOG.md)
 
-## Manual Installation
-
-### CLI Installation
+### Manual Installation
 
 #### Manual Download
 
@@ -272,16 +306,16 @@ To publish single-file executables:
 cd Task.Cli
 
 # Linux
-dotnet publish -c Release -r linux-x64 --self-contained -p:PublishSingleFile=true -p:PublishTrimmed=true
+dotnet publish -c Release -r linux-x64 --self-contained -p:PublishSingleFile=true 
 
 # macOS Intel
-dotnet publish -c Release -r osx-x64 --self-contained -p:PublishSingleFile=true -p:PublishTrimmed=true
+dotnet publish -c Release -r osx-x64 --self-contained -p:PublishSingleFile=true 
 
 # macOS ARM64
-dotnet publish -c Release -r osx-arm64 --self-contained -p:PublishSingleFile=true -p:PublishTrimmed=true
+dotnet publish -c Release -r osx-arm64 --self-contained -p:PublishSingleFile=true 
 
 # Windows
-dotnet publish -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:PublishTrimmed=true
+dotnet publish -c Release -r win-x64 --self-contained -p:PublishSingleFile=true 
 ```
 
 Run the CLI application:
@@ -292,7 +326,7 @@ Run the CLI application:
 
 ### API Backend Installation
 
-#### Running via Docker Compose (Recommended)
+#### Running via Docker Compose 
 
 The easiest way to run the API backend is using Docker Compose:
 
@@ -332,9 +366,34 @@ Requirements:
    dotnet run
    ```
 
-The API will start on http://localhost:5000 (development) or https://localhost:5001 (with SSL).
+The API will pick a random port and report to the console. You can check the server port with the `server status` command.
 
 For production deployment, configure the `ASPNETCORE_ENVIRONMENT` and `DatabasePath` settings.
+
+## Manual Uninstallation
+
+To remove the Task CLI tool from your system:
+
+### Linux & macOS
+
+1. Remove the CLI binary (default install location):
+   ```bash
+   rm -f ~/.local/bin/task
+   ```
+   If you installed to a custom location (such as `/usr/local/bin/task`):
+   ```bash
+   sudo rm -f /usr/local/bin/task
+   ```
+2. (Optional) Remove CLI configuration files:
+   ```bash
+   rm -rf ~/.config/task
+   ```
+
+### Windows
+
+1. Delete `Task.Cli.exe` from your install directory (commonly: `%LOCALAPPDATA%\Task\bin\Task.Cli.exe` or `task.exe`).
+2. (Optional) Remove `%LOCALAPPDATA%\Task` for all CLI-related config and cache files.
+3. (Optional) Update your system PATH variable if you manually added the Task CLI location.
 
 ## Usage
 
@@ -383,7 +442,7 @@ task server stop
 
 Alternatively, run the server in the foreground:
 ```
-task server run --urls http://localhost:8080
+task server run 
 ```
 
 When `--database-path` is omitted, the API stores its SQLite database in the same config directory used for CLI configuration: `~/.config/task/tasks.db` (or the equivalent resolved config directory path, such as `$XDG_CONFIG_HOME/task/tasks.db`).
@@ -397,7 +456,7 @@ task server run --database-path ./data/tasks.db
 
 Add a task:
 ```bash
-task add "Buy groceries" --api-url http://localhost:8080
+task add "Buy groceries" 
 # or set the API URL once with:
 task config set api-url http://localhost:8080
 # Set Telegram notification config (CLI convenience):
@@ -507,14 +566,9 @@ The SQLite database file is created automatically on the backend. In Docker depl
 
 See `SCHEMA.sql` (in the backend source) for the complete database schema definition.
 
-## Demo Video
+## Project Links
 
-Check out a demo of the Task Management System in action:
-
-[▶️ Watch the demo video](docs/assets/videos/TaskViaAI.mp4)
-
-Most browsers will play the video in-page or download it directly.
-
----
-
-<!-- Demo video and screenshots moved to top for better visibility -->
+- [LICENSE](LICENSE)
+- [CONTRIBUTING](CONTRIBUTING.md)
+- [CODE_OF_CONDUCT](CODE_OF_CONDUCT.md)
+- [CHANGELOG](CHANGELOG.md)
