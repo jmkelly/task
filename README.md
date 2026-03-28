@@ -15,6 +15,7 @@
 > **Let your team—and your AI agents—manage work together in the terminal, browser, or with code. Get started below!**
 
 [![License](https://img.shields.io/badge/License-See%20LICENSE-blue)](LICENSE)
+[![GitHub Pages](https://img.shields.io/badge/Website-jmkelly.github.io%2Ftask-blue)](https://jmkelly.github.io/task/)
 
 A cross-platform task management system with a robust CLI client (API-only), REST API backend, and persistent storage for advanced task management.
 
@@ -153,9 +154,30 @@ that the notification was skipped.
 
 ### CLI Installation
 
-#### Self-Contained Single File Executables
+#### Using the Installer Script (Recommended)
 
-Download the appropriate single executable for your platform from the releases page. Each executable is self-contained, including the .NET runtime and all dependencies, making it easy to distribute and run without additional setup.
+The fastest way to install the Task CLI is with the one-line installer. Open a terminal and run the command for your platform:
+
+**macOS:**
+```bash
+curl -fsSL https://jmkelly.github.io/task/installers/task-install-macos.sh | bash
+```
+
+**Linux:**
+```bash
+curl -fsSL https://jmkelly.github.io/task/installers/task-install-linux.sh | bash
+```
+
+**Windows (PowerShell):**
+```powershell
+irm https://jmkelly.github.io/task/installers/task-install-windows.ps1 | iex
+```
+
+The installer automatically downloads the latest release for your platform and places the `task` binary in `~/.local/bin` (macOS/Linux) or `%LOCALAPPDATA%\Task\bin` (Windows). After installation, open a new terminal and run `task --help` to verify.
+
+#### Manual Download
+
+If you prefer to install manually, download the appropriate self-contained executable for your platform from the [releases page](https://github.com/jmkelly/task/releases). Each executable includes the .NET runtime and all dependencies.
 
 - **Linux x64**: `Task.Cli` (single executable file, ~17MB)
 - **macOS Intel**: `Task.Cli` (single executable file)
@@ -164,25 +186,21 @@ Download the appropriate single executable for your platform from the releases p
 
 ##### Installation Steps
 
-1. **Download**: Download the executable for your platform from the [releases page](link-to-releases).
+1. **Download**: Download the executable for your platform from the [releases page](https://github.com/jmkelly/task/releases).
 
 2. **Make Executable (Linux/macOS only)**: After downloading, make the file executable:
    ```bash
-    chmod +x Task.Cli
-    ```
+   chmod +x Task.Cli
+   ```
 
 3. **Install to PATH (Recommended)**: To use the `task` command from anywhere, move the executable to a directory in your system's PATH:
-    - On Linux/macOS: Move to `/usr/local/bin/` (requires sudo) or `~/bin/` (create if needed):
+    - On Linux/macOS: Move to `/usr/local/bin/` (requires sudo) or `~/.local/bin/`:
       ```bash
       sudo mv Task.Cli /usr/local/bin/task
       # or
-      mkdir -p ~/bin && mv Task.Cli ~/bin/task
+      mkdir -p ~/.local/bin && mv Task.Cli ~/.local/bin/task
       ```
-     Ensure `~/bin` is in your PATH by adding to your shell profile (e.g., `~/.bashrc` or `~/.zshrc`):
-     ```bash
-     PATH="$HOME/bin:$PATH"
-     ```
-   - On Windows: Move `Task.exe` to a directory in your PATH, such as `C:\Windows\System32\` or create a custom directory and add it to PATH via System Properties > Environment Variables.
+    - On Windows: Move `Task.Cli.exe` to a directory already in your PATH (e.g., `%LOCALAPPDATA%\Task\bin`), then add that directory to your PATH via System Properties > Environment Variables > User variables > Path.
 
 4. **Verify Installation**: Open a new terminal and run:
     ```bash
