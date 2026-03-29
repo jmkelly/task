@@ -100,7 +100,7 @@
                             <span class="panel-badge">CLI</span>
                         </div>
                         <pre class="terminal-window"><code>$ task server start
-Task.Ready
+Task API started at http://127.0.0.1:45853 (port 45853).
 
 $ task add "Ship GitHub Pages site" \
   --project marketing \
@@ -113,7 +113,8 @@ $ task list --json
     "title": "Ship GitHub Pages site",
     "status": "in_progress"
   }
-]</code></pre>
+]
+						</code></pre>
                     </article>
 
                     <article class="surface-card preview-card">
@@ -214,7 +215,7 @@ task search "review"</code></pre>
                     <article class="surface-card feature-card">
                         <span class="card-kicker">AI agents</span>
                         <h3>Give agents a task backend</h3>
-                        <p>JSON I/O, explicit statuses, and tags work well for orchestrator/sub-agent workflows. Your Planner, Coder, and Reviewer can create, assign, and complete tasks programmatically.</p>
+                        <p>JSON I/O, explicit statuses, and tags work well for orchestrator/sub-agent workflows. Your Planner, Coder, and Reviewer can create, assign, and complete tasks agentically. Just add task instructions to your agent md files</p>
                     </article>
                     <article class="surface-card feature-card">
                         <span class="card-kicker">Scripts</span>
@@ -224,7 +225,7 @@ task search "review"</code></pre>
                     <article class="surface-card feature-card">
                         <span class="card-kicker">Notifications</span>
                         <h3>Telegram and custom hooks</h3>
-                        <p>Get notified when all tasks clear. Extend with your own providers for Slack, email, or webhooks.</p>
+                        <p>Get notified when all tasks clear. Built in Telegram support, extension points for your own providers for Slack, email, or webhooks.</p>
                     </article>
                 </div>
             </div>
