@@ -520,6 +520,16 @@ Run the CLI application:
 
 ---
 
+## Testing
+
+The CLI integration test project now includes an end-to-end PostgreSQL workflow that starts a disposable PostgreSQL container automatically with Testcontainers for .NET.
+
+- Requirements: Docker + .NET 10 SDK
+- Command: `dotnet test Tests/Task.Tests.csproj`
+- The PostgreSQL-backed CLI test writes config to the supported CLI config path (`$XDG_CONFIG_HOME/task/config.json` during the test) so `task server run`, `task add`, and `task list` use the same configuration flow as local usage.
+
+---
+
 ## Database
 
 The backend application uses SQLite for data storage with an advanced schema supporting:
