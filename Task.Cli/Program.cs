@@ -3,6 +3,7 @@ using Spectre.Console.Cli;
 using System;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
+using Task.Api;
 using Task.Core;
 
 namespace Task.Cli
@@ -118,6 +119,8 @@ config.SetApplicationVersion(version);
                         .WithDescription("Run the Task API server in the foreground.")
                         .WithExample(new[] { "server", "run" })
                         .WithExample(new[] { "server", "run", "--urls", "http://localhost:8080" })
+                        .WithExample(new[] { "server", "run", "--database-provider", "sqlite", "--database-path", "./data/tasks.db" })
+                        .WithExample(new[] { "server", "run", "--database-provider", "pg", "--pg-connection-string", "Host=localhost;Username=task;Password=secret;Database=task" })
                         .WithExample(new[] { "server", "run", "--database-path", "./data/tasks.db" })
                         .WithExample(new[] { "server", "run", "--ready-file", "/tmp/task-ready.json" });
                     branch.AddCommand<ServerStartCommand>("start")

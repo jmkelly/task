@@ -22,7 +22,7 @@ namespace Task.Api
 			ConfigureApp(app);
 
 			var database = app.Services.GetRequiredService<Database>();
-			await database.InitializeAsync();
+			await database.InitializeAsync(cancellationToken);
 
 			await app.StartAsync(cancellationToken);
 			LogServerAddress(app);
@@ -51,22 +51,12 @@ namespace Task.Api
 				options.SerializerOptions.Converters.Add(new DateTimeNullableConverter());
 			});
 
-			builder.Services.AddSingleton<Database>(sp =>
-			{
-				var configuration = sp.GetRequiredService<IConfiguration>();
-				var dbPath = TaskPaths.ResolveDatabasePath(configuration.GetValue<string>("DatabasePath"));
-				return new Database(dbPath);
-			});
-			builder.Services.AddSingleton<ITaskService>(sp =>
-			{
-				var configuration = sp.GetRequiredService<IConfiguration>();
-				var dbPath = TaskPaths.ResolveDatabasePath(configuration.GetValue<string>("DatabasePath"));
-				return new TaskService(dbPath);
-			});
+			builder.Services.AddSingleton(sp => CreateDatabaseConnectionSettings(sp.GetRequiredService<IConfiguration>()));
+			builder.Services.AddSingleton<Database>(sp => new Database(sp.GetRequiredService<DatabaseConnectionSettings>()));
+			builder.Services.AddSingleton<ITaskService>(sp => new TaskService(sp.GetRequiredService<DatabaseConnectionSettings>()));
 			builder.Services.AddSingleton<IUid, Uid>();
 
-			builder.Services.Configure<TelegramProviderOptions>(
-				builder.Configuration.GetSection("Telegram"));
+			builder.Services.Configure<TelegramProviderOptions>(builder.Configuration.GetSection("Telegram"));
 			builder.Services.PostConfigure<TelegramProviderOptions>(options =>
 			{
 				var hasRequiredCredentials =
@@ -75,6 +65,7 @@ namespace Task.Api
 
 				options.Enabled = hasRequiredCredentials;
 			});
+
 			builder.Services.AddHttpClient<ITelegramProvider, TelegramProvider>((sp, client) =>
 			{
 				var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<TelegramProviderOptions>>().Value;
@@ -83,13 +74,21 @@ namespace Task.Api
 					client.BaseAddress = new Uri($"https://api.telegram.org/bot{options.BotToken}/");
 				}
 			});
+
 			builder.Services.AddSingleton<TelegramNotificationService>();
+		}
+
+		private static DatabaseConnectionSettings CreateDatabaseConnectionSettings(IConfiguration configuration)
+		{
+			return DatabaseConnectionSettings.Create(
+				provider: configuration.GetValue<string>("DatabaseProvider"),
+				sqliteDatabasePath: configuration.GetValue<string>("DatabasePath"),
+				postgresConnectionString: configuration.GetValue<string>("Postgres:ConnectionString"));
 		}
 
 		private static void ConfigureApp(WebApplication app)
 		{
 			app.UseMiddleware<ErrorHandlingMiddleware>();
-
 			app.UseCors("AllowAll");
 			app.UseHttpsRedirection();
 			app.UseStaticFiles();
@@ -112,7 +111,7 @@ namespace Task.Api
 				return;
 			}
 
-			var preferredUrl = "http://localhost:8080";
+			const string preferredUrl = "http://localhost:8080";
 			if (IsPortAvailable(IPAddress.Loopback, 8080))
 			{
 				builder.WebHost.UseUrls(preferredUrl);
@@ -143,7 +142,7 @@ namespace Task.Api
 			Console.WriteLine($"Server.Started port={uri.Port} url={address} reason={reason}");
 			if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("Telegram__BotToken")))
 			{
-				Console.WriteLine($"Telegram NOT loaded. Please set Telegram__BotToken and Telegram__ChatId environment variable.");
+				Console.WriteLine("Telegram NOT loaded. Please set Telegram__BotToken and Telegram__ChatId environment variable.");
 			}
 		}
 

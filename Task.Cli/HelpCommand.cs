@@ -12,17 +12,14 @@ namespace Task.Cli
 
 		public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
 		{
-			// NAME
 			AnsiConsole.MarkupLine("[yellow]NAME[/]");
 			AnsiConsole.WriteLine("task - A powerful, interactive CLI tool for efficient task and todo management");
 			AnsiConsole.WriteLine();
 
-			// SYNOPSIS
 			AnsiConsole.MarkupLine("[yellow]SYNOPSIS[/]");
 			AnsiConsole.WriteLine("task [GLOBAL OPTIONS] <COMMAND> [COMMAND OPTIONS] [ARGS...]");
 			AnsiConsole.WriteLine();
 
-			// DESCRIPTION
 			AnsiConsole.MarkupLine("[yellow]DESCRIPTION[/]");
 			AnsiConsole.WriteLine("Task is a modern command-line interface for managing personal and team tasks with advanced features like priorities, due dates, projects, tags, dependencies, and semantic search. The CLI requires a running Task API server; all operations are performed over HTTP using the API.");
 			AnsiConsole.WriteLine();
@@ -38,10 +35,7 @@ namespace Task.Cli
 			AnsiConsole.WriteLine("- Configuration management");
 			AnsiConsole.WriteLine("- Bulk operations support");
 			AnsiConsole.WriteLine();
-			AnsiConsole.WriteLine("The tool prioritizes human-first design with rich, colored output while maintaining machine-readable interfaces for automation.");
-			AnsiConsole.WriteLine();
 
-			// GLOBAL OPTIONS
 			AnsiConsole.MarkupLine("[yellow]GLOBAL OPTIONS[/]");
 			AnsiConsole.WriteLine("These options apply to all commands:");
 			AnsiConsole.WriteLine();
@@ -52,11 +46,9 @@ namespace Task.Cli
 			AnsiConsole.WriteLine("--api-url <URL>     Base URL of the Task API server (required)");
 			AnsiConsole.WriteLine();
 
-			// COMMANDS
 			AnsiConsole.MarkupLine("[yellow]COMMANDS[/]");
 			AnsiConsole.WriteLine();
 
-			// Task Management
 			AnsiConsole.MarkupLine("[yellow]Task Management[/]");
 			AnsiConsole.WriteLine("add                 Create a new task with optional properties like priority, due date, tags, and project assignment");
 			AnsiConsole.WriteLine("list                Display tasks with advanced filtering by status, priority, assignee, project, tags, and due date");
@@ -66,33 +58,31 @@ namespace Task.Cli
 			AnsiConsole.WriteLine("reset <UID>         Reset a completed task back to pending status (UID is a 6-letter code)");
 			AnsiConsole.WriteLine();
 
-			// Server
 			AnsiConsole.MarkupLine("[yellow]Server[/]");
 			AnsiConsole.WriteLine("start               Start the Task API server in the background");
 			AnsiConsole.WriteLine("status              Show Task API server status");
 			AnsiConsole.WriteLine("stop                Stop the Task API server");
 			AnsiConsole.WriteLine("server run          Run the Task API server in the foreground");
 			AnsiConsole.WriteLine("  Options:");
-			AnsiConsole.WriteLine("    --urls <URLS>           Override server URLs (e.g., http://localhost:8080). Disables port auto-selection.");
-			AnsiConsole.WriteLine("    --database-path <PATH>  Database path for the API server (default: config dir tasks.db, e.g. ~/.config/task/tasks.db).");
-			AnsiConsole.WriteLine("    --ready-file <PATH>     Write readiness details to this file once the server is ready.");
+			AnsiConsole.WriteLine("    --urls <URLS>                  Override server URLs (e.g., http://localhost:8080). Disables port auto-selection.");
+			AnsiConsole.WriteLine("    --database-provider <PROVIDER> Database provider for the API server (sqlite or pg). Default: sqlite.");
+			AnsiConsole.WriteLine("    --database-path <PATH>         SQLite database path for the API server (default: config dir tasks.db, e.g. ~/.config/task/tasks.db).");
+			AnsiConsole.WriteLine("    --pg-connection-string <VALUE> PostgreSQL connection string for the API server when provider is pg.");
+			AnsiConsole.WriteLine("    --ready-file <PATH>            Write readiness details to this file once the server is ready.");
 			AnsiConsole.WriteLine();
 			AnsiConsole.WriteLine("server start        Start the Task API server in the background");
 			AnsiConsole.WriteLine("server status       Show Task API server status");
 			AnsiConsole.WriteLine("server stop         Stop the Task API server");
 			AnsiConsole.WriteLine();
 
-			// Search and Discovery
 			AnsiConsole.MarkupLine("[yellow]Search and Discovery[/]");
 			AnsiConsole.WriteLine("search <QUERY>      Perform full-text or semantic similarity search across task titles and descriptions");
 			AnsiConsole.WriteLine();
 
-			// Data Management
 			AnsiConsole.MarkupLine("[yellow]Data Management[/]");
 			AnsiConsole.WriteLine("import <FILE>       Import tasks from JSON or CSV files, merging with existing data");
 			AnsiConsole.WriteLine();
 
-			// Configuration
 			AnsiConsole.MarkupLine("[yellow]Configuration[/]");
 			AnsiConsole.WriteLine("config              Manage CLI configuration settings");
 			AnsiConsole.WriteLine("  set <KEY> <VALUE> Set a configuration value");
@@ -101,182 +91,86 @@ namespace Task.Cli
 			AnsiConsole.WriteLine("  list              Display all current configuration settings");
 			AnsiConsole.WriteLine();
 
-			// EXAMPLES
 			AnsiConsole.MarkupLine("[yellow]EXAMPLES[/]");
 			AnsiConsole.WriteLine();
-
-			// Basic Task Operations
-			AnsiConsole.MarkupLine("[yellow]Basic Task Operations[/]");
-			AnsiConsole.WriteLine("```bash");
-			AnsiConsole.WriteLine("# Add a simple task interactively");
-			AnsiConsole.WriteLine("task add");
-			AnsiConsole.WriteLine();
-			AnsiConsole.WriteLine("# Add task with title directly");
-			AnsiConsole.WriteLine("task add \"Review pull request #123\"");
-			AnsiConsole.WriteLine();
-			AnsiConsole.WriteLine("# Add complex task with all options");
-			AnsiConsole.WriteLine("task add --title \"Implement user authentication\" \\");
-			AnsiConsole.WriteLine("         --description \"Add login/logout functionality with JWT tokens\" \\");
-			AnsiConsole.WriteLine("         --priority high \\");
-			AnsiConsole.WriteLine("         --due-date 2024-12-31 \\");
-			AnsiConsole.WriteLine("         --tags backend,security,urgent \\");
-			AnsiConsole.WriteLine("         --project auth-system \\");
-			AnsiConsole.WriteLine("         --assignee john.doe \\");
-			AnsiConsole.WriteLine("         --status blocked \\");
-			AnsiConsole.WriteLine("         --block-reason \"Waiting on SSO access\"");
-			AnsiConsole.WriteLine("```");
-			AnsiConsole.WriteLine();
-
-			// Listing and Filtering Tasks
-			AnsiConsole.MarkupLine("[yellow]Listing and Filtering Tasks[/]");
-			AnsiConsole.WriteLine("```bash");
-			AnsiConsole.WriteLine("# List all tasks");
-			AnsiConsole.WriteLine("task list");
-			AnsiConsole.WriteLine();
-			AnsiConsole.WriteLine("# Filter by status and assignee");
-			AnsiConsole.WriteLine("task list --status in_progress --assignee john.doe");
-			AnsiConsole.WriteLine();
-			AnsiConsole.WriteLine("# Show high priority tasks due this week");
-			AnsiConsole.WriteLine("task list --priority high --due-before 2024-12-31");
-			AnsiConsole.WriteLine();
-			AnsiConsole.WriteLine("# JSON output for scripting");
-			AnsiConsole.WriteLine("task list --json --status todo | jq '.[] | select(.priority == \"high\")'");
-			AnsiConsole.WriteLine("```");
-			AnsiConsole.WriteLine();
-
-			// Task Modification
-			AnsiConsole.MarkupLine("[yellow]Task Modification[/]");
-			AnsiConsole.WriteLine("```bash");
-			AnsiConsole.WriteLine("# Edit task title and priority");
-			AnsiConsole.WriteLine("task edit abc123 --title \"Updated task name\" --priority low");
-			AnsiConsole.WriteLine();
-			AnsiConsole.WriteLine("# Change due date and add tags");
-			AnsiConsole.WriteLine("task edit def456 --due-date 2024-11-15 --tags frontend,ui");
-			AnsiConsole.WriteLine("```");
-			AnsiConsole.WriteLine();
-
-			// Search Functionality
-			AnsiConsole.MarkupLine("[yellow]Search Functionality[/]");
-			AnsiConsole.WriteLine("```bash");
-			AnsiConsole.WriteLine("# Full-text search");
-			AnsiConsole.WriteLine("task search \"authentication bug\"");
-			AnsiConsole.WriteLine();
-			AnsiConsole.WriteLine("# Semantic search for similar concepts");
-			AnsiConsole.WriteLine("task search \"login issues\" --type semantic");
-			AnsiConsole.WriteLine("```");
-			AnsiConsole.WriteLine();
-
-			// Bulk Operations
-			AnsiConsole.MarkupLine("[yellow]Bulk Operations[/]");
-			AnsiConsole.WriteLine("```bash");
-			AnsiConsole.WriteLine("# Complete multiple tasks");
-			AnsiConsole.WriteLine("task complete a2b3k9 d4e5f6 g7h8i9");
-			AnsiConsole.WriteLine();
-			AnsiConsole.WriteLine("# Delete tasks with confirmation");
-			AnsiConsole.WriteLine("task delete a2b3k9 d4e5f6");
-			AnsiConsole.WriteLine("```");
-			AnsiConsole.WriteLine();
-
-			// Server Mode
 			AnsiConsole.MarkupLine("[yellow]Server Mode[/]");
 			AnsiConsole.WriteLine("Note: 'server run' starts the API server in the foreground (blocking in the current shell), whereas 'server start' runs it detached in the background.");
 			AnsiConsole.WriteLine();
 			AnsiConsole.WriteLine("```bash");
-			AnsiConsole.WriteLine("# Start the API server in the background");
-			AnsiConsole.WriteLine("task server start");
-			AnsiConsole.WriteLine();
-			AnsiConsole.WriteLine("# Check server status");
-			AnsiConsole.WriteLine("task server status");
-			AnsiConsole.WriteLine();
-			AnsiConsole.WriteLine("# Stop the API server");
-			AnsiConsole.WriteLine("task server stop");
-			AnsiConsole.WriteLine();
 			AnsiConsole.WriteLine("# Run API server in the foreground with defaults");
 			AnsiConsole.WriteLine("task server run");
-			AnsiConsole.WriteLine("# Default database path resolves to ~/.config/task/tasks.db");
+			AnsiConsole.WriteLine("# Default database provider is sqlite and default database path resolves to ~/.config/task/tasks.db");
 			AnsiConsole.WriteLine();
+			AnsiConsole.WriteLine("# Run with custom sqlite path");
+			AnsiConsole.WriteLine("task server run --database-provider sqlite --database-path tasks_team.db");
 			AnsiConsole.WriteLine();
-			AnsiConsole.WriteLine("# Run with custom URL and DB path, write readiness details to a file");
-			AnsiConsole.WriteLine("task server run --urls http://localhost:9090 --database-path tasks_team.db --ready-file ./api.ready.json");
+			AnsiConsole.WriteLine("# Run with PostgreSQL");
+			AnsiConsole.WriteLine("task server run --database-provider pg --pg-connection-string \"Host=localhost;Username=task;Password=secret;Database=task\"");
+			AnsiConsole.WriteLine();
+			AnsiConsole.WriteLine("# Run with custom URL and readiness file");
+			AnsiConsole.WriteLine("task server run --urls http://localhost:9090 --ready-file ./api.ready.json");
 			AnsiConsole.WriteLine("```");
 			AnsiConsole.WriteLine();
 
-			// Data Import
-			AnsiConsole.MarkupLine("[yellow]Data Import[/]");
-			AnsiConsole.WriteLine("```bash");
-			AnsiConsole.WriteLine("# Import from CSV");
-			AnsiConsole.WriteLine("task import tasks_from_trello.csv");
-			AnsiConsole.WriteLine("```");
-			AnsiConsole.WriteLine();
-
-			// Configuration Management
 			AnsiConsole.MarkupLine("[yellow]Configuration Management[/]");
 			AnsiConsole.WriteLine("```bash");
 			AnsiConsole.WriteLine("# Set default output format");
 			AnsiConsole.WriteLine("task config set defaultOutput json");
+			AnsiConsole.WriteLine("# Select sqlite explicitly and set its path");
+			AnsiConsole.WriteLine("task config set database.provider sqlite");
+			AnsiConsole.WriteLine("task config set database.sqlite.path ~/.config/task/tasks.db");
+			AnsiConsole.WriteLine("# Select PostgreSQL and set its connection string");
+			AnsiConsole.WriteLine("task config set database.provider pg");
+			AnsiConsole.WriteLine("task config set database.pg.connectionString \"Host=localhost;Username=task;Password=secret;Database=task\"");
 			AnsiConsole.WriteLine("# Set Telegram bot token and chat ID");
 			AnsiConsole.WriteLine("task config set telegram.botToken <YOUR-BOT-TOKEN>");
-			AnsiConsole.WriteLine("# Automatically discover and set your Telegram chatId");
-			AnsiConsole.WriteLine("task telegram discover-chat-id");
-			AnsiConsole.WriteLine("# (Alternatively set manually if you know your chatId)");
 			AnsiConsole.WriteLine("task config set telegram.chatId <YOUR-CHAT-ID>");
 			AnsiConsole.WriteLine();
-			AnsiConsole.WriteLine("# Get Telegram config values");
-			AnsiConsole.WriteLine("task config get telegram.botToken");
-			AnsiConsole.WriteLine("task config get telegram.chatId");
+			AnsiConsole.WriteLine("# Get database config values");
+			AnsiConsole.WriteLine("task config get database.provider");
+			AnsiConsole.WriteLine("task config get database.sqlite.path");
+			AnsiConsole.WriteLine("task config get database.pg.connectionString");
 			AnsiConsole.WriteLine();
-			AnsiConsole.WriteLine("# Unset Telegram bot token");
-			AnsiConsole.WriteLine("task config unset telegram.botToken");
-			AnsiConsole.WriteLine();
-			AnsiConsole.WriteLine();
-			AnsiConsole.WriteLine("# View current settings");
-			AnsiConsole.WriteLine("task config list");
-			AnsiConsole.WriteLine();
-			AnsiConsole.WriteLine();
-			AnsiConsole.WriteLine("# Reset to defaults");
-			AnsiConsole.WriteLine("task config unset defaultOutput");
-			AnsiConsole.WriteLine();
+			AnsiConsole.WriteLine("# Reset provider to default sqlite");
+			AnsiConsole.WriteLine("task config unset database.provider");
 			AnsiConsole.WriteLine("```");
 			AnsiConsole.WriteLine();
 
-			// CONFIGURATION
 			AnsiConsole.MarkupLine("[yellow]CONFIGURATION[/]");
 			AnsiConsole.WriteLine("Task stores configuration in `~/.config/task/config.json`. Available settings include:");
 			AnsiConsole.WriteLine();
-			AnsiConsole.WriteLine("- `default_output`: Default output format (plain/json)");
-			AnsiConsole.WriteLine("- `api_url`: Default API server URL");
-			AnsiConsole.WriteLine("- `auto_sync`: Enable automatic synchronization with remote server");
-			AnsiConsole.WriteLine("- `telegram`: Telegram bot configuration object. If present, these values will be automatically passed to the API server as environment variables for notification support when you start the server from the CLI:");
-			AnsiConsole.WriteLine("    - `botToken`: Telegram bot token");
-			AnsiConsole.WriteLine("    - `chatId`: Target Telegram chat ID");
+			AnsiConsole.WriteLine("- `defaultOutput`: Default output format (plain/json)");
+			AnsiConsole.WriteLine("- `apiUrl`: Default API server URL");
+			AnsiConsole.WriteLine("- `database.provider`: Database provider (`sqlite` or `pg`). Defaults to `sqlite`");
+			AnsiConsole.WriteLine("- `database.sqlite.path`: SQLite database path used when provider is `sqlite`");
+			AnsiConsole.WriteLine("- `database.postgres.connectionString`: PostgreSQL connection string used when provider is `pg`");
+			AnsiConsole.WriteLine("- `telegram`: Telegram bot configuration object");
 			AnsiConsole.WriteLine();
 			AnsiConsole.WriteLine("Example:");
 			AnsiConsole.WriteLine("{");
 			AnsiConsole.WriteLine("  \"apiUrl\": \"http://localhost:8080\",");
 			AnsiConsole.WriteLine("  \"defaultOutput\": \"plain\",");
+			AnsiConsole.WriteLine("  \"database\": {");
+			AnsiConsole.WriteLine("    \"provider\": \"sqlite\",");
+			AnsiConsole.WriteLine("    \"sqlite\": {");
+			AnsiConsole.WriteLine("      \"path\": \"~/.config/task/tasks.db\"");
+			AnsiConsole.WriteLine("    },");
+			AnsiConsole.WriteLine("    \"postgres\": {");
+			AnsiConsole.WriteLine("      \"connectionString\": \"Host=localhost;Username=task;Password=secret;Database=task\"");
+			AnsiConsole.WriteLine("    }");
+			AnsiConsole.WriteLine("  },");
 			AnsiConsole.WriteLine("  \"telegram\": {");
 			AnsiConsole.WriteLine("    \"botToken\": \"<your-bot-token>\",");
 			AnsiConsole.WriteLine("    \"chatId\": \"<your-chat-id>\"");
 			AnsiConsole.WriteLine("  }");
 			AnsiConsole.WriteLine("}");
 			AnsiConsole.WriteLine();
-			AnsiConsole.WriteLine("Use `task config --help` for detailed configuration options.");
-			AnsiConsole.WriteLine();
 
-			// ENVIRONMENT VARIABLES
-			AnsiConsole.MarkupLine("[yellow]ENVIRONMENT VARIABLES[/]");
-			AnsiConsole.WriteLine("TASK_API_URL        Override default API URL");
-			AnsiConsole.WriteLine("NO_COLOR            Disable colored output (set to any non-empty value)");
-			AnsiConsole.WriteLine("TERM=dumb           Force plain text output");
-			AnsiConsole.WriteLine();
-
-			// FILES
 			AnsiConsole.MarkupLine("[yellow]FILES[/]");
 			AnsiConsole.WriteLine("~/.config/task/config.json    User configuration file");
-			AnsiConsole.WriteLine("~/.config/task/tasks.db       Default API database file when --database-path is omitted");
+			AnsiConsole.WriteLine("~/.config/task/tasks.db       Default sqlite database file when database.provider is sqlite and no path override is set");
 			AnsiConsole.WriteLine();
 
-			// EXIT STATUS
 			AnsiConsole.MarkupLine("[yellow]EXIT STATUS[/]");
 			AnsiConsole.WriteLine("0      Success");
 			AnsiConsole.WriteLine("1      General error (invalid arguments, task not found, etc.)");
@@ -284,44 +178,7 @@ namespace Task.Cli
 			AnsiConsole.WriteLine("3      Network/API error");
 			AnsiConsole.WriteLine();
 
-			// DIAGNOSTICS
-			AnsiConsole.MarkupLine("[yellow]DIAGNOSTICS[/]");
-			AnsiConsole.WriteLine("Task provides detailed error messages with suggestions for correction. Use `--json` flag for structured error output suitable for programmatic handling.");
-			AnsiConsole.WriteLine();
-
-			// COMPATIBILITY
-			AnsiConsole.MarkupLine("[yellow]COMPATIBILITY[/]");
-			AnsiConsole.WriteLine("- Single file executable");
-			AnsiConsole.WriteLine("- Compatible with Linux, macOS, and Windows");
-			AnsiConsole.WriteLine();
-
-			// SEE ALSO
-			AnsiConsole.MarkupLine("[yellow]SEE ALSO[/]");
-			AnsiConsole.WriteLine("todo.txt(1), taskwarrior(1), trello-cli(1), github-issues(1)");
-			AnsiConsole.WriteLine();
-
-			// REPORTING BUGS
-			AnsiConsole.MarkupLine("[yellow]REPORTING BUGS[/]");
-			AnsiConsole.WriteLine("Report bugs at: https://github.com/jmkelly/task/issues");
-			AnsiConsole.WriteLine();
-
-			// DOCUMENTATION
-			AnsiConsole.MarkupLine("[yellow]DOCUMENTATION[/]");
-			AnsiConsole.WriteLine("Full documentation: https://github.com/jmkelly/docs/task-cli");
-			AnsiConsole.WriteLine("API reference: https://opencode.ai/docs/task-api");
-			AnsiConsole.WriteLine();
-
-			// AUTHOR
-			AnsiConsole.MarkupLine("[yellow]AUTHOR[/]");
-			AnsiConsole.WriteLine("Written by the James Kelly.");
-			AnsiConsole.WriteLine();
-
-			// COPYRIGHT
-			AnsiConsole.MarkupLine("[yellow]COPYRIGHT[/]");
-			AnsiConsole.WriteLine("Copyright (C) 2026. License MIT.");
-			AnsiConsole.WriteLine();
 			AnsiConsole.WriteLine("Task CLI 1.0.0");
-
 			return 0;
 		}
 	}
