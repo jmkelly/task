@@ -11,7 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### 2026-08-14 — Multi-user accounts, API keys, and per-user task isolation
+## [1.0.0.54] - 2026-08-14
+
+### Multi-user accounts, API keys, and per-user task isolation
 - **Breaking**: the API and board now require authentication. Anonymous access is
   limited to `GET /api/health` and `/api/auth/*`. CLI/agents authenticate with a
   per-user API key (`X-Api-Key`); the browser uses username/password sessions.
