@@ -5,11 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [2.0.0.0] - 2026-08-14
+
+### Major release: CLI help overhaul, list filters, and dependency refresh
+- feat(cli): `task help <command>` shows per-command help (e.g., `task help add`);
+  the manual is restructured into grouped sections with accurate option docs and
+  a version banner; `--api-url` now defaults to the configured URL.
+- feat(cli): `list` gains `--tags`, `--due-before`, and `--due-after` filters for
+  fine-grained querying.
+- feat(cli): `complete --all` completes all todo tasks; `reset [id]` / `reset --all`
+  resets completed tasks back to todo; bulk `edit`/`delete` documented for multiple UIDs.
+- chore(api,core): bump dependencies — Microsoft.Data.Sqlite 10.0.3,
+  Microsoft.OpenApi 2.7.5, SQLitePCLRaw.lib.e_sqlite3 2.1.13.
+
 ## [0.1.0] - 2026-02-28
 ### Added
 - Initial release.
-
-## [Unreleased]
 
 ## [1.0.0.54] - 2026-08-14
 
