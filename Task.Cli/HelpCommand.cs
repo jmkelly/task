@@ -105,7 +105,7 @@ namespace Task.Cli
 			AnsiConsole.WriteLine("task server run --database-provider sqlite --database-path tasks_team.db");
 			AnsiConsole.WriteLine();
 			AnsiConsole.WriteLine("# Run with PostgreSQL");
-			AnsiConsole.WriteLine("task server run --database-provider pg --pg-connection-string \"Host=localhost;Username=task;Password=secret;Database=task\"");
+			AnsiConsole.WriteLine("task server run --database-provider pg --pg-connection-string \"Host=localhost;Username=task;Password=<your-password>;Database=task\"");
 			AnsiConsole.WriteLine();
 			AnsiConsole.WriteLine("# Run with custom URL and readiness file");
 			AnsiConsole.WriteLine("task server run --urls http://localhost:9090 --ready-file ./api.ready.json");
@@ -121,7 +121,7 @@ namespace Task.Cli
 			AnsiConsole.WriteLine("task config set database.sqlite.path ~/.config/task/tasks.db");
 			AnsiConsole.WriteLine("# Select PostgreSQL and set its connection string");
 			AnsiConsole.WriteLine("task config set database.provider pg");
-			AnsiConsole.WriteLine("task config set database.pg.connectionString \"Host=localhost;Username=task;Password=secret;Database=task\"");
+			AnsiConsole.WriteLine("task config set database.pg.connectionString \"Host=localhost;Username=task;Password=<your-password>;Database=task\"");
 			AnsiConsole.WriteLine("# Set Telegram bot token and chat ID");
 			AnsiConsole.WriteLine("task config set telegram.botToken <YOUR-BOT-TOKEN>");
 			AnsiConsole.WriteLine("task config set telegram.chatId <YOUR-CHAT-ID>");
@@ -156,7 +156,7 @@ namespace Task.Cli
 			AnsiConsole.WriteLine("      \"path\": \"~/.config/task/tasks.db\"");
 			AnsiConsole.WriteLine("    },");
 			AnsiConsole.WriteLine("    \"postgres\": {");
-			AnsiConsole.WriteLine("      \"connectionString\": \"Host=localhost;Username=task;Password=secret;Database=task\"");
+			AnsiConsole.WriteLine("      \"connectionString\": \"Host=localhost;Username=task;Password=<your-password>;Database=task\"");
 			AnsiConsole.WriteLine("    }");
 			AnsiConsole.WriteLine("  },");
 			AnsiConsole.WriteLine("  \"telegram\": {");

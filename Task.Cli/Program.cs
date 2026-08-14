@@ -120,7 +120,7 @@ config.SetApplicationVersion(version);
                         .WithExample(new[] { "server", "run" })
                         .WithExample(new[] { "server", "run", "--urls", "http://localhost:8080" })
                         .WithExample(new[] { "server", "run", "--database-provider", "sqlite", "--database-path", "./data/tasks.db" })
-                        .WithExample(new[] { "server", "run", "--database-provider", "pg", "--pg-connection-string", "Host=localhost;Username=task;Password=secret;Database=task" })
+                        .WithExample(new[] { "server", "run", "--database-provider", "pg", "--pg-connection-string", "Host=localhost;Username=task;Password=<your-password>;Database=task" })
                         .WithExample(new[] { "server", "run", "--database-path", "./data/tasks.db" })
                         .WithExample(new[] { "server", "run", "--ready-file", "/tmp/task-ready.json" });
                     branch.AddCommand<ServerStartCommand>("start")

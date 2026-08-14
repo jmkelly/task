@@ -118,7 +118,7 @@ namespace Task.Core.Providers.Postgres
         {
             return Environment.GetEnvironmentVariable("TASK_PG_CONNECTION_STRING")
                 ?? Environment.GetEnvironmentVariable("DATABASE_URL")
-                ?? "Host=localhost;Username=postgres;Password=postgres;Database=tasks";
+                ?? "Host=localhost;Username=postgres;Database=tasks";
         }
 
         private static void AddParameters(NpgsqlCommand command, IList<NpgsqlParameter>? parameters)
