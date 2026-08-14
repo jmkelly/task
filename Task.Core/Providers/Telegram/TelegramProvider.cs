@@ -47,7 +47,7 @@ public sealed class TelegramProvider : ITelegramProvider
 
         try
         {
-            var request = new TelegramSendMessageRequest(_options.ChatId, message);
+            var request = new TelegramSendMessageRequest(_options.ChatId, message ?? string.Empty);
             var payload = JsonSerializer.Serialize(request, TelegramJsonContext.Default.TelegramSendMessageRequest);
             using var content = new StringContent(payload, Encoding.UTF8, "application/json");
             var response = await _httpClient.PostAsync("sendMessage", content, cancellationToken);

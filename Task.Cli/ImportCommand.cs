@@ -14,8 +14,8 @@ namespace Task.Cli
     {
         public class Settings : Program.TaskCommandSettings
         {
-            [CommandArgument(0, "[input]")]
-            [Description("Input file path")]
+            [CommandArgument(0, "<input>")]
+            [Description("Path to the JSON or CSV file to import")]
             public string? Input { get; set; }
 
             [CommandOption("-f|--format")]

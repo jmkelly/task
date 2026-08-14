@@ -31,7 +31,6 @@ namespace Task.Cli {
                 }
                 AnsiConsole.MarkupLine("[green]Recent Telegram chats:[/]");
                 var chats = new List<(string, long, string)>();
-                int idx = 1;
                 foreach (var update in resultArr.EnumerateArray()) {
                     if (!update.TryGetProperty("message", out var msg)) continue;
                     var chat = msg.GetProperty("chat");
@@ -40,7 +39,7 @@ namespace Task.Cli {
                     var titleOrName = chatType == "private" ? (chat.TryGetProperty("username", out var user) ? user.GetString() : chat.GetProperty("first_name").GetString())
                         : chat.TryGetProperty("title", out var title) ? title.GetString() : chatId.ToString();
                     var textPreview = msg.TryGetProperty("text", out var text) ? text.GetString() : "<no text>";
-                    chats.Add((titleOrName, chatId, textPreview));
+                    chats.Add((titleOrName ?? chatId.ToString(), chatId, textPreview ?? ""));
                 }
                 // Remove duplicate chatIds
                 chats = chats.GroupBy(c => c.Item2).Select(g => g.First()).ToList();

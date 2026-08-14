@@ -35,12 +35,16 @@ namespace Task.Cli
 
             var registrar = new TypeRegistrar(services);
             var app = new CommandApp(registrar);
+            app.Configure(ConfigureApp);
 
-            app.Configure(config =>
-            {
-                config.SetApplicationName("task");
-                var version = typeof(Program).Assembly.GetName().Version?.ToString() ?? "unknown";
-config.SetApplicationVersion(version);
+            return app.Run(args);
+        }
+
+        public static void ConfigureApp(IConfigurator config)
+        {
+            config.SetApplicationName("task");
+            var version = typeof(Program).Assembly.GetName().Version?.ToString() ?? "unknown";
+            config.SetApplicationVersion(version);
 
                 // Commands
                 config.AddCommand<AddCommand>("add")
@@ -64,7 +68,7 @@ config.SetApplicationVersion(version);
                     .WithExample(new[] { "edit", "321", "--assignee", "jane.smith", "--priority", "low" });
 
                 config.AddCommand<DeleteCommand>("delete")
-                    .WithDescription("Permanently remove one or more tasks (supports bulk deletion with confirmation)")
+                    .WithDescription("Archive one or more tasks (removes them from active lists; supports bulk deletion)")
                     .WithExample(new[] { "delete", "abc123" })
                     .WithExample(new[] { "delete", "abc123", "def456" });
 
@@ -74,7 +78,7 @@ config.SetApplicationVersion(version);
                     .WithExample(new[] { "complete", "--all" });
 
                 config.AddCommand<ResetCommand>("reset")
-                    .WithDescription("Reset a completed task back to pending status")
+                    .WithDescription("Reset a completed task back to todo, or use --all to reset all done tasks")
                     .WithExample(new[] { "reset", "abc123" });
 
                 config.AddCommand<SearchCommand>("search")
@@ -83,28 +87,31 @@ config.SetApplicationVersion(version);
                     .WithExample(new[] { "search", "urgent", "--type", "hybrid" });
 
                 config.AddCommand<ImportCommand>("import")
-                    .WithDescription("Import tasks from JSON or CSV files, merging with existing data")
+                    .WithDescription("Import tasks from a JSON or CSV file (imported tasks get new UIDs)")
                     .WithExample(new[] { "import", "tasks.json" });
 
                 config.AddCommand<ServerStartCommand>("start")
-                    .WithDescription("Start the Task API server in the background")
+                    .WithDescription("Start the Task API server in the background (alias for 'server start')")
                     .WithExample(new[] { "start" });
 
                 config.AddCommand<ServerStatusCommand>("status")
-                    .WithDescription("Show Task API server status")
+                    .WithDescription("Show Task API server status (alias for 'server status')")
                     .WithExample(new[] { "status" });
 
                 config.AddCommand<ServerStopCommand>("stop")
-                    .WithDescription("Stop the Task API server")
+                    .WithDescription("Stop the Task API server (alias for 'server stop')")
                     .WithExample(new[] { "stop" });
 
                 config.AddBranch("config", branch =>
                 {
                     branch.SetDescription("Manage CLI configuration settings");
                     branch.AddCommand<ConfigSetCommand>("set")
-                        .WithDescription("Set a configuration value");
+                        .WithDescription("Set a configuration value")
+                        .WithExample(new[] { "config", "set", "api-url", "http://localhost:8080" })
+                        .WithExample(new[] { "config", "set", "api.key", "tk_..." });
                     branch.AddCommand<ConfigGetCommand>("get")
-                        .WithDescription("Retrieve a configuration value");
+                        .WithDescription("Retrieve a configuration value")
+                        .WithExample(new[] { "config", "get", "api-url" });
                     branch.AddCommand<ConfigUnsetCommand>("unset")
                         .WithDescription("Remove a configuration setting");
                     branch.AddCommand<ConfigListCommand>("list")
@@ -113,9 +120,9 @@ config.SetApplicationVersion(version);
 
                 config.AddBranch("users", branch =>
                 {
-                    branch.SetDescription("Manage user accounts (server-host, local database access)");
+                    branch.SetDescription("Manage user accounts (local, direct database access - no API required)");
                     branch.AddCommand<UsersCreateCommand>("create")
-                        .WithDescription("Create a user account directly in the database")
+                        .WithDescription("Create a user account directly in the database (works before the first signup and with closed signups)")
                         .WithExample(new[] { "users", "create", "alice", "--admin" })
                         .WithExample(new[] { "users", "create", "bob", "--password", "s3cret-pass" });
                 });
@@ -126,7 +133,7 @@ config.SetApplicationVersion(version);
                 {
                     branch.SetDescription("Manage the Task API server");
                     branch.AddCommand<ServerRunCommand>("run")
-                        .WithDescription("Run the Task API server in the foreground.")
+                        .WithDescription("Run the Task API server in the foreground")
                         .WithExample(new[] { "server", "run" })
                         .WithExample(new[] { "server", "run", "--urls", "http://localhost:8080" })
                         .WithExample(new[] { "server", "run", "--database-provider", "sqlite", "--database-path", "./data/tasks.db" })
@@ -134,23 +141,20 @@ config.SetApplicationVersion(version);
                         .WithExample(new[] { "server", "run", "--database-path", "./data/tasks.db" })
                         .WithExample(new[] { "server", "run", "--ready-file", "/tmp/task-ready.json" });
                     branch.AddCommand<ServerStartCommand>("start")
-                        .WithDescription("Start the Task API server in the background.");
+                        .WithDescription("Start the Task API server in the background (same as 'task start')");
                     branch.AddCommand<ServerStatusCommand>("status")
-                        .WithDescription("Show Task API server status.");
+                        .WithDescription("Show Task API server status (same as 'task status')");
                     branch.AddCommand<ServerStopCommand>("stop")
-                        .WithDescription("Stop the Task API server.");
+                        .WithDescription("Stop the Task API server (same as 'task stop')");
                 });
 
                 config.AddCommand<HelpCommand>("help")
-                    .WithDescription("Show detailed help information");
+                    .WithDescription("Show detailed help, optionally for a specific command (e.g., 'task help add')");
                 config.AddBranch("telegram", telegramBranch => {
                     telegramBranch.SetDescription("Telegram integration and utilities");
                     telegramBranch.AddCommand<TelegramDiscoverChatIdCommand>("discover-chat-id")
-                        .WithDescription("Discover recent chatIds received by your Telegram bot and interactively set telegram.chatId in config");
+                        .WithDescription("Discover recent Telegram chat IDs from your bot and set telegram.chatId interactively");
                 });
-            });
-
-            return app.Run(args);
         }
 
         // Shared settings for commands
@@ -167,7 +171,7 @@ config.SetApplicationVersion(version);
             public bool Plain { get; set; }
 
             [CommandOption("--api-url")]
-            [Description("Base URL of the Task API (required)")]
+            [Description("Base URL of the Task API (defaults to config api-url)")]
             public string? ApiUrl { get; set; }
 
             public TaskCommandSettings()

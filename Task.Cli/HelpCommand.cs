@@ -1,6 +1,8 @@
+using Microsoft.Extensions.DependencyInjection;
 using Spectre.Console;
 using Spectre.Console.Cli;
 using System.ComponentModel;
+using Task.Core;
 
 namespace Task.Cli
 {
@@ -8,10 +10,20 @@ namespace Task.Cli
 	{
 		public class Settings : CommandSettings
 		{
+			[CommandArgument(0, "[command]")]
+			[Description("Optional command to show help for (e.g., 'task help add'). Omit to show the full manual.")]
+			public string? Command { get; set; }
 		}
 
 		public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
 		{
+			if (!string.IsNullOrEmpty(settings.Command))
+			{
+				return await ShowCommandHelpAsync(settings.Command);
+			}
+
+			var version = typeof(Program).Assembly.GetName().Version?.ToString() ?? "unknown";
+
 			AnsiConsole.MarkupLine("[yellow]NAME[/]");
 			AnsiConsole.WriteLine("task - A powerful, interactive CLI tool for efficient task and todo management");
 			AnsiConsole.WriteLine();
@@ -22,6 +34,8 @@ namespace Task.Cli
 
 			AnsiConsole.MarkupLine("[yellow]DESCRIPTION[/]");
 			AnsiConsole.WriteLine("Task is a modern command-line interface for managing personal and team tasks with advanced features like priorities, due dates, projects, tags, dependencies, and semantic search. The CLI requires a running Task API server; all operations are performed over HTTP using the API.");
+			AnsiConsole.WriteLine();
+			AnsiConsole.WriteLine("Run 'task <command> --help' for detailed options of a specific command.");
 			AnsiConsole.WriteLine();
 			AnsiConsole.WriteLine("Key features include:");
 			AnsiConsole.WriteLine("- Interactive and non-interactive task creation");
@@ -37,32 +51,39 @@ namespace Task.Cli
 			AnsiConsole.WriteLine();
 
 			AnsiConsole.MarkupLine("[yellow]GLOBAL OPTIONS[/]");
-			AnsiConsole.WriteLine("These options apply to all commands:");
+			AnsiConsole.WriteLine("These options apply to the CLI itself:");
 			AnsiConsole.WriteLine();
 			AnsiConsole.WriteLine("-h, --help          Display this help message and exit");
 			AnsiConsole.WriteLine("-v, --version       Display version information and exit");
+			AnsiConsole.WriteLine();
+
+			AnsiConsole.MarkupLine("[yellow]COMMON TASK COMMAND OPTIONS[/]");
+			AnsiConsole.WriteLine("These options apply to the task commands (add, list, edit, delete, complete, reset, search, import), not to config, users, server, or telegram commands:");
+			AnsiConsole.WriteLine();
 			AnsiConsole.WriteLine("--json              Output results in JSON format for scripting and LLM integration");
 			AnsiConsole.WriteLine("--plain             Output in plain text format, disabling rich formatting and colors");
-			AnsiConsole.WriteLine("--api-url <URL>     Base URL of the Task API server (required)");
+			AnsiConsole.WriteLine("--api-url <URL>     Base URL of the Task API server (defaults to config api-url)");
 			AnsiConsole.WriteLine();
 
 			AnsiConsole.MarkupLine("[yellow]COMMANDS[/]");
 			AnsiConsole.WriteLine();
 
 			AnsiConsole.MarkupLine("[yellow]Task Management[/]");
-			AnsiConsole.WriteLine("add                 Create a new task with optional properties like priority, due date, tags, and project assignment");
-			AnsiConsole.WriteLine("list                Display tasks with advanced filtering by status, priority, assignee, project, tags, and due date");
-			AnsiConsole.WriteLine("edit <UID>          Modify existing task properties (title, description, priority, due date, and assignee) (UID is a 6-letter code)");
-			AnsiConsole.WriteLine("delete <UID...>      Permanently remove one or more tasks (supports bulk deletion with confirmation; UID is a 6-letter code, e.g., a2b3k9)");
-			AnsiConsole.WriteLine("complete <UID...>    Mark tasks as completed (supports bulk completion; UID is a 6-letter code, e.g., a2b3k9)");
-			AnsiConsole.WriteLine("reset <UID>         Reset a completed task back to pending status (UID is a 6-letter code)");
+			WriteCommand("add", "Create a new task with optional properties like priority, due date, tags, and project assignment");
+			WriteCommand("list", "Display tasks with advanced filtering by status, priority, assignee, project, tags, and due date");
+			WriteCommand("edit <ids>", "Modify existing task properties (title, description, priority, due date, tags, project, assignee, status) for one or more tasks (6-letter UID, e.g., a2b3k9)");
+			WriteCommand("delete <ids>", "Archive one or more tasks (removes them from active lists; supports bulk deletion; 6-letter UID, e.g., a2b3k9)");
+			WriteCommand("complete <ids>", "Mark tasks as completed (supports bulk completion; --all completes all todo tasks; 6-letter UID, e.g., a2b3k9)");
+			WriteCommand("reset [id]", "Reset a completed task back to todo, or use --all to reset all done tasks (6-letter UID, e.g., a2b3k9)");
+			WriteCommand("search <query>", "Perform full-text or semantic similarity search across task titles and descriptions");
+			WriteCommand("import <input>", "Import tasks from a JSON or CSV file (imported tasks get new UIDs)");
 			AnsiConsole.WriteLine();
 
 			AnsiConsole.MarkupLine("[yellow]Server[/]");
-			AnsiConsole.WriteLine("start               Start the Task API server in the background");
-			AnsiConsole.WriteLine("status              Show Task API server status");
-			AnsiConsole.WriteLine("stop                Stop the Task API server");
-			AnsiConsole.WriteLine("server run          Run the Task API server in the foreground");
+			WriteCommand("start", "Start the Task API server in the background (alias for 'server start')");
+			WriteCommand("status", "Show Task API server status (alias for 'server status')");
+			WriteCommand("stop", "Stop the Task API server (alias for 'server stop')");
+			WriteCommand("server run", "Run the Task API server in the foreground");
 			AnsiConsole.WriteLine("  Options:");
 			AnsiConsole.WriteLine("    --urls <URLS>                  Override server URLs (e.g., http://localhost:8080). Disables port auto-selection.");
 			AnsiConsole.WriteLine("    --database-provider <PROVIDER> Database provider for the API server (sqlite or pg). Default: sqlite.");
@@ -70,32 +91,32 @@ namespace Task.Cli
 			AnsiConsole.WriteLine("    --pg-connection-string <VALUE> PostgreSQL connection string for the API server when provider is pg.");
 			AnsiConsole.WriteLine("    --ready-file <PATH>            Write readiness details to this file once the server is ready.");
 			AnsiConsole.WriteLine();
-			AnsiConsole.WriteLine("server start        Start the Task API server in the background");
-			AnsiConsole.WriteLine("server status       Show Task API server status");
-			AnsiConsole.WriteLine("server stop         Stop the Task API server");
+			WriteCommand("server start", "Start the Task API server in the background (same as 'task start')");
+			WriteCommand("server status", "Show Task API server status (same as 'task status')");
+			WriteCommand("server stop", "Stop the Task API server (same as 'task stop')");
 			AnsiConsole.WriteLine();
 
 			AnsiConsole.MarkupLine("[yellow]Account Management[/]");
-			AnsiConsole.WriteLine("users create        Create a user account directly in the database (server-host, local only)");
+			WriteCommand("users create", "Create a user account directly in the database (local, no API required; works before the first signup and with closed signups)");
 			AnsiConsole.WriteLine("  Options:");
 			AnsiConsole.WriteLine("    --password <PASSWORD>   Password (prompted when omitted)");
-			AnsiConsole.WriteLine("    --admin                  Grant the admin role");
-			AnsiConsole.WriteLine();
-
-			AnsiConsole.MarkupLine("[yellow]Search and Discovery[/]");
-			AnsiConsole.WriteLine("search <QUERY>      Perform full-text or semantic similarity search across task titles and descriptions");
-			AnsiConsole.WriteLine();
-
-			AnsiConsole.MarkupLine("[yellow]Data Management[/]");
-			AnsiConsole.WriteLine("import <FILE>       Import tasks from JSON or CSV files, merging with existing data");
+			AnsiConsole.WriteLine("    --admin                  Grant the admin role (needed to sign in when signups are closed)");
 			AnsiConsole.WriteLine();
 
 			AnsiConsole.MarkupLine("[yellow]Configuration[/]");
-			AnsiConsole.WriteLine("config              Manage CLI configuration settings");
+			WriteCommand("config", "Manage CLI configuration settings");
 			AnsiConsole.WriteLine("  set <KEY> <VALUE> Set a configuration value");
 			AnsiConsole.WriteLine("  get <KEY>         Retrieve a configuration value");
 			AnsiConsole.WriteLine("  unset <KEY>       Remove a configuration setting");
 			AnsiConsole.WriteLine("  list              Display all current configuration settings");
+			AnsiConsole.WriteLine();
+
+			AnsiConsole.MarkupLine("[yellow]Telegram[/]");
+			WriteCommand("telegram discover-chat-id", "Discover recent Telegram chat IDs from your bot and set telegram.chatId interactively");
+			AnsiConsole.WriteLine();
+
+			AnsiConsole.MarkupLine("[yellow]General[/]");
+			WriteCommand("help", "Show detailed help, optionally for a specific command (e.g., 'task help add')");
 			AnsiConsole.WriteLine();
 
 			AnsiConsole.MarkupLine("[yellow]EXAMPLES[/]");
@@ -172,7 +193,7 @@ namespace Task.Cli
 			AnsiConsole.WriteLine("- `api.key`: Per-user API key sent as the X-Api-Key header (TASK_API_KEY env var overrides)");
 			AnsiConsole.WriteLine("- `database.provider`: Database provider (`sqlite` or `pg`). Defaults to `sqlite`");
 			AnsiConsole.WriteLine("- `database.sqlite.path`: SQLite database path used when provider is `sqlite`");
-			AnsiConsole.WriteLine("- `database.postgres.connectionString`: PostgreSQL connection string used when provider is `pg`");
+			AnsiConsole.WriteLine("- `database.pg.connectionString`: PostgreSQL connection string used when provider is `pg` (stored under `database.postgres` in config.json; `database.postgres.connectionString` is accepted as an alias)");
 			AnsiConsole.WriteLine("- `telegram`: Telegram bot configuration object");
 			AnsiConsole.WriteLine();
 			AnsiConsole.WriteLine("Example:");
@@ -203,13 +224,43 @@ namespace Task.Cli
 
 			AnsiConsole.MarkupLine("[yellow]EXIT STATUS[/]");
 			AnsiConsole.WriteLine("0      Success");
-			AnsiConsole.WriteLine("1      General error (invalid arguments, task not found, etc.)");
-			AnsiConsole.WriteLine("2      Configuration error");
-			AnsiConsole.WriteLine("3      Network/API error");
+			AnsiConsole.WriteLine("1      Error (invalid arguments, task not found, API or network errors)");
 			AnsiConsole.WriteLine();
 
-			AnsiConsole.WriteLine("Task CLI 1.0.0");
+			AnsiConsole.WriteLine($"Task CLI {version}");
 			return 0;
+		}
+
+		private static async Task<int> ShowCommandHelpAsync(string command)
+		{
+			var services = new ServiceCollection();
+			services.AddSingleton<IUid, Uid>();
+			var app = new CommandApp(new TypeRegistrar(services));
+			app.Configure(Program.ConfigureApp);
+
+			int result;
+			try
+			{
+				result = await app.RunAsync(new[] { command, "--help" });
+			}
+			catch (Exception)
+			{
+				Console.Error.WriteLine($"Error: Unknown command '{command}'.");
+				Console.Error.WriteLine("Run 'task --help' to list available commands.");
+				return 1;
+			}
+
+			if (result != 0)
+			{
+				Console.Error.WriteLine($"Run 'task --help' to list available commands.");
+			}
+
+			return result;
+		}
+
+		private static void WriteCommand(string name, string description)
+		{
+			AnsiConsole.WriteLine($"{name.PadRight(26)}{description}");
 		}
 	}
 }

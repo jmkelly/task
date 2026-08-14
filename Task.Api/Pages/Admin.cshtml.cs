@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Task.Core;
 using Task.Api.Auth;
-using Task.Core;
 using Task.Core.Auth;
 
 namespace Task.Api.Pages;

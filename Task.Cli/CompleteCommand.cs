@@ -10,11 +10,11 @@ namespace Task.Cli
 		public class Settings : Program.TaskCommandSettings
 		{
 			[CommandArgument(0, "[ids]")]
-			[Description("The 6-character alpha UID(s) of the task(s) to mark as completed (e.g., 'a2b3k9' or 'a2b3k9 d4e5f6')")]
+			[Description("The 6-character alpha UID(s) to mark as completed (required unless --all is used; e.g., 'a2b3k9' or 'a2b3k9 d4e5f6')")]
 			public string[] Ids { get; set; } = Array.Empty<string>();
 
 			[CommandOption("--all")]
-			[Description("Mark all incomplete tasks as completed")]
+			[Description("Mark all tasks with status todo as completed")]
 			public bool All { get; set; }
 		}
 

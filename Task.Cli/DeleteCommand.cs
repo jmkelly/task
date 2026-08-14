@@ -4,12 +4,12 @@ using System.Threading;
 
 namespace Task.Cli
 {
-    [Description("Delete a task permanently. Use --json for structured confirmation output.")]
+    [Description("Archive a task (removes it from active lists). Use --json for structured confirmation output.")]
     public class DeleteCommand : AsyncCommand<DeleteCommand.Settings>
     {
         public class Settings : Program.TaskCommandSettings
         {
-            [CommandArgument(0, "[ids]")]
+            [CommandArgument(0, "<ids>")]
             [Description("The 6-character alpha UID(s) of the task(s) to delete (e.g., 'a2b3k9' or 'a2b3k9 c4d5e6')")]
             public string? Ids { get; set; }
         }

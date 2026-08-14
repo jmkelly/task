@@ -22,7 +22,7 @@ public sealed class UsersCreateCommand : AsyncCommand<UsersCreateCommand.Setting
         public string? Password { get; set; }
 
         [CommandOption("--admin")]
-        [Description("Grant the admin role (required for closed-signup servers).")]
+        [Description("Grant the admin role (needed to sign in when signups are closed).")]
         public bool Admin { get; set; }
     }
 

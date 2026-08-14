@@ -232,9 +232,6 @@ namespace Task.Cli
 
 			var task = await service.AddTaskAsync(uid, title!, description, priority, dueDate, tags, project, dependsOn, assignee, status ?? "todo", blockReason, userId: null, cancellationToken);
 
-			Console.Error.WriteLine($"DEBUG: project='{project}', settings.Project='{settings.Project}'");
-			Console.Error.WriteLine($"DEBUG: task.Project='{task.Project}'");
-
 			if (settings.Json)
 			{
 #pragma warning disable IL2026

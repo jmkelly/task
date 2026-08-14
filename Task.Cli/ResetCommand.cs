@@ -4,13 +4,13 @@ using System.Threading;
 
 namespace Task.Cli
 {
-    [Description("Reset a task's status back to todo. Use --json for structured confirmation output.")]
+    [Description("Reset a task's status back to todo. Use --all to reset all done tasks. Use --json for structured confirmation output.")]
     public class ResetCommand : AsyncCommand<ResetCommand.Settings>
     {
         public class Settings : Program.TaskCommandSettings
         {
-            [CommandArgument(0, "<id>")]
-            [Description("The 6-character alpha UID of the task to reset (e.g., 'a2b3k9')")]
+            [CommandArgument(0, "[id]")]
+            [Description("The 6-character alpha UID of the task to reset (e.g., 'a2b3k9'). Omit when using --all.")]
             public string? Id { get; set; }
 
             [CommandOption("--all")]
@@ -52,7 +52,10 @@ namespace Task.Cli
 
             if (string.IsNullOrEmpty(settings.Id))
             {
-                Console.Error.WriteLine("ERROR: Task UID is required. Provide a 6-character alpha UID or use --all to reset all done tasks.");
+                ErrorHelper.ShowError(
+                    "Task UID is required. Provide a 6-character alpha UID or use --all to reset all done tasks.",
+                    "task reset <uid> or task reset --all",
+                    "task reset --help");
                 return 1;
             }
 
@@ -60,7 +63,10 @@ namespace Task.Cli
 
             if (taskItem == null)
             {
-                Console.Error.WriteLine($"ERROR: Task with UID {settings.Id} not found.");
+                ErrorHelper.ShowError(
+                    $"Task with UID {settings.Id} not found.",
+                    "task list",
+                    "task reset --help");
                 return 1;
             }
 
