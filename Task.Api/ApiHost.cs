@@ -1,11 +1,17 @@
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Scalar.AspNetCore;
 using System.Net.Sockets;
+using Task.Api.Auth;
 using Task.Core;
+using Task.Core.Auth;
 using Task.Core.Providers.Telegram;
 
 namespace Task.Api
@@ -119,7 +125,28 @@ namespace Task.Api
 
 			var result = BuildResult(app, reason);
 			app.Logger.LogInformation("Server.Started port={Port} url={Url} reason={Reason}", result.Port, result.Url, result.Reason);
+			LogTelegramConfiguration(app);
 			return new ApiHostHandle(app, result);
+		}
+
+		private static void LogTelegramConfiguration(WebApplication app)
+		{
+			try
+			{
+				var options = app.Services.GetRequiredService<IOptions<TelegramProviderOptions>>().Value;
+				var tokenPrefix = string.IsNullOrWhiteSpace(options.BotToken)
+					? string.Empty
+					: options.BotToken[..Math.Min(6, options.BotToken.Length)] + "...";
+				app.Logger.LogInformation(
+					"Telegram.Configured enabled={Enabled} chatId={ChatId} botToken={BotTokenPrefix}",
+					options.Enabled,
+					options.ChatId,
+					tokenPrefix);
+			}
+			catch (Exception ex)
+			{
+				app.Logger.LogWarning(ex, "Telegram.Configured failed to inspect options");
+			}
 		}
 
 		private static WebApplication BuildApp(string[] args, ApiHostOptions options, string? urlOverride)
@@ -180,7 +207,7 @@ namespace Task.Api
 			}
 		}
 
-		private static void ConfigureServices(WebApplicationBuilder builder)
+		internal static void ConfigureServices(WebApplicationBuilder builder)
 		{
 			var apiAssembly = typeof(ApiHost).Assembly;
 
@@ -193,16 +220,6 @@ namespace Task.Api
 			builder.Services.AddEndpointsApiExplorer();
 			builder.Services.AddOpenApi();
 
-			builder.Services.AddCors(options =>
-			{
-				options.AddPolicy("AllowAll", policy =>
-				{
-					policy.AllowAnyOrigin()
-						.AllowAnyMethod()
-						.AllowAnyHeader();
-				});
-			});
-
 			builder.Services.ConfigureHttpJsonOptions(options =>
 			{
 				options.SerializerOptions.Converters.Add(new DateTimeNullableConverter());
@@ -210,12 +227,78 @@ namespace Task.Api
 
 			builder.Services.AddSingleton(sp => CreateDatabaseConnectionSettings(sp.GetRequiredService<IConfiguration>()));
 			builder.Services.AddSingleton<Database>(sp => new Database(sp.GetRequiredService<DatabaseConnectionSettings>()));
+			builder.Services.AddSingleton<IAuthService>(sp => new AuthService(sp.GetRequiredService<DatabaseConnectionSettings>()));
 			builder.Services.AddSingleton<ITaskService>(sp => new TaskService(sp.GetRequiredService<DatabaseConnectionSettings>()));
 			builder.Services.AddSingleton<IUid, Uid>();
 
+			// Two authentication schemes, one claims identity (user_id + username + is_admin):
+			// cookie sessions for the browser, X-Api-Key for CLI/AI agents.
+			builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+				.AddCookie(options =>
+				{
+					options.Cookie.Name = "task_session";
+					options.Cookie.HttpOnly = true;
+					options.Cookie.SameSite = SameSiteMode.Lax;
+					options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+					options.LoginPath = "/login";
+					options.Events = new CookieAuthenticationEvents
+					{
+						OnRedirectToLogin = context =>
+						{
+							var isApi = context.Request.Path.StartsWithSegments("/api");
+							var isHtmx = string.Equals(context.Request.Headers["HX-Request"], "true", StringComparison.OrdinalIgnoreCase);
+							if (isApi || isHtmx)
+							{
+								context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+								if (isHtmx)
+								{
+									// Tell htmx to do a full-page navigation to the login page.
+									context.Response.Headers["HX-Redirect"] = "/login";
+								}
+
+								return System.Threading.Tasks.Task.CompletedTask;
+							}
+
+							context.Response.Redirect(context.RedirectUri);
+							return System.Threading.Tasks.Task.CompletedTask;
+						}
+					};
+				})
+				.AddApiKeyAuthentication();
+
+			builder.Services.AddAuthorization(options =>
+			{
+				// [Authorize] must accept BOTH the cookie session and the X-Api-Key header.
+				options.DefaultPolicy = new AuthorizationPolicyBuilder(
+						CookieAuthenticationDefaults.AuthenticationScheme,
+						ApiKeyAuthenticationHandler.SchemeName)
+					.RequireAuthenticatedUser()
+					.Build();
+
+				options.AddPolicy(AdminPolicy.Name, policy =>
+					policy.AddAuthenticationSchemes(
+							CookieAuthenticationDefaults.AuthenticationScheme,
+							ApiKeyAuthenticationHandler.SchemeName)
+						.RequireAuthenticatedUser()
+						.RequireClaim(AuthClaims.IsAdmin, "true"));
+			});
+
 			builder.Services.Configure<TelegramProviderOptions>(builder.Configuration.GetSection("Telegram"));
+			var telegramConfiguration = builder.Configuration;
 			builder.Services.PostConfigure<TelegramProviderOptions>(options =>
 			{
+				// An explicit Telegram:Enabled=false (e.g. test hosts) must not be overridden
+				// by the auto-enable-when-credentials-present behavior below.
+				var explicitlyDisabled = string.Equals(
+					telegramConfiguration["Telegram:Enabled"],
+					"false",
+					StringComparison.OrdinalIgnoreCase);
+				if (explicitlyDisabled)
+				{
+					options.Enabled = false;
+					return;
+				}
+
 				var hasRequiredCredentials =
 					!string.IsNullOrWhiteSpace(options.BotToken) &&
 					!string.IsNullOrWhiteSpace(options.ChatId);
@@ -225,11 +308,15 @@ namespace Task.Api
 
 			builder.Services.AddHttpClient<ITelegramProvider, TelegramProvider>((sp, client) =>
 			{
-				var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<TelegramProviderOptions>>().Value;
+				var options = sp.GetRequiredService<IOptions<TelegramProviderOptions>>().Value;
 				if (!string.IsNullOrWhiteSpace(options.BotToken))
 				{
 					client.BaseAddress = new Uri($"https://api.telegram.org/bot{options.BotToken}/");
 				}
+
+				// Bounded timeout: a slow or unreachable Telegram API must not stall API
+				// requests for the HttpClient default (100 s).
+				client.Timeout = TimeSpan.FromSeconds(10);
 			});
 
 			builder.Services.AddSingleton<TelegramNotificationService>();
@@ -243,23 +330,25 @@ namespace Task.Api
 				postgresConnectionString: configuration.GetValue<string>("Postgres:ConnectionString"));
 		}
 
-		private static void ConfigureMiddleware(WebApplication app)
+		internal static void ConfigureMiddleware(WebApplication app)
 		{
 			var database = app.Services.GetRequiredService<Database>();
 			database.InitializeAsync().GetAwaiter().GetResult();
 
 			app.UseMiddleware<ErrorHandlingMiddleware>();
-			app.UseCors("AllowAll");
 			app.UseHttpsRedirection();
 			app.UseStaticFiles();
+			app.UseAuthentication();
+			// Must run before UseAuthorization: authorization short-circuits 401s.
+			app.UseMiddleware<UnauthorizedBodyMiddleware>();
 			app.UseAuthorization();
 			app.MapControllers();
 			app.MapRazorPages();
 
 			if (app.Environment.IsDevelopment())
 			{
-				app.MapOpenApi();
-				app.MapScalarApiReference();
+				app.MapOpenApi().AllowAnonymous();
+				app.MapScalarApiReference().AllowAnonymous();
 			}
 		}
 

@@ -33,7 +33,7 @@ namespace Task.Cli
 
             foreach (var id in ids)
             {
-                var task = await service.GetTaskByUidAsync(id, cancellationToken);
+                var task = await service.GetTaskByUidAsync(id, userId: null, cancellationToken);
 
                 if (task == null)
                 {
@@ -41,7 +41,7 @@ namespace Task.Cli
                     continue;
                 }
 
-                await service.DeleteTaskAsync(id, cancellationToken);
+                await service.DeleteTaskAsync(id, userId: null, cancellationToken);
                 deleted.Add(id);
             }
 

@@ -1,14 +1,18 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Text;
 using System.Text.Json;
+using Task.Api.Auth;
 using Task.Core;
+using Task.Core.Auth;
 using Task.Core.Providers.Telegram;
 
 namespace Task.Api;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class TasksController : ControllerBase
 {
 	private readonly Database _database;
@@ -24,6 +28,8 @@ public class TasksController : ControllerBase
 		_logger = logger;
 		_telegramNotifications = telegramNotifications;
 	}
+
+	private string? UserId => AuthClaims.GetUserId(User);
 
 	[HttpGet]
 	public async Task<IActionResult> GetTasks(
@@ -41,7 +47,7 @@ public class TasksController : ControllerBase
 	{
 		try
 		{
-			var allTasks = await _database.GetAllTasksAsync();
+			var allTasks = await _database.GetAllTasksAsync(UserId);
 			var filteredTasks = allTasks;
 
 			if (!string.IsNullOrEmpty(status))
@@ -127,7 +133,7 @@ public class TasksController : ControllerBase
 	{
 		try
 		{
-			var task = await _database.GetTaskByUidAsync(uid);
+			var task = await _database.GetTaskByUidAsync(uid, UserId);
 			if (task == null)
 			{
 				return NotFound();
@@ -167,13 +173,14 @@ public class TasksController : ControllerBase
 				dto.Project,
 				dto.Assignee,
 				dto.Status ?? "todo",
-				dto.BlockReason);
+				dto.BlockReason,
+				UserId);
 
 			if (dto.Archived.HasValue || dto.ArchivedAt.HasValue)
 			{
 				task.Archived = dto.Archived ?? false;
 				task.ArchivedAt = dto.ArchivedAt;
-				await _database.UpdateTaskAsync(task);
+				await _database.UpdateTaskAsync(task, UserId);
 			}
 
 			return CreatedAtAction(nameof(GetTask), new { uid = task.Uid }, MapToDto(task));
@@ -190,7 +197,7 @@ public class TasksController : ControllerBase
 	{
 		try
 		{
-			var existingTask = await _database.GetTaskByUidAsync(uid);
+			var existingTask = await _database.GetTaskByUidAsync(uid, UserId);
 			if (existingTask == null)
 			{
 				return NotFound();
@@ -240,7 +247,7 @@ public class TasksController : ControllerBase
 			if (dto.ArchivedAt.HasValue || dto.Archived.HasValue)
 				existingTask.ArchivedAt = dto.ArchivedAt;
 
-			await _database.UpdateTaskAsync(existingTask);
+			await _database.UpdateTaskAsync(existingTask, UserId);
 			await _telegramNotifications.NotifyWhenTaskTransitionsToBlockedAsync(
 				existingTask,
 				previousStatus,
@@ -261,13 +268,13 @@ public class TasksController : ControllerBase
 	{
 		try
 		{
-			var existingTask = await _database.GetTaskByUidAsync(uid);
+			var existingTask = await _database.GetTaskByUidAsync(uid, UserId);
 			if (existingTask == null)
 			{
 				return NotFound();
 			}
 
-			await _database.DeleteTaskAsync(existingTask.Uid);
+			await _database.DeleteTaskAsync(existingTask.Uid, UserId);
 
 			return NoContent();
 		}
@@ -283,15 +290,15 @@ public class TasksController : ControllerBase
 	{
 		try
 		{
-			var existingTask = await _database.GetTaskByUidAsync(uid);
+			var existingTask = await _database.GetTaskByUidAsync(uid, UserId);
 			if (existingTask == null)
 			{
 				return NotFound();
 			}
 
-			await _database.CompleteTaskAsync(existingTask.Uid);
+			await _database.CompleteTaskAsync(existingTask.Uid, UserId);
 
-			var updatedTask = await _database.GetTaskByUidAsync(uid);
+			var updatedTask = await _database.GetTaskByUidAsync(uid, UserId);
 			return Ok(MapToDto(updatedTask!));
 		}
 		catch (Exception ex)
@@ -315,14 +322,14 @@ public class TasksController : ControllerBase
 			switch (type?.ToLower())
 			{
 				case "semantic":
-					tasks = await _database.SearchTasksSemanticAsync(q);
+					tasks = await _database.SearchTasksSemanticAsync(q, UserId);
 					break;
 				case "hybrid":
-					tasks = await _database.SearchTasksHybridAsync(q);
+					tasks = await _database.SearchTasksHybridAsync(q, UserId);
 					break;
 				case "fts":
 				default:
-					tasks = await _database.SearchTasksFTSAsync(q);
+					tasks = await _database.SearchTasksFTSAsync(q, UserId);
 					break;
 			}
 
@@ -341,7 +348,7 @@ public class TasksController : ControllerBase
 	{
 		try
 		{
-			var tasks = await _database.GetAllTasksAsync();
+			var tasks = await _database.GetAllTasksAsync(UserId);
 
 			if (format.ToLower() == "csv")
 			{
@@ -429,13 +436,14 @@ public class TasksController : ControllerBase
 						task.Project,
 						task.Assignee,
 						task.Status ?? "todo",
-						task.BlockReason);
+						task.BlockReason,
+						UserId);
 
 					if (task.Archived || task.ArchivedAt.HasValue)
 					{
 						addedTask.Archived = task.Archived;
 						addedTask.ArchivedAt = task.ArchivedAt;
-						await _database.UpdateTaskAsync(addedTask);
+						await _database.UpdateTaskAsync(addedTask, UserId);
 					}
 
 					importedTasks.Add(MapToDto(addedTask));
@@ -501,7 +509,7 @@ public class TasksController : ControllerBase
 	{
 		try
 		{
-			var tags = await _database.GetAllUniqueTagsAsync();
+			var tags = await _database.GetAllUniqueTagsAsync(UserId);
 			return Ok(tags);
 		}
 		catch (Exception ex)
@@ -516,7 +524,7 @@ public class TasksController : ControllerBase
 	{
 		try
 		{
-			var tasks = await _database.GetAllTasksAsync();
+			var tasks = await _database.GetAllTasksAsync(UserId);
 			var assignees = tasks.Where(t => !string.IsNullOrEmpty(t.Assignee)).Select(t => t.Assignee!).Distinct().OrderBy(a => a).ToList();
 			return Ok(assignees);
 		}

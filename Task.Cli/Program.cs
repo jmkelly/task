@@ -22,6 +22,7 @@ namespace Task.Cli
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ConfigGetCommand))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ConfigUnsetCommand))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ConfigListCommand))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(UsersCreateCommand))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ServerStartCommand))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ServerStatusCommand))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ServerStopCommand))]
@@ -110,6 +111,15 @@ config.SetApplicationVersion(version);
                         .WithDescription("Display all current configuration settings");
                 });
 
+                config.AddBranch("users", branch =>
+                {
+                    branch.SetDescription("Manage user accounts (server-host, local database access)");
+                    branch.AddCommand<UsersCreateCommand>("create")
+                        .WithDescription("Create a user account directly in the database")
+                        .WithExample(new[] { "users", "create", "alice", "--admin" })
+                        .WithExample(new[] { "users", "create", "bob", "--password", "s3cret-pass" });
+                });
+
 
 
                 config.AddBranch("server", branch =>
@@ -186,9 +196,34 @@ config.SetApplicationVersion(version);
                 throw new InvalidOperationException("API URL must be specified. Please set it in your config (task config set api-url <URL>) or provide --api-url <URL> on the command line.");
             }
             await Config.ValidateUrlAsync(settings.ApiUrl);
-            var apiClient = new ApiClient(settings.ApiUrl);
+            var apiClient = new ApiClient(settings.ApiUrl)
+            {
+                ApiKey = ResolveApiKey()
+            };
             await apiClient.InitializeAsync(cancellationToken);
             return apiClient;
+        }
+
+        /// <summary>
+        /// Resolves the API key: TASK_API_KEY environment variable takes precedence
+        /// over `task config set api.key <key>`. Neither configured → no header sent.
+        /// </summary>
+        /// <param name="getEnvironmentVariable">
+        /// Environment lookup, injectable for tests. Tests must not mutate the
+        /// process-wide environment directly: the integration suite runs in
+        /// parallel with tests that spawn CLI subprocesses, which would inherit
+        /// any mutation and resolve the wrong API key.
+        /// </param>
+        public static string? ResolveApiKey(Func<string, string?>? getEnvironmentVariable = null)
+        {
+            getEnvironmentVariable ??= Environment.GetEnvironmentVariable;
+            var fromEnv = getEnvironmentVariable("TASK_API_KEY");
+            if (!string.IsNullOrWhiteSpace(fromEnv))
+            {
+                return fromEnv;
+            }
+
+            return Config.Load().ApiKey;
         }
     }
 }

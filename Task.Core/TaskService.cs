@@ -37,9 +37,10 @@ namespace Task.Core
 			int? offset = null,
 			string? sortBy = null,
 			string? sortOrder = null,
+			string? userId = null,
 			CancellationToken cancellationToken = default)
 		{
-			var tasks = await _database.GetAllTasksAsync(cancellationToken);
+			var tasks = await _database.GetAllTasksAsync(userId, cancellationToken);
 
 			if (!string.IsNullOrEmpty(status))
 			{
@@ -103,24 +104,24 @@ namespace Task.Core
 			return tasks;
 		}
 
-		public async ST.Task<TaskItem?> GetTaskByUidAsync(string uid, CancellationToken cancellationToken = default)
+		public async ST.Task<TaskItem?> GetTaskByUidAsync(string uid, string? userId = null, CancellationToken cancellationToken = default)
 		{
-			return await _database.GetTaskByUidAsync(uid, cancellationToken);
+			return await _database.GetTaskByUidAsync(uid, userId, cancellationToken);
 		}
 
-		public async ST.Task<TaskItem> AddTaskAsync(string uid, string title, string? description, string priority, DateTime? dueDate, List<string> tags, string? project = null, List<string>? dependsOn = null, string? assignee = null, string status = "todo", string? blockReason = null, CancellationToken cancellationToken = default)
+		public async ST.Task<TaskItem> AddTaskAsync(string uid, string title, string? description, string priority, DateTime? dueDate, List<string> tags, string? project = null, List<string>? dependsOn = null, string? assignee = null, string status = "todo", string? blockReason = null, string? userId = null, CancellationToken cancellationToken = default)
 		{
-			return await _database.AddTaskAsync(uid, title, description, priority, dueDate, tags, project, assignee, status, blockReason, cancellationToken);
+			return await _database.AddTaskAsync(uid, title, description, priority, dueDate, tags, project, assignee, status, blockReason, userId, cancellationToken);
 		}
 
-		public async ST.Task UpdateTaskAsync(TaskItem task, CancellationToken cancellationToken = default)
+		public async ST.Task UpdateTaskAsync(TaskItem task, string? userId = null, CancellationToken cancellationToken = default)
 		{
-			await _database.UpdateTaskAsync(task, cancellationToken);
+			await _database.UpdateTaskAsync(task, userId, cancellationToken);
 		}
 
-		public async ST.Task DeleteTaskAsync(string uid, CancellationToken cancellationToken = default)
+		public async ST.Task DeleteTaskAsync(string uid, string? userId = null, CancellationToken cancellationToken = default)
 		{
-			var task = await _database.GetTaskByUidAsync(uid, cancellationToken);
+			var task = await _database.GetTaskByUidAsync(uid, userId, cancellationToken);
 			if (task == null)
 			{
 				return;
@@ -130,47 +131,47 @@ namespace Task.Core
 			{
 				task.Archived = true;
 				task.ArchivedAt = DateTime.UtcNow;
-				await _database.UpdateTaskAsync(task, cancellationToken);
+				await _database.UpdateTaskAsync(task, userId, cancellationToken);
 			}
 		}
 
-		public async ST.Task CompleteTaskAsync(string uid, CancellationToken cancellationToken = default)
+		public async ST.Task CompleteTaskAsync(string uid, string? userId = null, CancellationToken cancellationToken = default)
 		{
-			await _database.CompleteTaskAsync(uid, cancellationToken);
+			await _database.CompleteTaskAsync(uid, userId, cancellationToken);
 		}
 
-		public async ST.Task<List<TaskItem>> SearchTasksAsync(string query, string type = "fts", CancellationToken cancellationToken = default)
+		public async ST.Task<List<TaskItem>> SearchTasksAsync(string query, string type = "fts", string? userId = null, CancellationToken cancellationToken = default)
 		{
-			return await _database.SearchTasksAsync(query, cancellationToken);
+			return await _database.SearchTasksAsync(query, userId, cancellationToken);
 		}
 
-		public async ST.Task<List<string>> GetAllUniqueTagsAsync(CancellationToken cancellationToken = default)
+		public async ST.Task<List<string>> GetAllUniqueTagsAsync(string? userId = null, CancellationToken cancellationToken = default)
 		{
-			return await _database.GetAllUniqueTagsAsync(cancellationToken);
+			return await _database.GetAllUniqueTagsAsync(userId, cancellationToken);
 		}
 
-		public async ST.Task<List<string>> GetAllUniqueProjectsAsync(CancellationToken cancellationToken = default)
+		public async ST.Task<List<string>> GetAllUniqueProjectsAsync(string? userId = null, CancellationToken cancellationToken = default)
 		{
-			var tasks = await _database.GetAllTasksAsync(cancellationToken);
+			var tasks = await _database.GetAllTasksAsync(userId, cancellationToken);
 			return tasks.Where(t => !string.IsNullOrEmpty(t.Project)).Select(t => t.Project!).Distinct().OrderBy(p => p).ToList();
 		}
 
-		public async ST.Task<List<string>> GetAllUniqueAssigneesAsync(CancellationToken cancellationToken = default)
+		public async ST.Task<List<string>> GetAllUniqueAssigneesAsync(string? userId = null, CancellationToken cancellationToken = default)
 		{
-			var tasks = await _database.GetAllTasksAsync(cancellationToken);
+			var tasks = await _database.GetAllTasksAsync(userId, cancellationToken);
 			return tasks.Where(t => !string.IsNullOrEmpty(t.Assignee)).Select(t => t.Assignee!).Distinct().OrderBy(a => a).ToList();
 		}
 
-		public async ST.Task<List<TaskItem>> GetTasksDependingOnAsync(string uid, CancellationToken cancellationToken = default)
+		public async ST.Task<List<TaskItem>> GetTasksDependingOnAsync(string uid, string? userId = null, CancellationToken cancellationToken = default)
 		{
 			return await ST.Task.FromResult(new List<TaskItem>());
 		}
 
-		public async ST.Task<bool> ValidateDependenciesAsync(string uid, List<string> dependsOn, CancellationToken cancellationToken = default)
+		public async ST.Task<bool> ValidateDependenciesAsync(string uid, List<string> dependsOn, string? userId = null, CancellationToken cancellationToken = default)
 		{
 			foreach (var dep in dependsOn)
 			{
-				var task = await _database.GetTaskByUidAsync(dep, cancellationToken);
+				var task = await _database.GetTaskByUidAsync(dep, userId, cancellationToken);
 				if (task == null)
 				{
 					return false;
@@ -180,9 +181,9 @@ namespace Task.Core
 			return true;
 		}
 
-		public async ST.Task ArchiveAllTasksAsync(CancellationToken cancellationToken = default)
+		public async ST.Task ArchiveAllTasksAsync(string? userId = null, CancellationToken cancellationToken = default)
 		{
-			var tasks = await _database.GetAllTasksAsync(cancellationToken);
+			var tasks = await _database.GetAllTasksAsync(userId, cancellationToken);
 			var now = DateTime.UtcNow;
 			foreach (var task in tasks)
 			{
@@ -190,7 +191,7 @@ namespace Task.Core
 				{
 					task.Archived = true;
 					task.ArchivedAt = now;
-					await _database.UpdateTaskAsync(task, cancellationToken);
+					await _database.UpdateTaskAsync(task, userId, cancellationToken);
 				}
 			}
 		}

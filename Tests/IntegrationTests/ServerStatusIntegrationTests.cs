@@ -153,7 +153,26 @@ namespace Task.Cli.Tests.IntegrationTests
             var stderrTask = process.StandardError.ReadToEndAsync();
 
             using var cts = new CancellationTokenSource(timeout);
-            await process.WaitForExitAsync(cts.Token);
+            try
+            {
+                await process.WaitForExitAsync(cts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                // Leave no orphan processes behind and surface captured output so a
+                // hung CLI command can be diagnosed from the failure message alone.
+                try
+                {
+                    process.Kill(entireProcessTree: true);
+                }
+                catch
+                {
+                }
+
+                await process.WaitForExitAsync();
+                throw new XunitException(
+                    $"CLI command timed out after {timeout.TotalSeconds}s: {string.Join(' ', arguments)}\nSTDOUT:\n{await stdoutTask}\nSTDERR:\n{await stderrTask}");
+            }
 
             return new CliCommandResult(
                 process.ExitCode,
@@ -221,6 +240,12 @@ namespace Task.Cli.Tests.IntegrationTests
             startInfo.Environment["XDG_CONFIG_HOME"] = configHome;
             startInfo.Environment["DOTNET_CLI_HOME"] = homeDirectory;
             startInfo.Environment["NO_COLOR"] = "1";
+
+            // Tests must be hermetic: strip Telegram credentials inherited from the parent
+            // environment so the spawned API server never calls the live Telegram API.
+            startInfo.Environment.Remove("Telegram__BotToken");
+            startInfo.Environment.Remove("Telegram__ChatId");
+            startInfo.Environment.Remove("Telegram__Enabled");
 
             return startInfo;
         }

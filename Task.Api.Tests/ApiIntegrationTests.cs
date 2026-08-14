@@ -28,8 +28,8 @@ namespace Task.Api.Tests.IntegrationTests
 		public ApiIntegrationTests(TestWebApplicationFactory factory)
 		{
 			_factory = factory;
-			_client = _factory.CreateClient();
 			_factory.ClearDatabase();
+			_client = _factory.CreateUserClient();
 		}
 
 		[Fact]
@@ -696,6 +696,8 @@ namespace Task.Api.Tests.IntegrationTests
 
 		public string TestDbPath => _testDbPath;
 
+		public Database Database => _database ?? throw new InvalidOperationException("Factory not initialized.");
+
 		public FakeTelegramProvider TelegramProvider { get; }
 
 		public void ClearDatabase()
@@ -703,12 +705,85 @@ namespace Task.Api.Tests.IntegrationTests
 			if (_database != null)
 			{
 				_database.ClearAllTasksAsync().GetAwaiter().GetResult();
+				_database.ClearAuthTablesAsync().GetAwaiter().GetResult();
 			}
+		}
+
+		/// <summary>
+		/// Creates a client authenticated with a fresh cookie session (signup + login).
+		/// The first user created on a fresh database becomes the admin.
+		/// </summary>
+		public HttpClient CreateUserClient(string? username = null)
+		{
+			var client = CreateClient();
+			username ??= $"user_{Guid.NewGuid():N}"[..15];
+			const string password = "password123";
+
+			var signup = client.PostAsJsonAsync("/api/auth/signup", new { username, password }).GetAwaiter().GetResult();
+			signup.EnsureSuccessStatusCode();
+
+			var login = client.PostAsJsonAsync("/api/auth/login", new { username, password }).GetAwaiter().GetResult();
+			login.EnsureSuccessStatusCode();
+			return client;
+		}
+
+		/// <summary>
+		/// Creates a client authenticated with a fresh API key (signup + create key),
+		/// sent as the X-Api-Key header on every request.
+		/// </summary>
+		public HttpClient CreateKeyClient(string? username = null)
+		{
+			var userClient = CreateUserClient(username);
+			var response = userClient.PostAsJsonAsync("/api/keys", new { name = "test-key" }).GetAwaiter().GetResult();
+			response.EnsureSuccessStatusCode();
+
+			var keyResponse = response.Content.ReadFromJsonAsync<KeyDto>().GetAwaiter().GetResult()
+				?? throw new InvalidOperationException("Key creation returned no body.");
+
+			var keyClient = CreateClient();
+			keyClient.DefaultRequestHeaders.Add("X-Api-Key", keyResponse.Key);
+			return keyClient;
+		}
+
+		public sealed class KeyDto
+		{
+			public string Id { get; set; } = string.Empty;
+			public string Name { get; set; } = string.Empty;
+			public string? Key { get; set; }
+		}
+
+		/// <summary>Inserts a legacy-style task with no owner (user_id = NULL).</summary>
+		public TaskItem AddUnownedTask(string title, string? assignee = null, string? uid = null)
+		{
+			var database = Database;
+			var task = database.AddTaskAsync(
+				uid ?? new Uid().GenerateUid(),
+				title,
+				null,
+				"medium",
+				null,
+				new List<string>(),
+				assignee: assignee,
+				userId: null).GetAwaiter().GetResult();
+			return task;
+		}
+
+		public void SetUserDisabled(string username, bool disabled = true)
+		{
+			var user = Database.FindUserByUsernameAsync(username).GetAwaiter().GetResult()
+				?? throw new InvalidOperationException($"User '{username}' does not exist.");
+			Database.SetUserDisabledAsync(user.Id, disabled ? DateTime.UtcNow : null).GetAwaiter().GetResult();
 		}
 
 		protected override void ConfigureWebHost(IWebHostBuilder builder)
 		{
 			builder.UseEnvironment("Testing");
+
+			// Tests must be hermetic: never call the real Telegram API, even though the
+			// provider is already replaced with a fake below. (Credentials are often
+			// present in the developer/CI environment.)
+			builder.UseSetting("Telegram:Enabled", "false");
+
 			_database = new Database(_testDbPath);
 			_database.Initialize();
 			builder.ConfigureServices(services =>
@@ -719,7 +794,16 @@ namespace Task.Api.Tests.IntegrationTests
 					services.Remove(taskServiceDescriptor);
 				}
 
+				var authServiceDescriptors = services
+					.Where(descriptor => descriptor.ServiceType == typeof(IAuthService))
+					.ToList();
+				foreach (var descriptor in authServiceDescriptors)
+				{
+					services.Remove(descriptor);
+				}
+
 				services.AddSingleton(_database);
+				services.AddSingleton<IAuthService>(new AuthService(_database!));
 				services.AddSingleton<ITaskService>(sp =>
 				{
 					var taskService = new TaskService(_testDbPath);

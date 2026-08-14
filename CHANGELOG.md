@@ -11,6 +11,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 2026-08-14 — Multi-user accounts, API keys, and per-user task isolation
+- **Breaking**: the API and board now require authentication. Anonymous access is
+  limited to `GET /api/health` and `/api/auth/*`. CLI/agents authenticate with a
+  per-user API key (`X-Api-Key`); the browser uses username/password sessions.
+- feat(api,core): `users` and `api_keys` tables (both SQLite and PostgreSQL in the
+  same commit); tasks gain `user_id`, `created_by`, `updated_by` (indexed).
+- feat(api): signup/login/logout/me endpoints; first registered user becomes admin;
+  `Auth:AllowSignup=false` + `task users create <username> [--admin]` for closed setups.
+- feat(api): API keys page (`/api/keys`, `/keys`) — plaintext shown exactly once,
+  SHA-256 hashes at rest, immediate revocation, disabled users rejected per request.
+- feat(api): per-user isolation enforced in the data layer — every task query is
+  scoped by `user_id` on both providers; foreign uids return 404 (no existence leak).
+- feat(api): admin endpoints (`/api/admin/users`, `/api/admin/tasks`, key revoke)
+  and an admin page (read-only view of every board).
+- feat(ui): login, signup, and API-keys pages; board requires login; htmx 401
+  redirects to `/login`.
+- feat(cli): `config set api.key <key>`; `TASK_API_KEY` env var takes precedence;
+  actionable 401 messages pointing at the server's keys page.
+- feat(cli): `users create` command for closed-signup servers (local DB access).
+- feat(core): PBKDF2 password hashing (built-in `Rfc2898DeriveBytes`), constant-time
+  compares; `tk_` + base64url(32 CSPRNG bytes) key format.
+- feat(core): legacy tasks stay unowned (`user_id = NULL`, admin-visible); signup
+  auto-claims tasks whose assignee matches the new username.
+- test(api,core,cli): auth matrix, keys lifecycle, per-user isolation matrix, admin
+  powers, migration idempotency — on SQLite and PostgreSQL (Testcontainers).
+- test: run test collections in parallel — removed assembly-wide serialization;
+  the Postgres auth matrix shares one container per class with per-test database
+  resets (full test-level isolation, 9 containers → 2 per run), and the
+  `TASK_API_KEY` precedence test injects the environment lookup instead of
+  mutating the process-wide environment that spawned CLI subprocesses inherit.
+- docs(readme,help): authentication walkthrough, upgrade path, server setup.
+
 ### 2026-03-06
 - chore(db): update database file
 - build(cli): bump CLI project version

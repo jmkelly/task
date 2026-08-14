@@ -1,0 +1,91 @@
+@page
+@using Task.Api.Pages
+@model KeysModel
+@{
+    ViewData["Title"] = "API keys";
+}
+
+<section class="page-toolbar" aria-label="API keys">
+    <div class="page-toolbar-copy">
+        <p class="page-eyebrow">Account</p>
+        <h1 class="page-title">API keys</h1>
+        <p class="page-subtitle">Keys let the CLI and AI agents talk to your board. The key is shown only once at creation — copy it somewhere safe.</p>
+    </div>
+</section>
+
+<section class="board-surface" style="max-width: 720px; margin: 0 auto 2rem; padding: 2rem;">
+    @if (!string.IsNullOrEmpty(Model.NewKeyPlaintext))
+    {
+        <div style="border: 1px solid var(--accent, #46a758); border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">
+            <strong>Your new API key</strong> (shown once — copy it now):
+            <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                <code id="new-key" style="flex: 1; padding: 0.5rem; border-radius: 6px; background: var(--surface-2, #1a1d21); word-break: break-all;">@Model.NewKeyPlaintext</code>
+                <button type="button" class="btn-secondary" onclick="copyKey()">Copy</button>
+            </div>
+        </div>
+        <script>
+            function copyKey() {
+                const el = document.getElementById('new-key');
+                navigator.clipboard.writeText(el.textContent.trim());
+            }
+        </script>
+    }
+
+    <form method="post" asp-page-handler="Create" class="form-group" style="display: flex; gap: 0.5rem; align-items: end;">
+        @Html.AntiForgeryToken()
+        <div style="flex: 1;">
+            <label for="key-name">Key name</label>
+            <input class="search-input" id="key-name" name="Name" type="text" placeholder="e.g. cli-laptop, ci-bot" style="width: 100%;" />
+        </div>
+        <button type="submit" class="btn-primary">Create key</button>
+    </form>
+
+    @if (!Model.Keys.Any())
+    {
+        <p class="empty-state" style="margin-top: 1.5rem;">No API keys yet. Create one above to use the CLI.</p>
+    }
+    else
+    {
+        <table style="width: 100%; margin-top: 1.5rem; border-collapse: collapse;">
+            <thead>
+                <tr style="text-align: left; opacity: 0.7;">
+                    <th style="padding: 0.5rem;">Name</th>
+                    <th style="padding: 0.5rem;">Created</th>
+                    <th style="padding: 0.5rem;">Last used</th>
+                    <th style="padding: 0.5rem;">Status</th>
+                    <th style="padding: 0.5rem;"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var key in Model.Keys)
+                {
+                    <tr style="border-top: 1px solid var(--border, #2c3138);">
+                        <td style="padding: 0.5rem;">@key.Name</td>
+                        <td style="padding: 0.5rem;">@key.CreatedAt.ToLocalTime():g</td>
+                        <td style="padding: 0.5rem;">@(key.LastUsedAt?.ToLocalTime().ToString("g") ?? "never")</td>
+                        <td style="padding: 0.5rem;">
+                            @if (key.RevokedAt != null)
+                            {
+                                <span style="color: var(--danger, #e5484d);">revoked @key.RevokedAt.Value.ToLocalTime():g</span>
+                            }
+                            else
+                            {
+                                <span style="color: var(--success, #46a758);">active</span>
+                            }
+                        </td>
+                        <td style="padding: 0.5rem; text-align: right;">
+                            @if (key.RevokedAt == null)
+                            {
+                                <form method="post" asp-page-handler="Revoke" onsubmit="return confirm('Revoke this key? CLI and agents using it will lose access immediately.');">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="Id" value="@key.Id" />
+                                    <button type="submit" class="btn-quiet" style="color: var(--danger, #e5484d);">Revoke</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>

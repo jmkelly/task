@@ -7,6 +7,13 @@
     <title>@ViewData["Title"] - Task Kanban Board</title>
     <script src="https://unpkg.com/htmx.org@2.0.8"></script>
     <script src="https://unpkg.com/htmx.org@2.0.8/dist/ext/ws.js"></script>
+    <script>
+        document.addEventListener('htmx:responseError', function (event) {
+            if (event.detail.xhr && event.detail.xhr.status === 401) {
+                window.location.href = '/login';
+            }
+        });
+    </script>
     <link rel="stylesheet" href="~/styles.css" />
 </head>
 <body>
@@ -19,6 +26,24 @@
                     <span>Kanban board</span>
                 </span>
             </div>
+
+            <nav style="display: flex; align-items: center; gap: 0.75rem;">
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <span style="opacity: 0.8;">@User.Identity.Name</span>
+                    <a class="btn-quiet btn-small" href="/keys">API keys</a>
+                    @if (User.IsInRole("task_admin") || User.HasClaim("task_is_admin", "true"))
+                    {
+                        <a class="btn-quiet btn-small" href="/admin">Admin</a>
+                    }
+                    <a class="btn-secondary btn-small" href="/api/auth/logout">Sign out</a>
+                }
+                else
+                {
+                    <a class="btn-quiet btn-small" href="/login">Sign in</a>
+                    <a class="btn-secondary btn-small" href="/signup">Create account</a>
+                }
+            </nav>
 
             <button class="btn-secondary theme-toggle" id="theme-toggle" aria-label="Switch to light theme" title="Switch to light theme">
                 <span class="theme-toggle-icon" id="theme-toggle-icon">☀</span>

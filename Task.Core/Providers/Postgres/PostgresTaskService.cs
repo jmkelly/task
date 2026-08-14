@@ -43,6 +43,7 @@ namespace Task.Core.Providers.Postgres
             int? offset = null,
             string? sortBy = null,
             string? sortOrder = null,
+            string? userId = null,
             CancellationToken cancellationToken = default)
         {
             var sql = new StringBuilder($@"
@@ -51,6 +52,7 @@ namespace Task.Core.Providers.Postgres
                 WHERE archived = FALSE");
             var parameters = new List<NpgsqlParameter>();
 
+            AppendUserScope(sql, parameters, userId);
             AddCaseInsensitiveEqualsFilter(sql, parameters, "status", status, "status");
             AddCaseInsensitiveEqualsFilter(sql, parameters, "priority", priority, "priority");
             AddCaseInsensitiveEqualsFilter(sql, parameters, "project", project, "project");
@@ -112,17 +114,19 @@ namespace Task.Core.Providers.Postgres
             return await ReadTasksAsync(sql.ToString(), parameters, cancellationToken);
         }
 
-        public async ST.Task<TaskItem?> GetTaskByUidAsync(string uid, CancellationToken cancellationToken = default)
+        public async ST.Task<TaskItem?> GetTaskByUidAsync(string uid, string? userId = null, CancellationToken cancellationToken = default)
         {
             var sql = $@"
                 SELECT {SelectColumns}
                 FROM tasks
-                WHERE uid = @uid AND archived = FALSE
-                LIMIT 1";
+                WHERE uid = @uid AND archived = FALSE";
+            var parameters = new List<NpgsqlParameter> { new("uid", uid) };
+            AppendUserScopeSql(ref sql, parameters, userId);
+            sql += " LIMIT 1";
 
             await using var reader = await _db.ExecuteReaderAsync(
                 sql,
-                new List<NpgsqlParameter> { new("uid", uid) },
+                parameters,
                 cancellationToken);
 
             return await reader.ReadAsync(cancellationToken)
@@ -142,6 +146,7 @@ namespace Task.Core.Providers.Postgres
             string? assignee = null,
             string status = "todo",
             string? blockReason = null,
+            string? userId = null,
             CancellationToken cancellationToken = default)
         {
             ValidateBlockReason(status, blockReason);
@@ -166,7 +171,9 @@ namespace Task.Core.Providers.Postgres
                     created_at,
                     updated_at,
                     archived,
-                    archived_at)
+                    archived_at,
+                    user_id,
+                    created_by)
                 VALUES (
                     @uid,
                     @title,
@@ -182,7 +189,9 @@ namespace Task.Core.Providers.Postgres
                     @created_at,
                     @updated_at,
                     FALSE,
-                    NULL)
+                    NULL,
+                    @user_id,
+                    @user_id)
                 RETURNING id;";
 
             var parameters = new List<NpgsqlParameter>
@@ -199,7 +208,8 @@ namespace Task.Core.Providers.Postgres
                 new("status", status),
                 new("block_reason", ToDbValue(blockReason)),
                 new("created_at", now),
-                new("updated_at", now)
+                new("updated_at", now),
+                new("user_id", ToDbValue(userId))
             };
 
             var insertedId = await _db.ExecuteScalarAsync(sql, parameters, cancellationToken);
@@ -225,14 +235,14 @@ namespace Task.Core.Providers.Postgres
             };
         }
 
-        public async ST.Task UpdateTaskAsync(TaskItem task, CancellationToken cancellationToken = default)
+        public async ST.Task UpdateTaskAsync(TaskItem task, string? userId = null, CancellationToken cancellationToken = default)
         {
             ValidateBlockReason(task.Status, task.BlockReason);
 
             var now = DateTime.UtcNow;
             task.UpdatedAt = now;
 
-            const string sql = @"
+            var sql = @"
                 UPDATE tasks
                 SET title = @title,
                     description = @description,
@@ -245,6 +255,7 @@ namespace Task.Core.Providers.Postgres
                     status = @status,
                     block_reason = @block_reason,
                     updated_at = @updated_at,
+                    updated_by = @updated_by,
                     archived = @archived,
                     archived_at = @archived_at
                 WHERE uid = @uid";
@@ -263,16 +274,18 @@ namespace Task.Core.Providers.Postgres
                 new("status", task.Status),
                 new("block_reason", ToDbValue(task.BlockReason)),
                 new("updated_at", now),
+                new("updated_by", ToDbValue(userId)),
                 new("archived", task.Archived),
                 new("archived_at", ToDbValue(task.ArchivedAt)),
             };
 
+            AppendUserScopeSql(ref sql, parameters, userId);
             await _db.ExecuteNonQueryAsync(sql, parameters, cancellationToken);
         }
 
-        public async ST.Task DeleteTaskAsync(string uid, CancellationToken cancellationToken = default)
+        public async ST.Task DeleteTaskAsync(string uid, string? userId = null, CancellationToken cancellationToken = default)
         {
-            const string sql = @"
+            var sql = @"
                 UPDATE tasks
                 SET archived = TRUE,
                     archived_at = @archived_at,
@@ -280,37 +293,35 @@ namespace Task.Core.Providers.Postgres
                 WHERE uid = @uid AND archived = FALSE";
 
             var now = DateTime.UtcNow;
-            await _db.ExecuteNonQueryAsync(
-                sql,
-                new List<NpgsqlParameter>
-                {
-                    new("uid", uid),
-                    new("archived_at", now),
-                    new("updated_at", now)
-                },
-                cancellationToken);
+            var parameters = new List<NpgsqlParameter>
+            {
+                new("uid", uid),
+                new("archived_at", now),
+                new("updated_at", now)
+            };
+            AppendUserScopeSql(ref sql, parameters, userId);
+            await _db.ExecuteNonQueryAsync(sql, parameters, cancellationToken);
         }
 
-        public async ST.Task CompleteTaskAsync(string uid, CancellationToken cancellationToken = default)
+        public async ST.Task CompleteTaskAsync(string uid, string? userId = null, CancellationToken cancellationToken = default)
         {
-            const string sql = @"
+            var sql = @"
                 UPDATE tasks
                 SET status = 'done',
                     block_reason = NULL,
                     updated_at = @updated_at
                 WHERE uid = @uid AND archived = FALSE";
 
-            await _db.ExecuteNonQueryAsync(
-                sql,
-                new List<NpgsqlParameter>
-                {
-                    new("uid", uid),
-                    new("updated_at", DateTime.UtcNow)
-                },
-                cancellationToken);
+            var parameters = new List<NpgsqlParameter>
+            {
+                new("uid", uid),
+                new("updated_at", DateTime.UtcNow)
+            };
+            AppendUserScopeSql(ref sql, parameters, userId);
+            await _db.ExecuteNonQueryAsync(sql, parameters, cancellationToken);
         }
 
-        public async ST.Task<List<TaskItem>> SearchTasksAsync(string query, string type = "fts", CancellationToken cancellationToken = default)
+        public async ST.Task<List<TaskItem>> SearchTasksAsync(string query, string type = "fts", string? userId = null, CancellationToken cancellationToken = default)
         {
             var terms = ParseSearchTerms(query);
             if (terms.Count == 0)
@@ -323,6 +334,8 @@ namespace Task.Core.Providers.Postgres
                 FROM tasks
                 WHERE archived = FALSE");
             var parameters = new List<NpgsqlParameter>();
+
+            AppendUserScope(sql, parameters, userId);
 
             for (var index = 0; index < terms.Count; index++)
             {
@@ -340,18 +353,20 @@ namespace Task.Core.Providers.Postgres
             return await ReadTasksAsync(sql.ToString(), parameters, cancellationToken);
         }
 
-        public async ST.Task<List<string>> GetAllUniqueTagsAsync(CancellationToken cancellationToken = default)
+        public async ST.Task<List<string>> GetAllUniqueTagsAsync(string? userId = null, CancellationToken cancellationToken = default)
         {
-            const string sql = @"
+            var sql = @"
                 SELECT tags
                 FROM tasks
                 WHERE archived = FALSE
                   AND tags IS NOT NULL
                   AND tags <> ''";
+            var parameters = new List<NpgsqlParameter>();
+            AppendUserScopeSql(ref sql, parameters, userId);
 
             var values = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            await using var reader = await _db.ExecuteReaderAsync(sql, cancellationToken: cancellationToken);
+            await using var reader = await _db.ExecuteReaderAsync(sql, parameters, cancellationToken);
             while (await reader.ReadAsync(cancellationToken))
             {
                 foreach (var tag in ParseDelimitedValues(ReadNullableString(reader, "tags")))
@@ -363,33 +378,34 @@ namespace Task.Core.Providers.Postgres
             return values.OrderBy(value => value, StringComparer.OrdinalIgnoreCase).ToList();
         }
 
-        public async ST.Task<List<string>> GetAllUniqueProjectsAsync(CancellationToken cancellationToken = default)
+        public async ST.Task<List<string>> GetAllUniqueProjectsAsync(string? userId = null, CancellationToken cancellationToken = default)
         {
-            return await ReadUniqueScalarValuesAsync("project", cancellationToken);
+            return await ReadUniqueScalarValuesAsync("project", userId, cancellationToken);
         }
 
-        public async ST.Task<List<string>> GetAllUniqueAssigneesAsync(CancellationToken cancellationToken = default)
+        public async ST.Task<List<string>> GetAllUniqueAssigneesAsync(string? userId = null, CancellationToken cancellationToken = default)
         {
-            return await ReadUniqueScalarValuesAsync("assignee", cancellationToken);
+            return await ReadUniqueScalarValuesAsync("assignee", userId, cancellationToken);
         }
 
-        public async ST.Task<List<TaskItem>> GetTasksDependingOnAsync(string uid, CancellationToken cancellationToken = default)
+        public async ST.Task<List<TaskItem>> GetTasksDependingOnAsync(string uid, string? userId = null, CancellationToken cancellationToken = default)
         {
             var sql = $@"
                 SELECT {SelectColumns}
                 FROM tasks
                 WHERE archived = FALSE
                   AND depends_on IS NOT NULL
-                  AND depends_on <> ''
-                ORDER BY created_at ASC, id ASC";
-
-            var candidates = await ReadTasksAsync(sql, null, cancellationToken);
+                  AND depends_on <> ''";
+            var parameters = new List<NpgsqlParameter>();
+            AppendUserScopeSql(ref sql, parameters, userId);
+            sql += " ORDER BY created_at ASC, id ASC";
+            var candidates = await ReadTasksAsync(sql, parameters, cancellationToken);
             return candidates
                 .Where(task => task.DependsOn.Contains(uid, StringComparer.OrdinalIgnoreCase))
                 .ToList();
         }
 
-        public async ST.Task<bool> ValidateDependenciesAsync(string uid, List<string> dependsOn, CancellationToken cancellationToken = default)
+        public async ST.Task<bool> ValidateDependenciesAsync(string uid, List<string> dependsOn, string? userId = null, CancellationToken cancellationToken = default)
         {
             var dependencyUids = ParseDelimitedValues(dependsOn);
             if (dependencyUids.Count == 0)
@@ -399,16 +415,18 @@ namespace Task.Core.Providers.Postgres
 
             for (var index = 0; index < dependencyUids.Count; index++)
             {
-                const string sqlPrefix = @"
+                var sql = @"
                     SELECT 1
                     FROM tasks
                     WHERE uid = @uid
-                      AND archived = FALSE
-                    LIMIT 1";
+                      AND archived = FALSE";
+                var parameters = new List<NpgsqlParameter> { new("uid", dependencyUids[index]) };
+                AppendUserScopeSql(ref sql, parameters, userId);
+                sql += " LIMIT 1";
 
                 var exists = await _db.ExecuteScalarAsync(
-                    sqlPrefix,
-                    new List<NpgsqlParameter> { new("uid", dependencyUids[index]) },
+                    sql,
+                    parameters,
                     cancellationToken);
 
                 if (exists == null)
@@ -420,9 +438,9 @@ namespace Task.Core.Providers.Postgres
             return true;
         }
 
-        public async ST.Task ArchiveAllTasksAsync(CancellationToken cancellationToken = default)
+        public async ST.Task ArchiveAllTasksAsync(string? userId = null, CancellationToken cancellationToken = default)
         {
-            const string sql = @"
+            var sql = @"
                 UPDATE tasks
                 SET archived = TRUE,
                     archived_at = @archived_at,
@@ -430,14 +448,13 @@ namespace Task.Core.Providers.Postgres
                 WHERE archived = FALSE";
 
             var now = DateTime.UtcNow;
-            await _db.ExecuteNonQueryAsync(
-                sql,
-                new List<NpgsqlParameter>
-                {
-                    new("archived_at", now),
-                    new("updated_at", now)
-                },
-                cancellationToken);
+            var parameters = new List<NpgsqlParameter>
+            {
+                new("archived_at", now),
+                new("updated_at", now)
+            };
+            AppendUserScopeSql(ref sql, parameters, userId);
+            await _db.ExecuteNonQueryAsync(sql, parameters, cancellationToken);
         }
 
         private async ST.Task<List<TaskItem>> ReadTasksAsync(string sql, IList<NpgsqlParameter>? parameters, CancellationToken cancellationToken)
@@ -453,7 +470,7 @@ namespace Task.Core.Providers.Postgres
             return tasks;
         }
 
-        private async ST.Task<List<string>> ReadUniqueScalarValuesAsync(string columnName, CancellationToken cancellationToken)
+        private async ST.Task<List<string>> ReadUniqueScalarValuesAsync(string columnName, string? userId, CancellationToken cancellationToken)
         {
             columnName = NormalizeUniqueValueColumn(columnName);
 
@@ -462,11 +479,13 @@ namespace Task.Core.Providers.Postgres
                 FROM tasks
                 WHERE archived = FALSE
                   AND {columnName} IS NOT NULL
-                  AND {columnName} <> ''
-                ORDER BY {columnName} ASC";
+                  AND {columnName} <> ''";
+            var parameters = new List<NpgsqlParameter>();
+            AppendUserScopeSql(ref sql, parameters, userId);
+            sql += $" ORDER BY {columnName} ASC";
 
             var values = new List<string>();
-            await using var reader = await _db.ExecuteReaderAsync(sql, cancellationToken: cancellationToken);
+            await using var reader = await _db.ExecuteReaderAsync(sql, parameters, cancellationToken);
             while (await reader.ReadAsync(cancellationToken))
             {
                 values.Add(reader.GetString(0));
@@ -537,6 +556,28 @@ namespace Task.Core.Providers.Postgres
 
             sql.Append($" AND LOWER(COALESCE({columnName}, '')) = LOWER(@{parameterName})");
             parameters.Add(new NpgsqlParameter(parameterName, value));
+        }
+
+        private static void AppendUserScope(StringBuilder sql, ICollection<NpgsqlParameter> parameters, string? userId)
+        {
+            if (userId == null)
+            {
+                return;
+            }
+
+            sql.Append(" AND user_id = @user_id");
+            parameters.Add(new NpgsqlParameter("user_id", userId));
+        }
+
+        private static void AppendUserScopeSql(ref string sql, ICollection<NpgsqlParameter> parameters, string? userId)
+        {
+            if (userId == null)
+            {
+                return;
+            }
+
+            sql += " AND user_id = @user_id";
+            parameters.Add(new NpgsqlParameter("user_id", userId));
         }
 
         private static List<string> ParseSearchTerms(string query)
@@ -643,6 +684,9 @@ namespace Task.Core.Providers.Postgres
             created_at,
             updated_at,
             archived,
-            archived_at";
+            archived_at,
+            user_id,
+            created_by,
+            updated_by";
     }
 }

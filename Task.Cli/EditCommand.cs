@@ -73,7 +73,7 @@ namespace Task.Cli
 
             foreach (var id in ids)
             {
-                var task = await service.GetTaskByUidAsync(id, cancellationToken);
+                var task = await service.GetTaskByUidAsync(id, userId: null, cancellationToken);
 
                 if (task == null)
                 {
@@ -126,7 +126,7 @@ namespace Task.Cli
                     else
                     {
                         var newDeps = settings.DependsOn.Split(',').Select(t => t.Trim()).Where(t => !string.IsNullOrEmpty(t)).ToList();
-                        var isValid = await service.ValidateDependenciesAsync(task.Uid, newDeps, cancellationToken);
+                        var isValid = await service.ValidateDependenciesAsync(task.Uid, newDeps, userId: null, cancellationToken);
                         if (!isValid)
                         {
                             ErrorHelper.ShowError($"Invalid dependencies for task {id}. Cannot create circular dependency or self-reference.");
@@ -135,7 +135,7 @@ namespace Task.Cli
 
                         foreach (var depUid in newDeps)
                         {
-                            var depTask = await service.GetTaskByUidAsync(depUid, cancellationToken);
+                            var depTask = await service.GetTaskByUidAsync(depUid, userId: null, cancellationToken);
                             if (depTask == null)
                             {
                                 ErrorHelper.ShowError($"Task with UID '{depUid}' does not exist.");
@@ -178,7 +178,7 @@ namespace Task.Cli
 
                 task.Status = updatedStatus;
 
-                await service.UpdateTaskAsync(task, cancellationToken);
+                await service.UpdateTaskAsync(task, userId: null, cancellationToken);
                 updated.Add(id);
             }
 

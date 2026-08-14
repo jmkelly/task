@@ -34,7 +34,7 @@ namespace Task.Cli
                 foreach (var task in allTasks)
                 {
                     task.Status = "todo";
-                    await service.UpdateTaskAsync(task, cancellationToken);
+                    await service.UpdateTaskAsync(task, userId: null, cancellationToken);
                 }
 
                 if (settings.Json)
@@ -56,7 +56,7 @@ namespace Task.Cli
                 return 1;
             }
 
-            var taskItem = await service.GetTaskByUidAsync(settings.Id, cancellationToken);
+            var taskItem = await service.GetTaskByUidAsync(settings.Id, userId: null, cancellationToken);
 
             if (taskItem == null)
             {
@@ -65,7 +65,7 @@ namespace Task.Cli
             }
 
             taskItem.Status = "todo";
-            await service.UpdateTaskAsync(taskItem, cancellationToken);
+            await service.UpdateTaskAsync(taskItem, userId: null, cancellationToken);
 
             if (settings.Json)
             {

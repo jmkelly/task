@@ -2,12 +2,16 @@ using Xunit;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.IO;
 using Task.Core;
+using Task.Core.Auth;
+using Task.Core.Providers.Telegram;
 
 namespace Task.Cli.Tests.IntegrationTests
 {
@@ -19,8 +23,8 @@ namespace Task.Cli.Tests.IntegrationTests
 		public ApiIntegrationTests(TestWebApplicationFactory factory)
 		{
 			_factory = factory;
-			_client = _factory.CreateClient();
 			_factory.ClearDatabase();
+			_client = _factory.CreateUserClient();
 		}
 
 		[Fact]
@@ -182,23 +186,116 @@ namespace Task.Cli.Tests.IntegrationTests
 
 		public string TestDbPath => _testDbPath;
 
+		public Database Database => _database ?? throw new InvalidOperationException("Factory not initialized.");
+
 		public void ClearDatabase()
 		{
 			if (_database != null)
 			{
 				_database.ClearAllTasksAsync().GetAwaiter().GetResult();
+				_database.ClearAuthTablesAsync().GetAwaiter().GetResult();
+			}
+		}
+
+		/// <summary>Signs up + logs in a fresh user; returns a cookie-authenticated client.</summary>
+		public HttpClient CreateUserClient(string? username = null)
+		{
+			var client = CreateClient();
+			username ??= $"user_{Guid.NewGuid():N}"[..15];
+			const string password = "password123";
+
+			var signup = client.PostAsJsonAsync("/api/auth/signup", new { username, password }).GetAwaiter().GetResult();
+			signup.EnsureSuccessStatusCode();
+
+			var login = client.PostAsJsonAsync("/api/auth/login", new { username, password }).GetAwaiter().GetResult();
+			login.EnsureSuccessStatusCode();
+			return client;
+		}
+
+		/// <summary>Signs up a user and returns the plaintext API key for CLI configuration.</summary>
+		public string CreateUserApiKey(string? username = null)
+		{
+			var userClient = CreateUserClient(username);
+			var response = userClient.PostAsJsonAsync("/api/keys", new { name = "test-key" }).GetAwaiter().GetResult();
+			response.EnsureSuccessStatusCode();
+
+			var body = response.Content.ReadFromJsonAsync<KeyResponse>().GetAwaiter().GetResult()
+				?? throw new InvalidOperationException("Key creation returned no body.");
+			return body.Key ?? throw new InvalidOperationException("Key creation returned no plaintext.");
+		}
+
+		public sealed class KeyResponse
+		{
+			public string? Key { get; set; }
+		}
+
+		/// <summary>No-op Telegram provider: records nothing, never touches the network.</summary>
+		public sealed class FakeTelegramProvider : ITelegramProvider
+		{
+			public System.Threading.Tasks.Task SendMessageAsync(string message, System.Threading.CancellationToken cancellationToken = default)
+			{
+				return System.Threading.Tasks.Task.CompletedTask;
 			}
 		}
 
 		protected override void ConfigureWebHost(IWebHostBuilder builder)
 		{
 			builder.UseEnvironment("Testing");
+
+			// Tests must be hermetic: never let the app call the real Telegram API.
+			// (Credentials are often present in the environment, which previously made
+			// GET /api/tasks on an empty board await a live api.telegram.org POST and
+			// flake with 500s / 100s stalls / client aborts.)
+			builder.UseSetting("Telegram:Enabled", "false");
+
 			_database = new Database(_testDbPath);
 			_database.Initialize();
 			builder.ConfigureServices(services =>
 			{
-				services.AddSingleton<Database>(_database);
+				var authServiceDescriptors = services
+					.Where(descriptor => descriptor.ServiceType == typeof(IAuthService))
+					.ToList();
+				foreach (var descriptor in authServiceDescriptors)
+				{
+					services.Remove(descriptor);
+				}
+
+				ReplaceTelegramWithFake(services);
+
+				services.AddSingleton(_database);
+				services.AddSingleton<IAuthService>(new AuthService(_database!));
 			});
+
+			Console.WriteLine($"[TestHost] sqlite db={_testDbPath} telegram=disabled(fake)");
+		}
+
+		/// <summary>
+		/// Replaces the app's real Telegram provider + notification service with a
+		/// no-op fake so tests never perform live network calls.
+		/// </summary>
+		private static void ReplaceTelegramWithFake(IServiceCollection services)
+		{
+			var telegramProviderDescriptors = services
+				.Where(descriptor => descriptor.ServiceType == typeof(ITelegramProvider))
+				.ToList();
+			foreach (var descriptor in telegramProviderDescriptors)
+			{
+				services.Remove(descriptor);
+			}
+
+			var notificationServiceDescriptors = services
+				.Where(descriptor => descriptor.ServiceType == typeof(TelegramNotificationService))
+				.ToList();
+			foreach (var descriptor in notificationServiceDescriptors)
+			{
+				services.Remove(descriptor);
+			}
+
+			services.AddSingleton<ITelegramProvider>(new FakeTelegramProvider());
+			services.AddSingleton<TelegramNotificationService>(sp => new TelegramNotificationService(
+				sp.GetRequiredService<ITelegramProvider>(),
+				Options.Create(new TelegramProviderOptions { Enabled = false }),
+				NullLogger<TelegramNotificationService>.Instance));
 		}
 
 		protected override void Dispose(bool disposing)

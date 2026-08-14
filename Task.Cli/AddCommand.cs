@@ -159,7 +159,7 @@ namespace Task.Cli
 					dueDate = DateTime.Parse(dueDateInput);
 				}
 
-				var availableTags = await service.GetAllUniqueTagsAsync(cancellationToken);
+				var availableTags = await service.GetAllUniqueTagsAsync(userId: null, cancellationToken);
 				if (availableTags.Count > 0)
 				{
 					var selectedTags = AnsiConsole.Prompt(
@@ -230,7 +230,7 @@ namespace Task.Cli
 				return 1;
 			}
 
-			var task = await service.AddTaskAsync(uid, title!, description, priority, dueDate, tags, project, dependsOn, assignee, status ?? "todo", blockReason, cancellationToken);
+			var task = await service.AddTaskAsync(uid, title!, description, priority, dueDate, tags, project, dependsOn, assignee, status ?? "todo", blockReason, userId: null, cancellationToken);
 
 			Console.Error.WriteLine($"DEBUG: project='{project}', settings.Project='{settings.Project}'");
 			Console.Error.WriteLine($"DEBUG: task.Project='{task.Project}'");

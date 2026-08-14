@@ -6,7 +6,7 @@ namespace Task.Cli
 {
 	public class ConfigSetCommand : AsyncCommand<ConfigSetCommand.Settings>
 	{
-		private const string SupportedKeys = "api-url, defaultOutput, database.provider, database.sqlite.path, database.pg.connectionString, telegram.botToken, telegram.chatId";
+		private const string SupportedKeys = "api-url, api.key, defaultOutput, database.provider, database.sqlite.path, database.pg.connectionString, telegram.botToken, telegram.chatId";
 
 		public class Settings : CommandSettings
 		{
@@ -44,7 +44,7 @@ namespace Task.Cli
 
 	public class ConfigGetCommand : AsyncCommand<ConfigGetCommand.Settings>
 	{
-		private const string SupportedKeys = "api-url, defaultOutput, database.provider, database.sqlite.path, database.pg.connectionString, telegram.botToken, telegram.chatId";
+		private const string SupportedKeys = "api-url, api.key, defaultOutput, database.provider, database.sqlite.path, database.pg.connectionString, telegram.botToken, telegram.chatId";
 
 		public class Settings : CommandSettings
 		{
@@ -70,7 +70,7 @@ namespace Task.Cli
 
 	public class ConfigUnsetCommand : AsyncCommand<ConfigUnsetCommand.Settings>
 	{
-		private const string SupportedKeys = "api-url, defaultOutput, database.provider, database.sqlite.path, database.pg.connectionString, telegram.botToken, telegram.chatId";
+		private const string SupportedKeys = "api-url, api.key, defaultOutput, database.provider, database.sqlite.path, database.pg.connectionString, telegram.botToken, telegram.chatId";
 
 		public class Settings : CommandSettings
 		{
@@ -108,6 +108,7 @@ namespace Task.Cli
 			var config = Config.Load();
 			Console.WriteLine("Current configuration:");
 			Console.WriteLine($"api-url: {config.ApiUrl ?? "(not set)"}");
+			Console.WriteLine($"api.key: {MaskKey(config.ApiKey)}");
 			Console.WriteLine($"defaultOutput: {config.DefaultOutput}");
 			Console.WriteLine($"database.provider: {config.GetDatabaseProvider()}");
 			Console.WriteLine($"database.sqlite.path: {config.Database?.Sqlite?.Path ?? "(not set)"}");
@@ -120,6 +121,17 @@ namespace Task.Cli
 			}
 
 			return 0;
+		}
+
+		private static string MaskKey(string? key)
+		{
+			if (string.IsNullOrEmpty(key))
+			{
+				return "(not set)";
+			}
+
+			// Never print a full API key; show only the prefix.
+			return key.Length <= 8 ? "(set)" : $"{key[..8]}... (set)";
 		}
 	}
 }

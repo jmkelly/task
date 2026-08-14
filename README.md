@@ -154,6 +154,31 @@ For my exact setup for opencode (could easily be adapted to other tools) see [my
 
 The CLI requires a remote Task API server and operates in API mode only. All commands communicate with the backend API via the `--api-url` option. The CLI configuration is stored at the canonical config path `~/.config/task/config.json`.
 
+#### Authentication
+
+Every Task server requires authentication. The browser signs in with a username and password; the CLI and AI agents authenticate with a per-user API key sent as the `X-Api-Key` header.
+
+First run:
+1. Start the server: `task server run` (or `task server start`).
+2. Open the board in a browser and create the first account — it becomes the **administrator**.
+3. Open the **API keys** page (`/keys`), create a key, and copy it (it is shown exactly once).
+4. Configure the CLI:
+```bash
+task config set api.key <key>
+```
+   or export it (the environment variable takes precedence):
+```bash
+export TASK_API_KEY=<key>
+task add "Buy groceries"
+```
+
+If a key is missing, invalid, or revoked, commands fail with an actionable message pointing to the server's keys page. Revoking a key takes effect immediately.
+
+Closed signup setups: set `Auth__AllowSignup=false` on the server and create accounts locally with:
+```bash
+task users create <username> --admin
+```
+
 #### Configuration
 
 Set the API URL once:
@@ -192,6 +217,27 @@ To override the database location explicitly:
 ```
 task server run --database-path ./data/tasks.db
 ```
+
+#### Server Setup & Authentication
+
+Servers are secure by default — there is no anonymous access. On first run:
+
+1. **Sign up**: open the board (`/signup`) and create the first account. The first user ever created becomes the **administrator**. The admin can view every board (read-only), list users, and revoke any API key from the `/admin` page.
+2. **Create API keys**: users manage their own keys on `/keys`. The plaintext key (`tk_...`) is shown exactly once at creation; only its SHA-256 hash is stored.
+3. **Configure the CLI**: `task config set api.key <key>` (or `TASK_API_KEY`).
+4. **Signup policy**: self-registration is on by default. To close it, run the server with `Auth__AllowSignup=false` and create accounts locally with `task users create <username> [--admin]` (this works before the first signup — it writes to the same database).
+
+Upgrading an existing (pre-auth) install:
+1. Deploy the new server — the migration creates `users`/`api_keys` and adds `user_id` to `tasks`; existing tasks become **unowned** (`user_id = NULL`).
+2. The first visitor to sign up becomes admin and can see the unowned legacy tasks.
+3. When other users sign up, tasks whose `assignee` matches their username (case-insensitive, exact) are claimed automatically.
+4. Unmatched tasks stay visible to the admin, who can reassign them.
+
+> **Breaking change**: scripts and agents that previously called the API anonymously must now send `X-Api-Key`. The 401 responses include the exact remediation steps.
+
+#### Keys are per-user; the API key is not recoverable
+
+Only the hash of an API key is stored. Backing up the database preserves keys; losing the database means issuing new keys on the `/keys` page.
 
 #### Basic Commands
 
@@ -248,13 +294,24 @@ task --api-url http://localhost:8080 list
 
 ### API Usage
 
-The API provides REST endpoints for task management. When running locally, access:
+The API provides REST endpoints for task management and is secured by default:
+
+- Browser requests authenticate with a session cookie (`/login`, `/signup`).
+- CLI/agent requests authenticate with `X-Api-Key: tk_...` (created on the `/keys` page).
+- Anonymous access is allowed only on `GET /api/health` and `/api/auth/*`.
+- Every user sees and operates only on their own tasks; admin-only routes live under `/api/admin/*`.
+
+When running locally, access:
 
 - **Scalar UI**: http://localhost:8080/scalar (when using Docker) or http://localhost:5000/scalar (development)
 - **API Base URL**: http://localhost:8080/api (Docker) or http://localhost:5000/api (development)
 
 #### Key Endpoints
 
+- `POST /api/auth/signup` - Create an account (first user becomes admin; disable with `Auth:AllowSignup=false`)
+- `POST /api/auth/login` / `POST /api/auth/logout` - Session management
+- `GET /api/auth/me` - Current identity
+- `GET /api/keys`, `POST /api/keys`, `DELETE /api/keys/{id}` - Manage your API keys (plaintext shown once at creation)
 - `GET /api/tasks` - List all tasks with optional filtering
 - `GET /api/tasks/{uid}` - Get a specific task by UID
 - `POST /api/tasks` - Create a new task
@@ -263,19 +320,30 @@ The API provides REST endpoints for task management. When running locally, acces
 - `PATCH /api/tasks/{uid}/complete` - Mark task as completed
 - `GET /api/tasks/search?q={query}&type={fts|semantic}` - Search tasks
 - `GET /api/tags` - Get all unique tags
+- `GET /api/health` - Health check (anonymous)
+- `GET /api/admin/users`, `GET /api/admin/tasks`, `POST /api/admin/keys/{id}/revoke` - Admin only
 
 #### API Examples
 
-Create a task:
+Create a task (with an API key):
 ```bash
 curl -X POST http://localhost:8080/api/tasks \
   -H "Content-Type: application/json" \
+  -H "X-Api-Key: tk_..." \
   -d '{"title": "New Task", "priority": "high"}'
 ```
 
 List tasks:
 ```bash
-curl http://localhost:8080/api/tasks
+curl -H "X-Api-Key: tk_..." http://localhost:8080/api/tasks
+```
+
+Sign in with a browser session:
+```bash
+curl -c cookies.txt -X POST http://localhost:8080/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username": "alice", "password": "secret"}'
+curl -b cookies.txt http://localhost:8080/api/tasks
 ```
 
 ---
@@ -526,6 +594,11 @@ The CLI integration test project now includes an end-to-end PostgreSQL workflow 
 
 - Requirements: Docker + .NET 10 SDK
 - Command: `dotnet test Tests/Task.Tests.csproj`
+- Test collections run **in parallel**. Each test class is self-contained: its own
+  SQLite database file, temp HOME/`XDG_CONFIG_HOME`, spawned server (auto-assigned
+  port), and Postgres container where applicable, so collections never share
+  mutable state. Tests that need the process environment (e.g. `TASK_API_KEY`
+  precedence) inject the lookup instead of mutating the host environment.
 - The PostgreSQL-backed CLI test writes config to the supported CLI config path (`$XDG_CONFIG_HOME/task/config.json` during the test) so `task server run`, `task add`, and `task list` use the same configuration flow as local usage.
 
 ---

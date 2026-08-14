@@ -56,3 +56,5 @@ binaries/
 node_modules/
 package-lock.json
 package.json
+# Local secrets
+.env

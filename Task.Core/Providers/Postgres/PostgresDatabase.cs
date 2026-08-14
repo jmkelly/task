@@ -53,10 +53,35 @@ namespace Task.Core.Providers.Postgres
                 ALTER TABLE IF EXISTS tasks ADD COLUMN IF NOT EXISTS block_reason TEXT;
                 ALTER TABLE IF EXISTS tasks ADD COLUMN IF NOT EXISTS archived BOOLEAN NOT NULL DEFAULT FALSE;
                 ALTER TABLE IF EXISTS tasks ADD COLUMN IF NOT EXISTS archived_at TIMESTAMPTZ;
+                ALTER TABLE IF EXISTS tasks ADD COLUMN IF NOT EXISTS user_id TEXT;
+                ALTER TABLE IF EXISTS tasks ADD COLUMN IF NOT EXISTS created_by TEXT;
+                ALTER TABLE IF EXISTS tasks ADD COLUMN IF NOT EXISTS updated_by TEXT;
 
                 UPDATE tasks
                 SET status = COALESCE(NULLIF(status, ''), 'todo')
                 WHERE status IS NULL OR status = '';
+
+                CREATE TABLE IF NOT EXISTS users (
+                    id TEXT PRIMARY KEY,
+                    username TEXT NOT NULL UNIQUE,
+                    password_hash TEXT NOT NULL,
+                    is_admin BOOLEAN NOT NULL DEFAULT FALSE,
+                    created_at TIMESTAMPTZ NOT NULL,
+                    disabled_at TIMESTAMPTZ
+                );
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username_lower ON users (LOWER(username));
+
+                CREATE TABLE IF NOT EXISTS api_keys (
+                    id TEXT PRIMARY KEY,
+                    user_id TEXT NOT NULL,
+                    name TEXT NOT NULL,
+                    key_hash TEXT NOT NULL UNIQUE,
+                    created_at TIMESTAMPTZ NOT NULL,
+                    last_used_at TIMESTAMPTZ,
+                    revoked_at TIMESTAMPTZ
+                );
+                CREATE INDEX IF NOT EXISTS idx_api_keys_user_id ON api_keys(user_id);
+                CREATE INDEX IF NOT EXISTS idx_api_keys_key_hash ON api_keys(key_hash);
 
                 CREATE INDEX IF NOT EXISTS idx_tasks_uid ON tasks(uid);
                 CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
@@ -67,6 +92,7 @@ namespace Task.Core.Providers.Postgres
                 CREATE INDEX IF NOT EXISTS idx_tasks_project ON tasks(project);
                 CREATE INDEX IF NOT EXISTS idx_tasks_assignee ON tasks(assignee);
                 CREATE INDEX IF NOT EXISTS idx_tasks_archived ON tasks(archived);
+                CREATE INDEX IF NOT EXISTS idx_tasks_user_id ON tasks(user_id);
             ";
 
             await using var cmd = _dataSource.CreateCommand(sql);

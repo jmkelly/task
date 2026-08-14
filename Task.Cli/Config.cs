@@ -12,6 +12,7 @@ namespace Task.Cli
 		private static readonly string ConfigFile = Path.Combine(ConfigDir, "config.json");
 
 		public string? ApiUrl { get; set; }
+		public string? ApiKey { get; set; }
 		public string? DefaultOutput { get; set; }
 		public DatabaseConfig? Database { get; set; }
 		public TelegramConfig? Telegram { get; set; }
@@ -84,6 +85,9 @@ namespace Task.Cli
 					await ValidateUrlAsync(value);
 					ApiUrl = value;
 					break;
+				case "api.key":
+					ApiKey = value;
+					break;
 				case "defaultoutput":
 					if (value != "json" && value != "plain")
 					{
@@ -119,6 +123,7 @@ namespace Task.Cli
 			return NormalizeKey(key) switch
 			{
 				"api-url" => ApiUrl,
+				"api.key" => ApiKey,
 				"defaultoutput" => DefaultOutput,
 				"database.provider" => GetDatabaseProvider(),
 				"database.sqlite.path" => Database?.Sqlite?.Path,
@@ -136,6 +141,9 @@ namespace Task.Cli
 			{
 				case "api-url":
 					ApiUrl = null;
+					break;
+				case "api.key":
+					ApiKey = null;
 					break;
 				case "defaultoutput":
 					DefaultOutput = "plain";
@@ -219,6 +227,7 @@ namespace Task.Cli
 		{
 			var botTokenEnv = Environment.GetEnvironmentVariable("TELEGRAM_BOT_TOKEN") ?? Environment.GetEnvironmentVariable("Telegram__BotToken");
 			var chatIdEnv = Environment.GetEnvironmentVariable("TELEGRAM_CHAT_ID") ?? Environment.GetEnvironmentVariable("Telegram__ChatId");
+			var apiKeyEnv = Environment.GetEnvironmentVariable("TASK_API_KEY");
 
 			if (!string.IsNullOrEmpty(botTokenEnv))
 			{
@@ -228,6 +237,12 @@ namespace Task.Cli
 			if (!string.IsNullOrEmpty(chatIdEnv))
 			{
 				config.EnsureTelegram().ChatId = chatIdEnv;
+			}
+
+			// Environment variable takes precedence over the configured key.
+			if (!string.IsNullOrEmpty(apiKeyEnv))
+			{
+				config.ApiKey = apiKeyEnv;
 			}
 		}
 

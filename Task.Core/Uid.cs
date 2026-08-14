@@ -11,6 +11,12 @@ public class Uid : IUid
 	{
 		return Guid.NewGuid().ToString()[..6];
 	}
+
+	/// <summary>Generates a full GUID string for identity columns (users, api_keys).</summary>
+	public static string NewId()
+	{
+		return Guid.NewGuid().ToString("N");
+	}
 }
 
 /// <summary>

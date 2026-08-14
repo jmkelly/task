@@ -54,7 +54,7 @@ namespace Task.Cli
 			foreach (var id in idsToComplete)
 			{
 
-				await service.CompleteTaskAsync(id, cancellationToken);
+				await service.CompleteTaskAsync(id, userId: null, cancellationToken);
 				completed.Add(id);
 			}
 

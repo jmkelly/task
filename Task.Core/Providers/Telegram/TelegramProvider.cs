@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
@@ -38,21 +39,46 @@ public sealed class TelegramProvider : ITelegramProvider
             throw new InvalidOperationException("Telegram provider is enabled but BotToken or ChatId is missing.");
         }
 
-        var request = new TelegramSendMessageRequest(_options.ChatId, message);
-        var payload = JsonSerializer.Serialize(request, TelegramJsonContext.Default.TelegramSendMessageRequest);
-        using var content = new StringContent(payload, Encoding.UTF8, "application/json");
-        var response = await _httpClient.PostAsync("sendMessage", content, cancellationToken);
+        var stopwatch = Stopwatch.StartNew();
+        _logger.LogInformation(
+            "Telegram.SendStart chatId={ChatId} messageLength={MessageLength}",
+            _options.ChatId,
+            message?.Length ?? 0);
 
-        if (!response.IsSuccessStatusCode)
+        try
         {
-            var body = await response.Content.ReadAsStringAsync(cancellationToken);
-            _logger.LogError(
-                "Telegram send failed with status {StatusCode}. Response: {Response}",
-                response.StatusCode,
-                body);
-            response.EnsureSuccessStatusCode();
-        }
+            var request = new TelegramSendMessageRequest(_options.ChatId, message);
+            var payload = JsonSerializer.Serialize(request, TelegramJsonContext.Default.TelegramSendMessageRequest);
+            using var content = new StringContent(payload, Encoding.UTF8, "application/json");
+            var response = await _httpClient.PostAsync("sendMessage", content, cancellationToken);
 
-        _logger.LogInformation("Telegram message delivered to chat {ChatId}.", _options.ChatId);
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadAsStringAsync(cancellationToken);
+                _logger.LogError(
+                    "Telegram.SendFailed chatId={ChatId} status={StatusCode} elapsedMs={ElapsedMs} response={Response}",
+                    _options.ChatId,
+                    (int)response.StatusCode,
+                    stopwatch.ElapsedMilliseconds,
+                    body);
+                response.EnsureSuccessStatusCode();
+            }
+
+            _logger.LogInformation(
+                "Telegram.SendCompleted chatId={ChatId} status={StatusCode} elapsedMs={ElapsedMs}",
+                _options.ChatId,
+                (int)response.StatusCode,
+                stopwatch.ElapsedMilliseconds);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Telegram.SendException chatId={ChatId} elapsedMs={ElapsedMs} cancelled={Cancelled}",
+                _options.ChatId,
+                stopwatch.ElapsedMilliseconds,
+                cancellationToken.IsCancellationRequested);
+            throw;
+        }
     }
 }

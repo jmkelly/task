@@ -1,0 +1,129 @@
+@page
+@using Task.Api.Pages
+@model AdminModel
+@{
+    ViewData["Title"] = "Admin";
+}
+
+<section class="page-toolbar" aria-label="Admin">
+    <div class="page-toolbar-copy">
+        <p class="page-eyebrow">Administration</p>
+        <h1 class="page-title">Admin</h1>
+        <p class="page-subtitle">Users, API keys, and a read-only view of every board.</p>
+    </div>
+</section>
+
+<section class="board-surface" style="max-width: 960px; margin: 0 auto 2rem; padding: 2rem;">
+    <h2 class="board-kicker" style="margin-bottom: 0.5rem;">Users</h2>
+    <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+            <tr style="text-align: left; opacity: 0.7;">
+                <th style="padding: 0.5rem;">Username</th>
+                <th style="padding: 0.5rem;">Role</th>
+                <th style="padding: 0.5rem;">Created</th>
+                <th style="padding: 0.5rem;">API keys</th>
+                <th style="padding: 0.5rem;">Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var user in Model.Users)
+            {
+                <tr style="border-top: 1px solid var(--border, #2c3138);">
+                    <td style="padding: 0.5rem;">@user.Username</td>
+                    <td style="padding: 0.5rem;">@(user.IsAdmin ? "admin" : "user")</td>
+                    <td style="padding: 0.5rem;">@user.CreatedAt.ToLocalTime():g</td>
+                    <td style="padding: 0.5rem;">@user.ApiKeyCount</td>
+                    <td style="padding: 0.5rem;">
+                        @if (user.DisabledAt != null)
+                        {
+                            <span style="color: var(--danger, #e5484d);">disabled</span>
+                        }
+                        else
+                        {
+                            <span style="color: var(--success, #46a758);">active</span>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <h2 class="board-kicker" style="margin: 2rem 0 0.5rem;">API keys</h2>
+    <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+            <tr style="text-align: left; opacity: 0.7;">
+                <th style="padding: 0.5rem;">Owner</th>
+                <th style="padding: 0.5rem;">Name</th>
+                <th style="padding: 0.5rem;">Created</th>
+                <th style="padding: 0.5rem;">Status</th>
+                <th style="padding: 0.5rem;"></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var key in Model.Keys)
+            {
+                <tr style="border-top: 1px solid var(--border, #2c3138);">
+                    <td style="padding: 0.5rem;">@key.OwnerUsername</td>
+                    <td style="padding: 0.5rem;">@key.Name</td>
+                    <td style="padding: 0.5rem;">@key.CreatedAt.ToLocalTime():g</td>
+                    <td style="padding: 0.5rem;">
+                        @if (key.RevokedAt != null)
+                        {
+                            <span style="color: var(--danger, #e5484d);">revoked</span>
+                        }
+                        else
+                        {
+                            <span style="color: var(--success, #46a758);">active</span>
+                        }
+                    </td>
+                    <td style="padding: 0.5rem; text-align: right;">
+                        @if (key.RevokedAt == null)
+                        {
+                            <form method="post" asp-page-handler="RevokeKey" onsubmit="return confirm('Revoke this key?');">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="Id" value="@key.Id" />
+                                <button type="submit" class="btn-quiet" style="color: var(--danger, #e5484d);">Revoke</button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+<section class="board-surface" style="max-width: 960px; margin: 0 auto 2rem; padding: 2rem;">
+    <h2 class="board-kicker" style="margin-bottom: 0.5rem;">All tasks (read-only)</h2>
+    <form method="get" style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+        <select class="form-select" name="owner" onchange="this.form.submit()">
+            <option value="">All owners</option>
+            @foreach (var owner in Model.Owners)
+            {
+                <option value="@owner" selected="@(Model.OwnerFilter == owner)">@owner</option>
+            }
+        </select>
+    </form>
+    <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+            <tr style="text-align: left; opacity: 0.7;">
+                <th style="padding: 0.5rem;">UID</th>
+                <th style="padding: 0.5rem;">Title</th>
+                <th style="padding: 0.5rem;">Status</th>
+                <th style="padding: 0.5rem;">Assignee</th>
+                <th style="padding: 0.5rem;">Owner</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var task in Model.Tasks)
+            {
+                <tr style="border-top: 1px solid var(--border, #2c3138);">
+                    <td style="padding: 0.5rem;"><code>@task.Uid</code></td>
+                    <td style="padding: 0.5rem;">@task.Title</td>
+                    <td style="padding: 0.5rem;">@task.Status</td>
+                    <td style="padding: 0.5rem;">@(task.Assignee ?? "—")</td>
+                    <td style="padding: 0.5rem;">@(task.OwnerUsername ?? "unowned")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>

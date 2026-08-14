@@ -54,7 +54,7 @@ public sealed class TelegramNotificationService
         }
 
         _logger.LogInformation("Telegram notification triggered. Active tasks count is zero.");
-        await _provider.SendMessageAsync(message, cancellationToken);
+        await SendWithTimingAsync("no-active-tasks", message, cancellationToken);
     }
 
     public async System.Threading.Tasks.Task NotifyWhenTaskTransitionsToBlockedAsync(
@@ -89,6 +89,32 @@ public sealed class TelegramNotificationService
             previousStatus,
             nextStatus);
 
-        await _provider.SendMessageAsync(message, cancellationToken);
+        await SendWithTimingAsync("task-blocked", message, cancellationToken);
+    }
+
+    private async System.Threading.Tasks.Task SendWithTimingAsync(
+        string reason,
+        string message,
+        CancellationToken cancellationToken)
+    {
+        var startedAt = DateTimeOffset.UtcNow;
+        try
+        {
+            await _provider.SendMessageAsync(message, cancellationToken);
+            _logger.LogInformation(
+                "Telegram.SendAwaitedCompleted reason={Reason} elapsedMs={ElapsedMs}",
+                reason,
+                (DateTimeOffset.UtcNow - startedAt).TotalMilliseconds);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Telegram.SendAwaitedFailed reason={Reason} elapsedMs={ElapsedMs} cancelled={Cancelled}",
+                reason,
+                (DateTimeOffset.UtcNow - startedAt).TotalMilliseconds,
+                cancellationToken.IsCancellationRequested);
+            throw;
+        }
     }
 }

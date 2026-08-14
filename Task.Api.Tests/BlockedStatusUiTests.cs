@@ -17,8 +17,8 @@ namespace Task.Api.Tests.IntegrationTests
         public BlockedStatusUiTests(TestWebApplicationFactory factory)
         {
             _factory = factory;
-            _client = _factory.CreateClient();
             _factory.ClearDatabase();
+            _client = _factory.CreateUserClient();
         }
 
         [Fact]

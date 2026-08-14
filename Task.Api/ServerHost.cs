@@ -31,76 +31,12 @@ namespace Task.Api
 
 		private static void ConfigureServices(WebApplicationBuilder builder)
 		{
-			builder.Services.AddControllers();
-			builder.Services.AddRazorPages();
-			builder.Services.AddEndpointsApiExplorer();
-			builder.Services.AddOpenApi();
-
-			builder.Services.AddCors(options =>
-			{
-				options.AddPolicy("AllowAll", policy =>
-				{
-					policy.AllowAnyOrigin()
-						.AllowAnyMethod()
-						.AllowAnyHeader();
-				});
-			});
-
-			builder.Services.ConfigureHttpJsonOptions(options =>
-			{
-				options.SerializerOptions.Converters.Add(new DateTimeNullableConverter());
-			});
-
-			builder.Services.AddSingleton(sp => CreateDatabaseConnectionSettings(sp.GetRequiredService<IConfiguration>()));
-			builder.Services.AddSingleton<Database>(sp => new Database(sp.GetRequiredService<DatabaseConnectionSettings>()));
-			builder.Services.AddSingleton<ITaskService>(sp => new TaskService(sp.GetRequiredService<DatabaseConnectionSettings>()));
-			builder.Services.AddSingleton<IUid, Uid>();
-
-			builder.Services.Configure<TelegramProviderOptions>(builder.Configuration.GetSection("Telegram"));
-			builder.Services.PostConfigure<TelegramProviderOptions>(options =>
-			{
-				var hasRequiredCredentials =
-					!string.IsNullOrWhiteSpace(options.BotToken) &&
-					!string.IsNullOrWhiteSpace(options.ChatId);
-
-				options.Enabled = hasRequiredCredentials;
-			});
-
-			builder.Services.AddHttpClient<ITelegramProvider, TelegramProvider>((sp, client) =>
-			{
-				var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<TelegramProviderOptions>>().Value;
-				if (!string.IsNullOrWhiteSpace(options.BotToken))
-				{
-					client.BaseAddress = new Uri($"https://api.telegram.org/bot{options.BotToken}/");
-				}
-			});
-
-			builder.Services.AddSingleton<TelegramNotificationService>();
-		}
-
-		private static DatabaseConnectionSettings CreateDatabaseConnectionSettings(IConfiguration configuration)
-		{
-			return DatabaseConnectionSettings.Create(
-				provider: configuration.GetValue<string>("DatabaseProvider"),
-				sqliteDatabasePath: configuration.GetValue<string>("DatabasePath"),
-				postgresConnectionString: configuration.GetValue<string>("Postgres:ConnectionString"));
+			ApiHost.ConfigureServices(builder);
 		}
 
 		private static void ConfigureApp(WebApplication app)
 		{
-			app.UseMiddleware<ErrorHandlingMiddleware>();
-			app.UseCors("AllowAll");
-			app.UseHttpsRedirection();
-			app.UseStaticFiles();
-			app.UseAuthorization();
-			app.MapControllers();
-			app.MapRazorPages();
-
-			if (app.Environment.IsDevelopment())
-			{
-				app.MapOpenApi();
-				app.MapScalarApiReference();
-			}
+			ApiHost.ConfigureMiddleware(app);
 		}
 
 		private static void ConfigureServerUrls(WebApplicationBuilder builder)

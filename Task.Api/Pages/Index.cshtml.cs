@@ -1,12 +1,16 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Text.Json;
+using Task.Api.Auth;
 using Task.Core;
+using Task.Core.Auth;
 using Task.Core.Providers.Telegram;
 using TaskItem = Task.Core.TaskItem;
 
 namespace Task.Api.Pages
 {
+    [Authorize]
     public class IndexModel : PageModel
     {
         private readonly ITaskService _taskService;
@@ -22,6 +26,8 @@ namespace Task.Api.Pages
             _telegramNotifications = telegramNotifications;
             this.uidGenerator = uidGenerator;
         }
+
+        private string? UserId => AuthClaims.GetUserId(User);
 
         public List<TaskItem> TaskItems { get; set; } = new();
 
@@ -42,14 +48,14 @@ namespace Task.Api.Pages
 
         public async System.Threading.Tasks.Task OnGetAsync()
         {
-            var tasks = await _taskService.GetAllTasksAsync();
+            var tasks = await _taskService.GetAllTasksAsync(userId: UserId);
             PopulateOptions(tasks);
             TaskItems = FilterTasks(tasks);
         }
 
         public async System.Threading.Tasks.Task<IActionResult> OnGetRefresh()
         {
-            var tasks = await _taskService.GetAllTasksAsync();
+            var tasks = await _taskService.GetAllTasksAsync(userId: UserId);
             PopulateOptions(tasks);
             TaskItems = FilterTasks(tasks);
             return Partial("_BoardContainer", this);
@@ -57,7 +63,7 @@ namespace Task.Api.Pages
 
         public async System.Threading.Tasks.Task<IActionResult> OnPostUpdateStatus(string uid, string status, string? blockReason)
         {
-            var task = await _taskService.GetTaskByUidAsync(uid);
+            var task = await _taskService.GetTaskByUidAsync(uid, UserId);
             if (task == null)
             {
                 return NotFound();
@@ -80,14 +86,14 @@ namespace Task.Api.Pages
                 task.BlockReason = string.IsNullOrEmpty(blockReason) ? null : blockReason;
             }
 
-            await _taskService.UpdateTaskAsync(task);
+            await _taskService.UpdateTaskAsync(task, UserId);
             await _telegramNotifications.NotifyWhenTaskTransitionsToBlockedAsync(
                 task,
                 previousStatus,
                 task.Status,
                 HttpContext.RequestAborted);
 
-            var tasks = await _taskService.GetAllTasksAsync();
+            var tasks = await _taskService.GetAllTasksAsync(userId: UserId);
             PopulateOptions(tasks);
             TaskItems = FilterTasks(tasks);
             return Partial("_BoardContainer", this);
@@ -112,9 +118,9 @@ namespace Task.Api.Pages
                 uid = uidGenerator.GenerateUid();
             }
 
-            await _taskService.AddTaskAsync(uid, title, description, priority, dueDate, tags, project, null, assignee, status ?? "todo", blockReason);
+            await _taskService.AddTaskAsync(uid, title, description, priority, dueDate, tags, project, null, assignee, status ?? "todo", blockReason, UserId);
 
-            var tasks = await _taskService.GetAllTasksAsync();
+            var tasks = await _taskService.GetAllTasksAsync(userId: UserId);
             PopulateOptions(tasks);
             TaskItems = FilterTasks(tasks);
             return Partial("_BoardContainer", this);
@@ -127,7 +133,7 @@ namespace Task.Api.Pages
                 return BadRequest("Title is required");
             }
 
-            var task = await _taskService.GetTaskByUidAsync(uid);
+            var task = await _taskService.GetTaskByUidAsync(uid, UserId);
             if (task == null)
             {
                 return NotFound();
@@ -160,14 +166,14 @@ namespace Task.Api.Pages
             }
             task.UpdatedAt = DateTime.UtcNow;
 
-            await _taskService.UpdateTaskAsync(task);
+            await _taskService.UpdateTaskAsync(task, UserId);
             await _telegramNotifications.NotifyWhenTaskTransitionsToBlockedAsync(
                 task,
                 previousStatus,
                 task.Status,
                 HttpContext.RequestAborted);
 
-            var tasks = await _taskService.GetAllTasksAsync();
+            var tasks = await _taskService.GetAllTasksAsync(userId: UserId);
             PopulateOptions(tasks);
             TaskItems = FilterTasks(tasks);
             return Partial("_BoardContainer", this);
@@ -180,7 +186,7 @@ namespace Task.Api.Pages
 
         public async System.Threading.Tasks.Task<IActionResult> OnGetEditModal(string uid)
         {
-            var task = await _taskService.GetTaskByUidAsync(uid);
+            var task = await _taskService.GetTaskByUidAsync(uid, UserId);
             if (task == null)
             {
                 return NotFound();
@@ -190,15 +196,15 @@ namespace Task.Api.Pages
 
         public async System.Threading.Tasks.Task<IActionResult> OnPostDeleteTask(string uid)
         {
-            var task = await _taskService.GetTaskByUidAsync(uid);
+            var task = await _taskService.GetTaskByUidAsync(uid, UserId);
             if (task == null)
             {
                 return NotFound();
             }
 
-            await _taskService.DeleteTaskAsync(task.Uid);
+            await _taskService.DeleteTaskAsync(task.Uid, UserId);
 
-            var tasks = await _taskService.GetAllTasksAsync();
+            var tasks = await _taskService.GetAllTasksAsync(userId: UserId);
             PopulateOptions(tasks);
             TaskItems = FilterTasks(tasks);
             return Partial("_BoardContainer", this);
@@ -206,8 +212,8 @@ namespace Task.Api.Pages
 
         public async System.Threading.Tasks.Task<IActionResult> OnPostClearBoard()
         {
-            await _taskService.ArchiveAllTasksAsync();
-            var tasks = await _taskService.GetAllTasksAsync();
+            await _taskService.ArchiveAllTasksAsync(UserId);
+            var tasks = await _taskService.GetAllTasksAsync(userId: UserId);
             PopulateOptions(tasks);
             TaskItems = FilterTasks(tasks);
             return Partial("_BoardContainer", this);

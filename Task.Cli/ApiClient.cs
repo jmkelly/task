@@ -11,14 +11,45 @@ public class ApiClient : ITaskService
     private readonly string _baseUrl;
     private readonly JsonSerializerOptions _jsonOptions;
 
+    /// <summary>API key sent as the X-Api-Key header. When null, requests go out without credentials.</summary>
+    public string? ApiKey { get; set; }
+
     public ApiClient(string baseUrl)
+        : this(baseUrl, new HttpClient())
+    {
+    }
+
+    /// <summary>Allows tests to inject an HttpClient wired to an in-process TestServer.</summary>
+    public ApiClient(string baseUrl, HttpClient httpClient)
     {
         _baseUrl = baseUrl.TrimEnd('/');
-        _httpClient = new HttpClient();
+        _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         _jsonOptions = new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true
         };
+    }
+
+    private async System.Threading.Tasks.Task<HttpResponseMessage> SendAsync(Func<HttpRequestMessage> requestFactory, CancellationToken cancellationToken)
+    {
+        using var request = requestFactory();
+        if (!string.IsNullOrEmpty(ApiKey))
+        {
+            request.Headers.Add("X-Api-Key", ApiKey);
+        }
+
+        var response = await _httpClient.SendAsync(request, cancellationToken);
+        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            throw new UnauthorizedAccessException(BuildUnauthorizedMessage());
+        }
+
+        return response;
+    }
+
+    private string BuildUnauthorizedMessage()
+    {
+        return $"Your API key is missing, invalid, or revoked. Create one at {_baseUrl}/keys or run `task config set api.key <key>`.";
     }
 
     public async System.Threading.Tasks.Task InitializeAsync(CancellationToken cancellationToken = default)
@@ -38,6 +69,7 @@ public class ApiClient : ITaskService
         int? offset = null,
         string? sortBy = null,
         string? sortOrder = null,
+        string? userId = null,
         CancellationToken cancellationToken = default)
     {
         var queryParams = new List<string>();
@@ -57,17 +89,17 @@ public class ApiClient : ITaskService
         var queryString = queryParams.Any() ? "?" + string.Join("&", queryParams) : "";
         var url = $"{_baseUrl}/api/tasks{queryString}";
 
-        var response = await _httpClient.GetAsync(url, cancellationToken);
+        var response = await SendAsync(() => new HttpRequestMessage(HttpMethod.Get, url), cancellationToken);
         response.EnsureSuccessStatusCode();
 
         var dtos = await response.Content.ReadFromJsonAsync<List<TaskDto>>(_jsonOptions, cancellationToken);
         return dtos?.Select(MapFromDto).ToList() ?? new List<TaskItem>();
     }
 
-    public async System.Threading.Tasks.Task<TaskItem?> GetTaskByUidAsync(string uid, CancellationToken cancellationToken = default)
+    public async System.Threading.Tasks.Task<TaskItem?> GetTaskByUidAsync(string uid, string? userId = null, CancellationToken cancellationToken = default)
     {
         var url = $"{_baseUrl}/api/tasks/{uid}";
-        var response = await _httpClient.GetAsync(url, cancellationToken);
+        var response = await SendAsync(() => new HttpRequestMessage(HttpMethod.Get, url), cancellationToken);
 
         if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
         {
@@ -91,6 +123,7 @@ public class ApiClient : ITaskService
         string? assignee = null,
         string? status = "todo",
         string? blockReason = null,
+        string? userId = null,
         CancellationToken cancellationToken = default)
     {
         var taskStatus = !string.IsNullOrEmpty(status) && new[] { "todo", "done", "in_progress", "blocked" }.Contains(status.ToLower())
@@ -118,14 +151,17 @@ public class ApiClient : ITaskService
         };
 
         var url = $"{_baseUrl}/api/tasks";
-        var response = await _httpClient.PostAsJsonAsync(url, createDto, _jsonOptions, cancellationToken);
+        var response = await SendAsync(() => new HttpRequestMessage(HttpMethod.Post, url)
+        {
+            Content = JsonContent.Create(createDto, options: _jsonOptions)
+        }, cancellationToken);
         response.EnsureSuccessStatusCode();
 
         var dto = await response.Content.ReadFromJsonAsync<TaskDto>(_jsonOptions, cancellationToken);
         return MapFromDto(dto!);
     }
 
-    public async System.Threading.Tasks.Task UpdateTaskAsync(TaskItem task, CancellationToken cancellationToken = default)
+    public async System.Threading.Tasks.Task UpdateTaskAsync(TaskItem task, string? userId = null, CancellationToken cancellationToken = default)
     {
         var updateDto = new TaskUpdateDto
         {
@@ -141,82 +177,89 @@ public class ApiClient : ITaskService
         };
 
         var url = $"{_baseUrl}/api/tasks/{task.Uid}";
-        var response = await _httpClient.PutAsJsonAsync(url, updateDto, _jsonOptions, cancellationToken);
+        var response = await SendAsync(() => new HttpRequestMessage(HttpMethod.Put, url)
+        {
+            Content = JsonContent.Create(updateDto, options: _jsonOptions)
+        }, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 
-    public async System.Threading.Tasks.Task DeleteTaskAsync(string uid, CancellationToken cancellationToken = default)
+    public async System.Threading.Tasks.Task DeleteTaskAsync(string uid, string? userId = null, CancellationToken cancellationToken = default)
     {
         var url = $"{_baseUrl}/api/tasks/{uid}";
-        var response = await _httpClient.DeleteAsync(url, cancellationToken);
+        var response = await SendAsync(() => new HttpRequestMessage(HttpMethod.Delete, url), cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 
-    public async System.Threading.Tasks.Task CompleteTaskAsync(string uid, CancellationToken cancellationToken = default)
+    public async System.Threading.Tasks.Task CompleteTaskAsync(string uid, string? userId = null, CancellationToken cancellationToken = default)
     {
         var url = $"{_baseUrl}/api/tasks/{uid}/complete";
-        var response = await _httpClient.PatchAsync(url, null, cancellationToken);
+        var response = await SendAsync(() => new HttpRequestMessage(HttpMethod.Patch, url), cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 
     public async System.Threading.Tasks.Task<List<TaskItem>> SearchTasksAsync(
         string query,
         string type = "fts",
+        string? userId = null,
         CancellationToken cancellationToken = default)
     {
         var url = $"{_baseUrl}/api/tasks/search?q={Uri.EscapeDataString(query)}&type={Uri.EscapeDataString(type)}";
-        var response = await _httpClient.GetAsync(url, cancellationToken);
+        var response = await SendAsync(() => new HttpRequestMessage(HttpMethod.Get, url), cancellationToken);
         response.EnsureSuccessStatusCode();
 
         var dtos = await response.Content.ReadFromJsonAsync<List<TaskDto>>(_jsonOptions, cancellationToken);
         return dtos?.Select(MapFromDto).ToList() ?? new List<TaskItem>();
     }
 
-    public async System.Threading.Tasks.Task<List<string>> GetAllUniqueTagsAsync(CancellationToken cancellationToken = default)
+    public async System.Threading.Tasks.Task<List<string>> GetAllUniqueTagsAsync(string? userId = null, CancellationToken cancellationToken = default)
     {
         var url = $"{_baseUrl}/api/tags";
-        var response = await _httpClient.GetAsync(url, cancellationToken);
+        var response = await SendAsync(() => new HttpRequestMessage(HttpMethod.Get, url), cancellationToken);
         response.EnsureSuccessStatusCode();
 
         return await response.Content.ReadFromJsonAsync<List<string>>(_jsonOptions, cancellationToken) ?? new List<string>();
     }
 
-    public async System.Threading.Tasks.Task<List<string>> GetAllUniqueProjectsAsync(CancellationToken cancellationToken = default)
+    public async System.Threading.Tasks.Task<List<string>> GetAllUniqueProjectsAsync(string? userId = null, CancellationToken cancellationToken = default)
     {
         var url = $"{_baseUrl}/api/projects";
-        var response = await _httpClient.GetAsync(url, cancellationToken);
+        var response = await SendAsync(() => new HttpRequestMessage(HttpMethod.Get, url), cancellationToken);
         response.EnsureSuccessStatusCode();
 
         return await response.Content.ReadFromJsonAsync<List<string>>(_jsonOptions, cancellationToken) ?? new List<string>();
     }
 
-    public async System.Threading.Tasks.Task<List<string>> GetAllUniqueAssigneesAsync(CancellationToken cancellationToken = default)
+    public async System.Threading.Tasks.Task<List<string>> GetAllUniqueAssigneesAsync(string? userId = null, CancellationToken cancellationToken = default)
     {
         var url = $"{_baseUrl}/api/assignees";
-        var response = await _httpClient.GetAsync(url, cancellationToken);
+        var response = await SendAsync(() => new HttpRequestMessage(HttpMethod.Get, url), cancellationToken);
         response.EnsureSuccessStatusCode();
 
         return await response.Content.ReadFromJsonAsync<List<string>>(_jsonOptions, cancellationToken) ?? new List<string>();
     }
 
-    public async System.Threading.Tasks.Task<List<TaskItem>> GetTasksDependingOnAsync(string uid, CancellationToken cancellationToken = default)
+    public async System.Threading.Tasks.Task<List<TaskItem>> GetTasksDependingOnAsync(string uid, string? userId = null, CancellationToken cancellationToken = default)
     {
         var url = $"{_baseUrl}/api/tasks/{uid}/dependencies";
-        var response = await _httpClient.GetAsync(url, cancellationToken);
+        var response = await SendAsync(() => new HttpRequestMessage(HttpMethod.Get, url), cancellationToken);
         response.EnsureSuccessStatusCode();
 
         var dtos = await response.Content.ReadFromJsonAsync<List<TaskDto>>(_jsonOptions, cancellationToken);
         return dtos?.Select(MapFromDto).ToList() ?? new List<TaskItem>();
     }
 
-    public async System.Threading.Tasks.Task<bool> ValidateDependenciesAsync(string uid, List<string> dependsOn, CancellationToken cancellationToken = default)
+    public async System.Threading.Tasks.Task<bool> ValidateDependenciesAsync(string uid, List<string> dependsOn, string? userId = null, CancellationToken cancellationToken = default)
     {
         var url = $"{_baseUrl}/api/tasks/{uid}/validate-dependencies";
-        var response = await _httpClient.PostAsJsonAsync(url, dependsOn, _jsonOptions, cancellationToken);
+        var response = await SendAsync(() => new HttpRequestMessage(HttpMethod.Post, url)
+        {
+            Content = JsonContent.Create(dependsOn, options: _jsonOptions)
+        }, cancellationToken);
         return response.IsSuccessStatusCode;
     }
 
-    public System.Threading.Tasks.Task ArchiveAllTasksAsync(System.Threading.CancellationToken cancellationToken = default)
+    public System.Threading.Tasks.Task ArchiveAllTasksAsync(string? userId = null, System.Threading.CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();
     }

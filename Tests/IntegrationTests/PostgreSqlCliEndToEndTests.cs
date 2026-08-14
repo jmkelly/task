@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Net.Http;
+using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
@@ -30,8 +32,6 @@ public sealed class PostgreSqlCliEndToEndTests : IClassFixture<PostgreSqlCliFixt
 	[Fact]
 	public async System.Threading.Tasks.Task AddAndListWorkflow_UsesPostgreSqlBackedServerViaConfigPath()
 	{
-		await _fixture.ResetDatabaseAsync();
-
 		var addResult = await _fixture.RunCliCommandAsync(
 			new[]
 			{
@@ -114,6 +114,8 @@ public sealed class PostgreSqlCliFixture : IAsyncLifetime
 		Directory.CreateDirectory(_configHomeDirectory);
 
 		await _container.StartAsync();
+		Console.WriteLine(
+			$"[PostgreSqlCliFixture] container={_container.Id} host={_container.Hostname}:{_container.GetMappedPublicPort(5432)} config={_configFilePath} readyFile={_readyFilePath}");
 		await WriteConfigAsync();
 
 		_serverProcess = StartCliProcess(
@@ -124,6 +126,7 @@ public sealed class PostgreSqlCliFixture : IAsyncLifetime
 		Readiness = await WaitForReadyAsync(_serverProcess, _readyFilePath, TimeSpan.FromSeconds(60));
 		await WaitForApiUrlInConfigAsync(TimeSpan.FromSeconds(30));
 		await ResetDatabaseAsync();
+		await ProvisionUserAndKeyAsync();
 	}
 
 	public async System.Threading.Tasks.Task DisposeAsync()
@@ -143,8 +146,54 @@ public sealed class PostgreSqlCliFixture : IAsyncLifetime
 		await connection.OpenAsync();
 
 		await using var command = connection.CreateCommand();
-		command.CommandText = "TRUNCATE TABLE tasks RESTART IDENTITY";
+		command.CommandText = "TRUNCATE TABLE tasks, users, api_keys RESTART IDENTITY CASCADE";
 		await command.ExecuteNonQueryAsync();
+	}
+
+	/// <summary>
+	/// The server requires authentication. Signs up a user, creates an API key,
+	/// and stores it in the CLI config so subsequent `task` commands authenticate.
+	/// </summary>
+	private async System.Threading.Tasks.Task ProvisionUserAndKeyAsync()
+	{
+		var config = JsonSerializer.Deserialize<JsonElement>(await File.ReadAllTextAsync(_configFilePath));
+		var apiUrl = TryGetApiUrl(config, out var url) ? url : null;
+		if (string.IsNullOrWhiteSpace(apiUrl))
+		{
+			throw new XunitException("CLI config has no apiUrl; cannot provision a user.");
+		}
+
+		// Sign up, then sign in to establish a session cookie (the API's signup does not
+		// create a session; keys are per-user and require authentication).
+		using var cookieHandler = new HttpClientHandler();
+		using var client = new HttpClient(cookieHandler);
+		var signup = await client.PostAsJsonAsync($"{apiUrl}/api/auth/signup", new { username = "e2e-user", password = "password123" });
+		if (!signup.IsSuccessStatusCode)
+		{
+			var body = await signup.Content.ReadAsStringAsync();
+			throw new XunitException($"Signup failed: {(int)signup.StatusCode} {body} (url={apiUrl})");
+		}
+
+		var login = await client.PostAsJsonAsync($"{apiUrl}/api/auth/login", new { username = "e2e-user", password = "password123" });
+		if (!login.IsSuccessStatusCode)
+		{
+			var body = await login.Content.ReadAsStringAsync();
+			throw new XunitException($"Login failed: {(int)login.StatusCode} {body} (url={apiUrl})");
+		}
+
+		var keyResponse = await client.PostAsJsonAsync($"{apiUrl}/api/keys", new { name = "e2e" });
+		keyResponse.EnsureSuccessStatusCode();
+		using var keyDocument = JsonDocument.Parse(await keyResponse.Content.ReadAsStringAsync());
+		var key = keyDocument.RootElement.GetProperty("key").GetString()
+			?? throw new XunitException("Key creation returned no plaintext.");
+
+		// Persist the key into the CLI config (mirrors `task config set api.key <key>`).
+		var configObject = JsonSerializer.Deserialize<Dictionary<string, object?>>(await File.ReadAllTextAsync(_configFilePath))
+			?? new Dictionary<string, object?>();
+		configObject["ApiKey"] = key;
+		await File.WriteAllTextAsync(
+			_configFilePath,
+			JsonSerializer.Serialize(configObject, new JsonSerializerOptions { WriteIndented = true }));
 	}
 
 	public async System.Threading.Tasks.Task<CliCommandResult> RunCliCommandAsync(string[] arguments, TimeSpan timeout)
@@ -163,7 +212,26 @@ public sealed class PostgreSqlCliFixture : IAsyncLifetime
 		var stderrTask = process.StandardError.ReadToEndAsync();
 
 		using var cts = new CancellationTokenSource(timeout);
-		await process.WaitForExitAsync(cts.Token);
+		try
+		{
+			await process.WaitForExitAsync(cts.Token);
+		}
+		catch (OperationCanceledException)
+		{
+			// Leave no orphan processes behind and surface captured output so a
+			// hung CLI command can be diagnosed from the failure message alone.
+			try
+			{
+				process.Kill(entireProcessTree: true);
+			}
+			catch
+			{
+			}
+
+			await process.WaitForExitAsync();
+			throw new XunitException(
+				$"CLI command timed out after {timeout.TotalSeconds}s: {string.Join(' ', arguments)}\nSTDOUT:\n{await stdoutTask}\nSTDERR:\n{await stderrTask}");
+		}
 
 		return new CliCommandResult(
 			process.ExitCode,
@@ -371,6 +439,12 @@ public sealed class PostgreSqlCliFixture : IAsyncLifetime
 		startInfo.Environment["XDG_CONFIG_HOME"] = configHome;
 		startInfo.Environment["DOTNET_CLI_HOME"] = homeDirectory;
 		startInfo.Environment["NO_COLOR"] = "1";
+
+		// Tests must be hermetic: strip Telegram credentials inherited from the parent
+		// environment so the spawned API server never calls the live Telegram API.
+		startInfo.Environment.Remove("Telegram__BotToken");
+		startInfo.Environment.Remove("Telegram__ChatId");
+		startInfo.Environment.Remove("Telegram__Enabled");
 
 		return startInfo;
 	}

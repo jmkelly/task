@@ -32,7 +32,7 @@ namespace Task.Cli
                 return 1;
             }
 
-            var tasks = await service.SearchTasksAsync(settings.Query, settings.Type, cancellationToken);
+            var tasks = await service.SearchTasksAsync(settings.Query, settings.Type, userId: null, cancellationToken);
 
             if (settings.Json)
             {

@@ -75,6 +75,13 @@ namespace Task.Cli
 			AnsiConsole.WriteLine("server stop         Stop the Task API server");
 			AnsiConsole.WriteLine();
 
+			AnsiConsole.MarkupLine("[yellow]Account Management[/]");
+			AnsiConsole.WriteLine("users create        Create a user account directly in the database (server-host, local only)");
+			AnsiConsole.WriteLine("  Options:");
+			AnsiConsole.WriteLine("    --password <PASSWORD>   Password (prompted when omitted)");
+			AnsiConsole.WriteLine("    --admin                  Grant the admin role");
+			AnsiConsole.WriteLine();
+
 			AnsiConsole.MarkupLine("[yellow]Search and Discovery[/]");
 			AnsiConsole.WriteLine("search <QUERY>      Perform full-text or semantic similarity search across task titles and descriptions");
 			AnsiConsole.WriteLine();
@@ -116,6 +123,9 @@ namespace Task.Cli
 			AnsiConsole.WriteLine("```bash");
 			AnsiConsole.WriteLine("# Set default output format");
 			AnsiConsole.WriteLine("task config set defaultOutput json");
+			AnsiConsole.WriteLine("# Store your API key (create one on the board at /keys)");
+			AnsiConsole.WriteLine("task config set api.key tk_...");
+			AnsiConsole.WriteLine("# Or use the TASK_API_KEY environment variable instead (takes precedence)");
 			AnsiConsole.WriteLine("# Select sqlite explicitly and set its path");
 			AnsiConsole.WriteLine("task config set database.provider sqlite");
 			AnsiConsole.WriteLine("task config set database.sqlite.path ~/.config/task/tasks.db");
@@ -136,11 +146,30 @@ namespace Task.Cli
 			AnsiConsole.WriteLine("```");
 			AnsiConsole.WriteLine();
 
+			AnsiConsole.MarkupLine("[yellow]AUTHENTICATION[/]");
+			AnsiConsole.WriteLine("Every Task server requires authentication. The browser signs in with a username and");
+			AnsiConsole.WriteLine("password; the CLI and AI agents authenticate with a per-user API key.");
+			AnsiConsole.WriteLine();
+			AnsiConsole.WriteLine("First run:");
+			AnsiConsole.WriteLine("  1. Start the server: task server run");
+			AnsiConsole.WriteLine("  2. Open the board in a browser and create the first account (it becomes admin).");
+			AnsiConsole.WriteLine("  3. Open /keys, create an API key, copy it (shown exactly once).");
+			AnsiConsole.WriteLine("  4. Configure the CLI: task config set api.key <key>");
+			AnsiConsole.WriteLine("     (or export TASK_API_KEY=<key> — the env var takes precedence).");
+			AnsiConsole.WriteLine();
+			AnsiConsole.WriteLine("401 responses tell you exactly what to do. Revoking a key on the /keys page takes");
+			AnsiConsole.WriteLine("effect immediately; the CLI fails with an actionable message until a new key is set.");
+			AnsiConsole.WriteLine();
+			AnsiConsole.WriteLine("Closed signup: set Auth__AllowSignup=false on the server and create accounts with");
+			AnsiConsole.WriteLine("`task users create <username> --admin` (local, uses the configured database).");
+			AnsiConsole.WriteLine();
+
 			AnsiConsole.MarkupLine("[yellow]CONFIGURATION[/]");
 			AnsiConsole.WriteLine("Task stores configuration in `~/.config/task/config.json`. Available settings include:");
 			AnsiConsole.WriteLine();
 			AnsiConsole.WriteLine("- `defaultOutput`: Default output format (plain/json)");
 			AnsiConsole.WriteLine("- `apiUrl`: Default API server URL");
+			AnsiConsole.WriteLine("- `api.key`: Per-user API key sent as the X-Api-Key header (TASK_API_KEY env var overrides)");
 			AnsiConsole.WriteLine("- `database.provider`: Database provider (`sqlite` or `pg`). Defaults to `sqlite`");
 			AnsiConsole.WriteLine("- `database.sqlite.path`: SQLite database path used when provider is `sqlite`");
 			AnsiConsole.WriteLine("- `database.postgres.connectionString`: PostgreSQL connection string used when provider is `pg`");
@@ -149,6 +178,7 @@ namespace Task.Cli
 			AnsiConsole.WriteLine("Example:");
 			AnsiConsole.WriteLine("{");
 			AnsiConsole.WriteLine("  \"apiUrl\": \"http://localhost:8080\",");
+			AnsiConsole.WriteLine("  \"apiKey\": \"tk_...\",");
 			AnsiConsole.WriteLine("  \"defaultOutput\": \"plain\",");
 			AnsiConsole.WriteLine("  \"database\": {");
 			AnsiConsole.WriteLine("    \"provider\": \"sqlite\",");
